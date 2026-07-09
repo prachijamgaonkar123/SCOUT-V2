@@ -372,7 +372,7 @@ export const analyticsMenu: CategoryConfig[] = [
       {
         type: "link",
         name: "Fire and Smoke Detection",
-        path: "/fireSmokeOilLeakDetection",
+        path: "/fireSmokeDetection",
         featureId: FEATURE.FIRE_SMOKE,
       },
       {
@@ -384,7 +384,7 @@ export const analyticsMenu: CategoryConfig[] = [
       {
         type: "link",
         name: "Forklift / Vehicle in Walkways",
-        path: "/objectDetection",
+        path: "/forkliftVehicleInWalkways",
         featureId: FEATURE.OBJECT_DETECTION,
       },
       {
@@ -503,24 +503,24 @@ export const analyticsMenu: CategoryConfig[] = [
       },
     ],
   },
-  // {
-  //   title: "Facial Recognition Analytics",
-  //   icon: FaceRecognitionIcon,
-  //   items: [
-  //     {
-  //       type: "link",
-  //       name: "Face Recognition for Entry/Exit Logging",
-  //       path: "/faceRecognition",
-  //       featureId: FEATURE.FACE_RECOGNITION,
-  //     },
-  //     {
-  //       type: "link",
-  //       name: "Employee Idle Time Monitoring with Face Recognition",
-  //       path: "/employeeIdleTimeMonitoringWithFaceRecognition",
-  //       featureId: FEATURE.FACE_IDLE_MONITORING,
-  //     },
-  //   ],
-  // },
+  {
+    title: "Facial Recognition Analytics",
+    icon: FaceRecognitionIcon,
+    items: [
+      {
+        type: "link",
+        name: "Face Recognition for Entry/Exit Logging",
+        path: "/faceRecognition",
+        featureId: FEATURE.FACE_RECOGNITION,
+      },
+      {
+        type: "link",
+        name: "Employee Idle Time Monitoring with Face Recognition",
+        path: "/employeeIdleTimeMonitoringWithFaceRecognition",
+        featureId: FEATURE.FACE_IDLE_MONITORING,
+      },
+    ],
+  },
 ];
 /* =========================
    EXPORT
