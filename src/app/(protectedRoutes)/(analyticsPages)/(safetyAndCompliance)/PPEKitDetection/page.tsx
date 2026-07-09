@@ -1,4 +1,6 @@
-import PPEDetection from "./PPEKitDetection";
+
+import PPEDetectionNew from "./PPEKitDetectionNew";
+
 export default function PPEDetectionPage() {
-  return <PPEDetection />;
+  return <PPEDetectionNew />;
 }
