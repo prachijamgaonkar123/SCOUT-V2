@@ -74,10 +74,10 @@ export const mockWorkforceDashboardData: WorkforceMonitoringDashboardResponse[] 
     title: "Employee Presence in Critical Areas",
     kpi: {
       title: "Employee Presence in Critical Areas",
-      colour: "green",
-      violationsCount: 0,
-      lastDetection: "No Detections",
-      lastDetectionTime: "",
+      colour: "red",
+      violationsCount: 10,
+      lastDetection: "Zone B",
+      lastDetectionTime: "2026-07-08 10:22:44",
     },
     graphs: {
       data: {

@@ -263,7 +263,7 @@ const Dashboard: React.FC = () => {
 
           <Box sx={{ flexShrink: 0 }}>
             <UpgradeBanner
-              title="4 more AI use cases available with an upgrade"
+              title="1 more AI use cases available with an upgrade"
               subtitle="Unlock advanced detection models across every zone."
             />
           </Box>

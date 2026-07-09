@@ -111,10 +111,10 @@ export const mockSurveillanceDashboardData: SurveillanceDashboardResponse[] = [
     title: "Movement During Shutdown Hours",
     kpi: {
       title: "Movement During Shutdown Hours",
-      colour: "green",
-      violationsCount: 0,
-      lastDetection: "No Detections",
-      lastDetectionTime: "",
+      colour: "red",
+      violationsCount: 10,
+     lastDetection: "Zone C",
+      lastDetectionTime: "2026-07-08 09:37:02",
     },
     graphs: {
       data: {
