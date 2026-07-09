@@ -45,15 +45,6 @@ export interface PieChartItem {
   count: number;
   color?: string;
 }
-export interface ShiftType {
-  shiftId: string;
-  name: string;
-  startTime: string;
-  endTime: string;
-  breakStartTime: string;
-  breakEndTime: string;
-  status: string;
-}
 
 export interface CameraTamperingPieCharts {
   onlineCameras: PieChartItem[];
