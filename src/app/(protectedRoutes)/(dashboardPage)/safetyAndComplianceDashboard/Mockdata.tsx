@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // import { ShiftType, SurveillanceDashboardResponse } from "./SafetyAndComplianceDashboard.types";
 
 // // ---------- Helpers ----------
@@ -213,6 +214,8 @@
 //   serverTimestamp: new Date().toISOString(),
 //   data: mockDashboardData,
 // };
+=======
+>>>>>>> a61e6c7 (push scout-v2)
 import { ShiftType, SurveillanceDashboardResponse } from "./SafetyAndComplianceDashboard.types";
 
 // ---------- Helpers ----------
@@ -237,6 +240,7 @@ const pieData = (labels: string[], values: number[]) =>
     color: ["#ffcdd2", "#FFEAA7", "#A8E6CF", "#B0E0E6", "#D4A5FF"][i % 5],
   }));
 
+<<<<<<< HEAD
 const waveValue = (base: number, hour: number, day: number, seed: number): number => {
   const wave = Math.sin(((hour - 6) / 24) * Math.PI * 2) + 1;
   const jitter = ((day * 7 + hour * 3 + seed * 5) % 3) - 1;
@@ -251,6 +255,22 @@ const generateSeries = (
   dailyValues: number[][]
 ): Array<Record<string, string | number>> => {
   const series: Array<Record<string, string | number>> = [];
+=======
+// Wave shape across the day: low at night, peaks around midday, plus a small
+// deterministic jitter so lines look like real activity instead of flat steps.
+const waveValue = (base: number, hour: number, day: number, seed: number) => {
+  const wave = Math.sin(((hour - 6) / 24) * Math.PI * 2) + 1; // 0..2, peak ~12:00
+  const jitter = ((day * 7 + hour * 3 + seed * 5) % 3) - 1; // -1..1
+  return Math.max(0, Math.round(base * wave + jitter));
+};
+
+// Generate hourly series for 7 days (4‑hour intervals)
+const generateSeries = (
+  fields: string[],
+  dailyValues: number[][]
+) => {
+  const series = [];
+>>>>>>> a61e6c7 (push scout-v2)
   const now = new Date();
   for (let day = 6; day >= 0; day--) {
     const d = new Date(now);
@@ -258,7 +278,11 @@ const generateSeries = (
     const dateStr = d.toISOString().slice(0, 10);
     for (let h = 0; h < 24; h += 4) {
       const timeStr = `${String(h).padStart(2, "0")}:00`;
+<<<<<<< HEAD
       const item: Record<string, string | number> = { date: dateStr, time: timeStr };
+=======
+      const item: any = { date: dateStr, time: timeStr };
+>>>>>>> a61e6c7 (push scout-v2)
       fields.forEach((field, idx) => {
         item[field] = waveValue(dailyValues[idx][day], h, day, idx);
       });
@@ -270,7 +294,11 @@ const generateSeries = (
 
 // Generate vehicle points (different structure)
 const generateVehiclePoints = (dailyValues: number[], seed = 0) => {
+<<<<<<< HEAD
   const points: Array<{ time: string; date: string; value: number }> = [];
+=======
+  const points = [];
+>>>>>>> a61e6c7 (push scout-v2)
   const now = new Date();
   for (let day = 6; day >= 0; day--) {
     const d = new Date(now);
@@ -308,7 +336,11 @@ export const mockDashboardData: SurveillanceDashboardResponse[] = [
     graphs: {
       data: {
         granularity: "hour",
+<<<<<<< HEAD
         series: generateSeries(["fireCount", "smokeCount"], [fire, smoke]) as Array<{ date: string; time: string; fireCount: number; smokeCount: number }>,
+=======
+        series: generateSeries(["fireCount", "smokeCount"], [fire, smoke]),
+>>>>>>> a61e6c7 (push scout-v2)
         hazardTypePieData: pieData(["Fire", "Smoke"], [45, 30]),
         zoneWisePieData: pieData(["Zone A", "Zone B", "Zone C"], [20, 35, 20]),
       },
@@ -320,7 +352,11 @@ export const mockDashboardData: SurveillanceDashboardResponse[] = [
     graphs: {
       data: {
         granularity: "hour",
+<<<<<<< HEAD
         series: generateSeries(["helmet", "vest", "glasses"], [helmet, vest, glasses]) as Array<{ date: string; time: string; helmet: number; vest: number; glasses: number }>,
+=======
+        series: generateSeries(["helmet", "vest", "glasses"], [helmet, vest, glasses]),
+>>>>>>> a61e6c7 (push scout-v2)
         violationTypePieData: pieData(["No Helmet", "No Vest", "No Glasses"], [25, 15, 8]),
         zoneWisePieData: pieData(["Zone A", "Zone B", "Zone C"], [18, 22, 12]),
       },
@@ -332,7 +368,11 @@ export const mockDashboardData: SurveillanceDashboardResponse[] = [
     graphs: {
       data: {
         granularity: "hour",
+<<<<<<< HEAD
         series: generateSeries(["count"], [fall]) as Array<{ date: string; time: string; count: number }>,
+=======
+        series: generateSeries(["count"], [fall]),
+>>>>>>> a61e6c7 (push scout-v2)
         zoneWisePieData: pieData(["Zone A", "Zone B", "Zone C"], [8, 12, 5]),
       },
     },
@@ -363,7 +403,11 @@ export const mockDashboardData: SurveillanceDashboardResponse[] = [
     graphs: {
       data: {
         granularity: "hour",
+<<<<<<< HEAD
         series: generateSeries(["count", "mobCount"], [crowd, mob]) as Array<{ date: string; time: string; count: number; mobCount: number }>,
+=======
+        series: generateSeries(["count", "mobCount"], [crowd, mob]),
+>>>>>>> a61e6c7 (push scout-v2)
         zoneWisePieData: pieData(["Zone A", "Zone B", "Zone C"], [6, 9, 4]),
       },
     },
@@ -397,9 +441,15 @@ export const mockShifts: ShiftType[] = [
     name: "Morning",
     startTime: "06:00",
     endTime: "14:00",
+<<<<<<< HEAD
     breakStartTime: "10:00",
     breakEndTime: "10:30",
     status: "active",
+=======
+    breakStartTime: "10:00", // dummy
+    breakEndTime: "10:30",   // dummy
+    status: "active",        // dummy
+>>>>>>> a61e6c7 (push scout-v2)
   },
   {
     shiftId: "shift-2",

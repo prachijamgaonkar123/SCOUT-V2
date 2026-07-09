@@ -366,7 +366,7 @@ export const analyticsMenu: CategoryConfig[] = [
       {
         type: "link",
         name: "PPE Detection (Helmet, Vest,Glasses)",
-        path: "/PPEKitDetection",
+        path: "/ppeKitDetectionPage",
         featureId: FEATURE.PPE_DETECTION,
       },
       {

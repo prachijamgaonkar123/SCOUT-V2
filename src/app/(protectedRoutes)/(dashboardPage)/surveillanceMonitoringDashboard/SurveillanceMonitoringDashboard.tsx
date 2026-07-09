@@ -42,13 +42,6 @@ import {
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
-// ---------- TYPE DEFINITIONS ----------
-type CameraZoneData = {
-  zone: string;
-  count: number;
-  color?: string;
-};
-
 const SurveillanceMonitoring: React.FC = () => {
   const { t } = useTranslation();
   const { user, features } = useSelector((state: RootState) => state.auth);
