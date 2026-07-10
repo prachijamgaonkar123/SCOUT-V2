@@ -1,17 +1,21 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
-  Grid,
   Card,
   CardContent,
   Box,
   Typography,
   Skeleton,
-  Tooltip,
+  IconButton,
 } from "@mui/material";
-import { Warning } from "@mui/icons-material";
-import { ViolationCard, Violation } from "../ViolationCard/ViolationCard";
-import ViewAlertPopup from "../ViewAlertPopup/ViewAlertPopupOld";
-import InfoOutlineIcon from "@mui/icons-material/InfoOutline";
+import { Warning, ChevronRight } from "@mui/icons-material";
+import { SvgIconComponent } from "@mui/icons-material";
+import { Violation } from "../ViolationCard/ViolationCard";
+import ViewAlertPopup from "../ViewAlertPopup/ViewAlertPopup";
+
+// 3 tiles fill the container edge-to-edge (no partial 4th tile peeking in at rest).
+const VISIBLE_TILES = 3;
+const TILE_GAP = 14;
+const TILE_BASIS = `calc((100% - ${(VISIBLE_TILES - 1) * TILE_GAP}px) / ${VISIBLE_TILES})`;
 
 interface RecentViolationsProps {
   readonly tooltipMessage: string;
@@ -20,6 +24,8 @@ interface RecentViolationsProps {
   readonly loading?: boolean;
   readonly imageKey?: string;
   readonly onDownload?: (url: string, violation: Violation) => void;
+  /** Icon shown in every tile's thumbnail — defaults to a generic warning icon. */
+  readonly icon?: SvgIconComponent;
 }
 
 export default function RecentViolations(
@@ -32,12 +38,14 @@ export default function RecentViolations(
     loading = false,
     imageKey = "imageUrl",
     onDownload,
+    icon: TileIcon = Warning,
   } = props;
 
   const [selectedViolation, setSelectedViolation] = useState<Violation | null>(
     null,
   );
   const [open, setOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const handleOpen = (violation: Violation) => {
     setSelectedViolation(violation);
@@ -48,24 +56,27 @@ export default function RecentViolations(
     setOpen(false);
     setSelectedViolation(null);
   };
-  console.log("popup data from the recent violations", selectedViolation);
+
+  const scrollNext = () => {
+    // Tile width is a percentage of the container, so scroll by a measured
+    // one-tile amount rather than a hardcoded pixel value.
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: el.clientWidth / VISIBLE_TILES, behavior: "smooth" });
+  };
+
   /* ---------------- Render Helpers ---------------- */
 
   const renderSkeletons = () => (
-    <Grid container spacing={2}>
-      {Array.from({ length: 4 }).map((_, index) => (
-        <Grid
-          size={{ xs: 12, sm: 6, md: 4, lg: 4, xl: 3 }}
-          key={`skeleton-${index + 1}`}
-        >
-          <Card sx={{ p: 2 }}>
-            <Skeleton width="70%" />
-            <Skeleton width="50%" sx={{ mb: 1 }} />
-            <Skeleton variant="rectangular" height={150} />
-          </Card>
-        </Grid>
+    <Box sx={{ display: "flex", gap: `${TILE_GAP}px`, overflow: "hidden" }}>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <Box key={`skeleton-${index + 1}`} sx={{ flex: `0 0 ${TILE_BASIS}` }}>
+          <Skeleton variant="rectangular" height={130} sx={{ borderRadius: "10px 10px 0 0" }} />
+          <Skeleton width="70%" sx={{ mt: 1 }} />
+          <Skeleton width="50%" />
+        </Box>
       ))}
-    </Grid>
+    </Box>
   );
 
   const renderEmptyState = () => (
@@ -88,20 +99,135 @@ export default function RecentViolations(
   );
 
   const renderViolations = () => (
-    <Grid container spacing={2}>
-      {violations.map((violation, index) => (
-        <Grid
-          size={{ xs: 12, sm: 6, md: 4, lg: 4, xl: 3 }}
-          key={`violation-${index + 1}`}
-          sx={{ display: "flex" }}
-        >
-          <ViolationCard
-            violations={violation}
-            onClick={() => handleOpen(violation)}
-          />
-        </Grid>
-      ))}
-    </Grid>
+    <Box sx={{ position: "relative" }}>
+      {/* No reserved right padding here — 3 tiles must span the full width with
+          zero dead space, otherwise sub-pixel rounding can let a sliver of the
+          4th tile peek through. The arrow button floats on top of tile 3 instead. */}
+      <Box
+        ref={scrollRef}
+        sx={{
+          display: "flex",
+          gap: `${TILE_GAP}px`,
+          overflowX: "auto",
+          scrollBehavior: "smooth",
+          pb: "2px",
+          "&::-webkit-scrollbar": { height: 0 },
+        }}
+      >
+        {violations.map((violation, index) => {
+          const title =
+            violation.violation || violation.incident || violation.usage || "Violation";
+          const cameraId = violation.cameraId ? String(violation.cameraId) : "";
+          const meta = [violation.zone, cameraId].filter(Boolean).join(" · ");
+          const isAlarmed = violation.alarmTriggered === true;
+
+          return (
+            <Box
+              key={`violation-${index + 1}`}
+              onClick={() => handleOpen(violation)}
+              sx={{
+                flex: `0 0 ${TILE_BASIS}`,
+                border: "1px solid #E5E7EB",
+                borderRadius: "11px",
+                overflow: "hidden",
+                bgcolor: "#fff",
+                cursor: "pointer",
+                transition: "box-shadow .12s ease, transform .12s ease",
+                "&:hover": {
+                  boxShadow: "0 4px 12px rgba(0,0,0,.10)",
+                  transform: "translateY(-2px)",
+                },
+              }}
+            >
+              <Box
+                sx={{
+                  height: 130,
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  bgcolor: "#374151",
+                }}
+              >
+                {isAlarmed && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 8,
+                      right: 8,
+                      fontSize: "9.5px",
+                      fontWeight: 800,
+                      color: "#fff",
+                      bgcolor: "rgba(220,38,38,.92)",
+                      borderRadius: "5px",
+                      px: "7px",
+                      py: "3px",
+                    }}
+                  >
+                    HIGH
+                  </Box>
+                )}
+                <TileIcon sx={{ fontSize: 32, color: "rgba(255,255,255,.4)" }} />
+              </Box>
+              <Box sx={{ p: "11px 12px 13px 12px" }}>
+                <Typography
+                  sx={{
+                    fontSize: "12.5px",
+                    fontWeight: 700,
+                    color: "#111827",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {title}
+                </Typography>
+                {meta && (
+                  <Typography
+                    sx={{
+                      fontSize: "11px",
+                      color: "#6B7280",
+                      fontWeight: 500,
+                      mt: "4px",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {meta}
+                  </Typography>
+                )}
+                {violation.time && (
+                  <Typography sx={{ fontSize: "10.5px", color: "#9CA3AF", mt: "2px" }}>
+                    {violation.time}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          );
+        })}
+      </Box>
+
+      <IconButton
+        onClick={scrollNext}
+        sx={{
+          position: "absolute",
+          right: 4,
+          top: "50%",
+          transform: "translateY(-50%)",
+          zIndex: 1,
+          width: 32,
+          height: 32,
+          border: "1px solid #E5E7EB",
+          bgcolor: "#fff",
+          boxShadow: "0 2px 6px rgba(0,0,0,.10)",
+          color: "#6B7280",
+          "&:hover": { color: "#2563EB" },
+        }}
+      >
+        <ChevronRight fontSize="small" />
+      </IconButton>
+    </Box>
   );
 
   const renderContent = () => {
@@ -116,45 +242,26 @@ export default function RecentViolations(
     <Card
       sx={{
         height: "100%",
-        maxHeight: 420,
         display: "flex",
         flexDirection: "column",
         borderRadius: 2,
         boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
       }}
     >
-      <CardContent sx={{ p: 3, flex: 1, overflowY: "auto" }}>
+      <CardContent sx={{ p: 3, flex: 1 }}>
         {/* Header */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
+            gap: 1,
             mb: 2.5,
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Warning sx={{ fontSize: 20, color: "#f44336" }} />
-            <Typography variant="h6" fontWeight={600} color="#1c2025">
-              {label}
-            </Typography>
-          </Box>
-
-          {tooltipMessage && (
-            <Tooltip title={tooltipMessage} arrow placement="left">
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  color: "#f44336",
-                }}
-              >
-                <InfoOutlineIcon />
-              </Box>
-            </Tooltip>
-          )}
+          <Warning sx={{ fontSize: 20, color: "#f44336" }} />
+          <Typography variant="h6" fontWeight={600} color="#1c2025">
+            {label}
+          </Typography>
         </Box>
 
         {/* Content */}

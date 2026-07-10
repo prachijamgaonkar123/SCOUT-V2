@@ -41,6 +41,20 @@ const ViolationBreakdown: React.FC<ViolationBreakdownProps> = ({
         </Typography>
       </Box>
 
+      {metrics.length === 0 ? (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: 100,
+            color: DASHBOARD_COLORS.textSecondary,
+            fontSize: 13,
+          }}
+        >
+          🚫 No Violations Found
+        </Box>
+      ) : (
       <Box
         sx={{
           display: "grid",
@@ -101,6 +115,7 @@ const ViolationBreakdown: React.FC<ViolationBreakdownProps> = ({
           );
         })}
       </Box>
+      )}
     </Box>
   );
 };

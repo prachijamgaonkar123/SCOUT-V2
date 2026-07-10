@@ -30,7 +30,7 @@ import KpiCard from "@/app/components/molecules/KpiCard/KpiCard";
 
 import RecentViolations from "@/app/components/molecules/RecentViolations/RecentViolations";
 
-import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolations";
+import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolationsOld";
 
 import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
 

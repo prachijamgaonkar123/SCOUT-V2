@@ -9,9 +9,9 @@ import ViolationBreakdown, {
 } from "@/app/components/molecules/ViolationBreakdown/ViolationBreakdown";
 import ViolationsTrend from "@/app/components/molecules/ViolationsTrend/ViolationsTrend";
 import RecentViolations from "@/app/components/molecules/RecentViolations/RecentViolations";
-import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolations";
+import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolation";
 import ReportTable from "@/app/components/organisms/ReportTable/ReportTable";
-import TimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/TimeFilter";
+import CollapsibleTimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/CollapsibleTimeFilter";
 import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
 import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
@@ -47,6 +47,16 @@ import { Violation } from "@/app/components/molecules/ViolationCard/ViolationCar
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/store/store";
 import { formatLocalDateTime } from "@/utils/formatLocalDateTime";
+
+// ---------- MOCK DATA IMPORTS ----------
+import {
+  mockPpeKpi,
+  mockZoneViolations,
+  mockRecentViolations,
+  mockDetailedReport,
+} from "./Mockdata";
+
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 /* ================= COMPONENT ================= */
 
@@ -89,6 +99,15 @@ const PPEDetection: React.FC = () => {
 
   /* ---------- INITIAL LOAD ---------- */
   useEffect(() => {
+    if (USE_MOCK) {
+      // 👈 Use static mock data
+      setDisplayKpi(mockPpeKpi);
+      setDisplayZoneViolations(mockZoneViolations);
+      setRecentViolationsLive(mockRecentViolations);
+      setDetailedReport(mockDetailedReport);
+      return;
+    }
+
     const load = async () => {
       const [kpi, zones, recent, detailed] = await Promise.all([
         fetchKpi({ tenantId }).unwrap(),
@@ -115,7 +134,7 @@ const PPEDetection: React.FC = () => {
   /* ---------- SOCKET (LIVE ONLY) ---------- */
   useSocketEvent<PpeSocketPayload>({
     tenantId,
-    enabled: isLiveMode,
+    enabled: isLiveMode && !USE_MOCK, // 👈 Disable socket in mock mode
     event: SOCKET_EVENTS.PPE_UPDATE,
     handler: (payload) => {
       console.log("payload form the socket", payload);
@@ -128,6 +147,15 @@ const PPEDetection: React.FC = () => {
   /* ---------- TIME FILTER ---------- */
   const handleTimeRangeChange = useCallback(
     async (range: { start?: string; end?: string }) => {
+      if (USE_MOCK) {
+        // 👈 Return mock data (optionally filter by range if needed)
+        setDisplayKpi(mockPpeKpi);
+        setDisplayZoneViolations(mockZoneViolations);
+        setRecentViolationsLive(mockRecentViolations);
+        setDetailedReport(mockDetailedReport);
+        return;
+      }
+
       if (!range.start && !range.end) {
         setIsLiveMode(true);
         fetchKpi({ tenantId });
@@ -400,39 +428,54 @@ const PPEDetection: React.FC = () => {
   return (
     <Box>
       <Paper sx={{ p: 3, backgroundColor: "#fff", borderRadius: 2 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-          <Typography variant="h6">📊 {t("Overview")}</Typography>
-          <TimeFilter onRangeChange={handleTimeRangeChange} />
-        </Box>
-
-        {!kpiLoading && (
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              border: `1px solid ${DASHBOARD_COLORS.border}`,
-              borderRadius: "12px",
-              boxShadow: "0 1px 2px rgba(0,0,0,.08), 0 1px 3px 1px rgba(0,0,0,.06)",
-              overflow: "hidden",
-              mb: "20px",
-            }}
-          >
-            <Box sx={{ flex: "1 1 0", minWidth: 0, p: "24px" }}>
-              <ViolationBreakdown metrics={breakdownMetrics} />
-            </Box>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 2,
+            flexWrap: "wrap",
+            mb: "20px",
+          }}
+        >
+          {!kpiLoading && (
             <Box
               sx={{
-                flex: "1.3 1 0",
+                flex: "1 1 480px",
                 minWidth: 0,
-                p: "24px",
-                borderLeft: { xs: "none", md: `1px solid ${DASHBOARD_COLORS.border}` },
-                borderTop: { xs: `1px solid ${DASHBOARD_COLORS.border}`, md: "none" },
+                display: "flex",
+                flexDirection: { xs: "column", md: "row" },
+                // Floor, not a fixed height: ViolationsTrend always has data (static
+                // placeholder) and must stay readable even when ViolationBreakdown
+                // has zero metrics (e.g. a tenant with no violations yet) and would
+                // otherwise collapse the whole row via flex-stretch.
+                minHeight: { xs: "auto", md: "220px" },
+                border: `1px solid ${DASHBOARD_COLORS.border}`,
+                borderRadius: "12px",
+                boxShadow: "0 1px 2px rgba(0,0,0,.08), 0 1px 3px 1px rgba(0,0,0,.06)",
+                overflow: "hidden",
               }}
             >
-              <ViolationsTrend data={violationsTrendData} trendPercentage={18} />
+              <Box sx={{ flex: "1 1 0", minWidth: 0, p: "24px" }}>
+                <ViolationBreakdown metrics={breakdownMetrics} />
+              </Box>
+              <Box
+                sx={{
+                  flex: "1.3 1 0",
+                  minWidth: 0,
+                  p: "24px",
+                  borderLeft: { xs: "none", md: `1px solid ${DASHBOARD_COLORS.border}` },
+                  borderTop: { xs: `1px solid ${DASHBOARD_COLORS.border}`, md: "none" },
+                }}
+              >
+                <ViolationsTrend data={violationsTrendData} trendPercentage={18} />
+              </Box>
             </Box>
+          )}
+
+          <Box sx={{ flexShrink: 0 }}>
+            <CollapsibleTimeFilter onRangeChange={handleTimeRangeChange} />
           </Box>
-        )}
+        </Box>
 
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, lg: 8 }}>

@@ -6,7 +6,7 @@ import RecentViolations from "@/app/components/molecules/RecentViolations/Recent
 import KpiCardSkeleton from "@/app/components/molecules/KpiCardSkeleton/KpiCardSkeleton";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
-import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolations";
+import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolationsOld";
 import TimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/TimeFilter";
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";

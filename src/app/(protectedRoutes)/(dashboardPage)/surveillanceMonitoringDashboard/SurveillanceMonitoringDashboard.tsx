@@ -8,7 +8,6 @@ import DashboardKpiCard from "@/app/components/molecules/MonitoringDashboardKpiC
 import DashboardTabs, {
   TabConfig,
 } from "@/app/components/organisms/DashboardTabs/DashboardTabs";
-
 import EngineeringIcon from "@mui/icons-material/Engineering";
 import DynamicPieChart from "@/app/components/organisms/PieChart/PieChart";
 import { useTranslation } from "react-i18next";

@@ -12,7 +12,7 @@ import { Block, CheckCircle, LocationOn } from "@mui/icons-material";
 import CarIcon from "@mui/icons-material/DirectionsCar";
 import EquipmentIcon from "@mui/icons-material/Build";
 import TimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/TimeFilter";
-import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolations";
+import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolationsOld";
 import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
 const UnauthorizedParkingOrEquipmentBlockingAisles: React.FC = () => {
   const skeletonKeys = Array.from({ length: 6 }, () => uuidv4());
