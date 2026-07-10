@@ -4,13 +4,16 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Grid, Paper, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
-import KpiCard from "@/app/components/molecules/KpiCard/KpiCard";
-import KpiCardSkeleton from "@/app/components/molecules/KpiCardSkeleton/KpiCardSkeleton";
+import ViolationBreakdown, {
+  BreakdownMetric,
+} from "@/app/components/molecules/ViolationBreakdown/ViolationBreakdown";
+import ViolationsTrend from "@/app/components/molecules/ViolationsTrend/ViolationsTrend";
 import RecentViolations from "@/app/components/molecules/RecentViolations/RecentViolations";
 import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolations";
 import ReportTable from "@/app/components/organisms/ReportTable/ReportTable";
 import TimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/TimeFilter";
 import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
 import EngineeringIcon from "@mui/icons-material/Engineering";
 import CheckroomIcon from "@mui/icons-material/Checkroom";
@@ -44,8 +47,6 @@ import { Violation } from "@/app/components/molecules/ViolationCard/ViolationCar
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/store/store";
 import { formatLocalDateTime } from "@/utils/formatLocalDateTime";
-import ViolationsTrend, { TrendDataPoint } from "@/app/components/molecules/ViolationsTrend/ViolationsTrend";
-import ViolationBreakdown, { BreakdownItem } from "@/app/components/molecules/ViolationBreakdown/ViolationBreakdown";
 
 /* ================= COMPONENT ================= */
 
@@ -153,51 +154,7 @@ const PPEDetection: React.FC = () => {
     },
     [tenantId, fetchKpi, fetchZoneViolations, fetchRecent],
   );
-// -------- Derived data for new components --------
-const breakdownData = useMemo(() => {
-  const breakdownItems: BreakdownItem[] = [];
-  let total = 0;
 
-  displayKpi.forEach((item) => {
-    if (item.title === "Total Violations") {
-      total = Number(item.value);
-    } else {
-      // Only include non‑total items as breakdown categories
-      breakdownItems.push({
-        label: item.title,
-        count: Number(item.value),
-      });
-    }
-  });
-
-  return { total, breakdownItems };
-}, [displayKpi]);
-
-const lastDetectionTime = useMemo(() => {
-  if (recentViolationsLive.length === 0) return "--:--:--";
-  // Sort by time descending and take the latest
-  const sorted = [...recentViolationsLive].sort(
-    (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
-  );
-  const latest = sorted[0];
-  return latest.time ? new Date(latest.time).toLocaleTimeString() : "--:--:--";
-}, [recentViolationsLive]);
-
-// ⚠️ Replace with real trend data from an API later
-const trendData = useMemo<TrendDataPoint[]>(
-  () => [
-    { date: "Jun 25", value: 4 },
-    { date: "Jun 26", value: 6 },
-    { date: "Jun 27", value: 3 },
-    { date: "Jun 28", value: 8 },
-    { date: "Jun 29", value: 5 },
-    { date: "Jun 30", value: 7 },
-    { date: "Jul 01", value: 9 },
-  ],
-  []
-);
-
-const trendPercentage = useMemo(() => 18, []);
   const ppeKpiData = useMemo(
     () =>
       displayKpi.map((item) => {
@@ -205,6 +162,7 @@ const trendPercentage = useMemo(() => 18, []);
 
         return {
           ...item,
+          rawTitle: item.title, // untranslated key — used below to pick the icon tone
           title: t(item.title),
           icon: config?.icon || EngineeringIcon,
           tooltipMessage: config?.tooltipMessage || "",
@@ -212,6 +170,39 @@ const trendPercentage = useMemo(() => 18, []);
       }),
     [displayKpi, t],
   );
+
+  // Location/time metrics get the "info" tint; violation counts get red — matches the mockup.
+  const breakdownMetrics: BreakdownMetric[] = useMemo(
+    () =>
+      ppeKpiData.map((kpi) => ({
+        icon: kpi.icon,
+        value: kpi.value,
+        label: kpi.title,
+        tone:
+          kpi.rawTitle === "Current Unsafe Zone" ||
+          kpi.rawTitle === "Last Detection Time"
+            ? "info"
+            : "red",
+        // Timestamps are long — shrink the value so it doesn't crowd the label, like the mockup does.
+        valueFontSize: kpi.rawTitle === "Last Detection Time" ? 13 : undefined,
+      })),
+    [ppeKpiData],
+  );
+
+  // TODO: replace with a real 7-day trend endpoint once one exists on this page's API.
+  // Placeholder mirrors the approved mockup (src/app/.html) until that's wired up.
+  const violationsTrendData = useMemo(() => {
+    const values = [3, 4, 2, 5, 4, 3, 5];
+    const now = new Date();
+    return values.map((value, idx) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (values.length - 1 - idx));
+      return {
+        date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        value,
+      };
+    });
+  }, []);
   const zoneViolationsForUi = useMemo(() => {
     const iconMap: Record<string, SvgIconComponent> = {
       Helmet: EngineeringIcon,
@@ -414,52 +405,35 @@ const trendPercentage = useMemo(() => 18, []);
           <TimeFilter onRangeChange={handleTimeRangeChange} />
         </Box>
 
-        {/* <Grid container spacing={2.5} sx={{ mb: 4 }}>
-          {kpiLoading
-            ? Array.from({ length: 6 }).map((_, index) => (
-              <Grid
-                key={index + 1}
-                size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-              >
-                <KpiCardSkeleton />
-              </Grid>
-            ))
-            : ppeKpiData.map((kpi) => (
-              <Grid
-                key={kpi.title}
-                size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-              >
-                <KpiCard {...kpi} />
-              </Grid>
-            ))}
-        </Grid> */}
-<Grid container spacing={3} sx={{ mb: 4 }}>
-  {/* Violation Breakdown – left column */}
-  <Grid size={{ xs: 12, md: 6 }}>
-    {kpiLoading ? (
-      <Box sx={{ height: 220, bgcolor: "#f5f5f5", borderRadius: 2 }} />
-    ) : (
-      <ViolationBreakdown
-        totalViolations={breakdownData.total}
-        breakdown={breakdownData.breakdownItems}
-        lastDetection={lastDetectionTime}
-      />
-    )}
-  </Grid>
+        {!kpiLoading && (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              border: `1px solid ${DASHBOARD_COLORS.border}`,
+              borderRadius: "12px",
+              boxShadow: "0 1px 2px rgba(0,0,0,.08), 0 1px 3px 1px rgba(0,0,0,.06)",
+              overflow: "hidden",
+              mb: "20px",
+            }}
+          >
+            <Box sx={{ flex: "1 1 0", minWidth: 0, p: "24px" }}>
+              <ViolationBreakdown metrics={breakdownMetrics} />
+            </Box>
+            <Box
+              sx={{
+                flex: "1.3 1 0",
+                minWidth: 0,
+                p: "24px",
+                borderLeft: { xs: "none", md: `1px solid ${DASHBOARD_COLORS.border}` },
+                borderTop: { xs: `1px solid ${DASHBOARD_COLORS.border}`, md: "none" },
+              }}
+            >
+              <ViolationsTrend data={violationsTrendData} trendPercentage={18} />
+            </Box>
+          </Box>
+        )}
 
-  {/* Violations Trend – right column */}
-  <Grid size={{ xs: 12, md: 6 }}>
-    {kpiLoading ? (
-      <Box sx={{ height: 220, bgcolor: "#f5f5f5", borderRadius: 2 }} />
-    ) : (
-      <ViolationsTrend
-        data={trendData}
-        trendPercentage={trendPercentage}
-        trendLabel="↑"
-      />
-    )}
-  </Grid>
-</Grid>
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, lg: 8 }}>
             <RecentViolations

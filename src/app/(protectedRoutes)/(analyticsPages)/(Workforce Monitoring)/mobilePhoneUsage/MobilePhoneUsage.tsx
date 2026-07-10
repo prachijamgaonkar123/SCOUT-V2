@@ -10,7 +10,6 @@ import { v4 as uuidv4 } from "uuid";
 import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolations";
 import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
 import TimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/TimeFilter";
-import { getOneHourBefore } from "../../(safetyAndCompliance)/PPEKitDetection/PPEKitDetection";
 
 const MobilePhoneUsage: React.FC = () => {
   interface ViolationData {
@@ -24,7 +23,7 @@ const MobilePhoneUsage: React.FC = () => {
   }
   const [viewPopupOpen, setViewPopupOpen] = useState(false);
   const [viewPopupData, setViewPopupData] = useState<ViolationData | null>(
-    null
+    null,
   );
   const skeletonKeys = Array.from({ length: 4 }, () => uuidv4());
   const MobilePhoneUsageKpiData = [
@@ -43,7 +42,7 @@ const MobilePhoneUsage: React.FC = () => {
     },
     {
       title: "Latest Incidence",
-      value: getOneHourBefore().time,
+      value: "10:30 AM",
       icon: AccessTime,
       tooltipMessage:
         "The time when the most recent mobile phone usage violation was detected.",
@@ -64,7 +63,7 @@ const MobilePhoneUsage: React.FC = () => {
       zone: "Assembly Line",
       cameraid: "CAM-11",
       alarmTriggered: true,
-      createdAt: getOneHourBefore().fullDate,
+      createdAt: "2025-09-23 16:42",
       updatedAt: "2025-09-23 16:43",
     },
     {
@@ -74,7 +73,7 @@ const MobilePhoneUsage: React.FC = () => {
       zone: "Production Floor A",
       cameraid: "CAM-12",
       alarmTriggered: false,
-      createdAt: getOneHourBefore().fullDate,
+      createdAt: "2025-09-23 16:50",
       updatedAt: "2025-09-23 16:51",
     },
     {
@@ -84,7 +83,7 @@ const MobilePhoneUsage: React.FC = () => {
       zone: "Warehouse",
       cameraid: "CAM-13",
       alarmTriggered: false,
-      createdAt: getOneHourBefore().fullDate,
+      createdAt: "2025-09-23 17:05",
       updatedAt: "2025-09-23 17:06",
     },
     {
@@ -94,7 +93,7 @@ const MobilePhoneUsage: React.FC = () => {
       zone: "Main Entrance",
       cameraid: "CAM-14",
       alarmTriggered: true,
-      createdAt: getOneHourBefore().fullDate,
+      createdAt: "2025-09-23 17:20",
       updatedAt: "2025-09-23 17:21",
     },
     {
@@ -104,7 +103,7 @@ const MobilePhoneUsage: React.FC = () => {
       zone: "Parking Area",
       cameraid: "CAM-15",
       alarmTriggered: false,
-      createdAt: getOneHourBefore().fullDate,
+      createdAt: "2025-09-23 17:35",
       updatedAt: "2025-09-23 17:36",
     },
   ];
@@ -167,8 +166,8 @@ const MobilePhoneUsage: React.FC = () => {
     console.log("Export requested clikcedd:", format);
   };
   const handleViewSingle = (row: Record<string, string | number | boolean>) => {
-    console.log("view single row", row);
-    setViewPopupData(row as ViolationData);
+    const violation = row as ViolationData;
+    setViewPopupData(violation);
     setViewPopupOpen(true);
   };
   const KpiCardLoading = false;
@@ -198,9 +197,7 @@ const MobilePhoneUsage: React.FC = () => {
             </Typography>
           </Box>
 
-          <TimeFilter onRangeChange={function (range: { start: string; end: string; }): void {
-            throw new Error("Function not implemented.");
-          } } />
+          <TimeFilter onRangeChange={() => console.log("on ranged chnaged")} />
         </Box>
         {/* KPI Cards */}
 
@@ -250,6 +247,9 @@ const MobilePhoneUsage: React.FC = () => {
       </Paper>
       {/*  Violations Report */}
       <ReportTable
+        totalCount={4}
+        page={0}
+        rowsPerPage={10}
         title="Detailed Report"
         columns={[
           { id: "voilation", label: "Violation", minWidth: 150 },
@@ -266,7 +266,7 @@ const MobilePhoneUsage: React.FC = () => {
             label: "Zone",
             type: "select",
             options: Array.from(
-              new Set(recentMobilePhoneViolations.map((v) => v.zone))
+              new Set(recentMobilePhoneViolations.map((v) => v.zone)),
             ),
           },
           {
@@ -274,7 +274,7 @@ const MobilePhoneUsage: React.FC = () => {
             label: "Cameras",
             type: "select",
             options: Array.from(
-              new Set(recentMobilePhoneViolations.map((v) => v.cameraId))
+              new Set(recentMobilePhoneViolations.map((v) => v.cameraId)),
             ),
           },
           {
@@ -300,7 +300,8 @@ const MobilePhoneUsage: React.FC = () => {
         onExport={handleExport}
         loading={false}
         onView={handleViewSingle}
-        tooltipMessage="Detailed mobile phone usage  report with filter, reset, and CSV/PDF download options." totalCount={0} page={0} rowsPerPage={0}      />
+        tooltipMessage="Detailed mobile phone usage  report with filter, reset, and CSV/PDF download options."
+      />
       {/* View Alert Popup */}
       {viewPopupData && (
         <ViewAlertPopup

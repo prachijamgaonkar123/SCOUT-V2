@@ -1,345 +1,823 @@
 "use client";
-import React, { useState } from "react";
+
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import { useSelector } from "react-redux";
+
+import { RootState } from "@/app/store/store";
+
+import {
+  Box,
+  Grid,
+  Paper,
+  Typography,
+} from "@mui/material";
+
+import {
+  Block,
+  CheckCircle,
+  LocationOn,
+} from "@mui/icons-material";
+
 import ReportTable from "@/app/components/organisms/ReportTable/ReportTable";
+
 import KpiCard from "@/app/components/molecules/KpiCard/KpiCard";
-import { Box, Grid, Paper, Typography } from "@mui/material";
-import { Block, CheckCircle, LocationOn } from "@mui/icons-material";
+
 import RecentViolations from "@/app/components/molecules/RecentViolations/RecentViolations";
-import KpiCardSkeleton from "@/app/components/molecules/KpiCardSkeleton/KpiCardSkeleton";
-import { v4 as uuidv4 } from "uuid";
-import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
+
 import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolations";
+
+import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
+
 import TimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/TimeFilter";
-import { getOneHourBefore } from "../PPEKitDetection/PPEKitDetection";
+
+import KpiCardSkeleton from "@/app/components/molecules/KpiCardSkeleton/KpiCardSkeleton";
+
+import {
+  useGetOrgShiftTimeDataQuery,
+  useLazyGetEmergencyExitBlockageDetectionDataQuery,
+  useLazyGetEmergencyExitBlockageDetectionDetailedReportQuery,
+  useGetEmergencyExitBlockageDetectionSingleReportPdfMutation,
+  useGetEmergencyExitBlockageDetectionDetailedCsvReportMutation,
+  useGetEmergencyExitBlockageDetectionDetailedPdfReportMutation,
+} from "./EmergencyExitBlockageApi";
+
+import {
+  EmergencyExitBlockageDetailedReportResponse,
+  EmergencyExitBlockageFilterParams,
+  EmergencyExitBlockageRecentViolation,
+  EmergencyExitBlockageResponse,
+  EmergencyExitBlockageKpiItem,
+  EmergencyExitBlockageZoneViolation,
+} from "./EmergencyExitBlockage.types";
+
+import { formatLocalDateTime } from "@/utils/formatLocalDateTime";
+
+import { useSocketEvent } from "@/customhooks/useSocketEvent";
+
+import { SOCKET_EVENTS } from "@/sockets/socket.events";
 
 const EmergencyExitBlockage: React.FC = () => {
-  interface ReportData extends Record<string, string | number | boolean> {
-    voilation: string;
-    zone: string;
-    time: string;
-    cameraId: string;
-    imageUrl: string;
-    alarmTriggered: boolean;
-  }
-
-  const [viewPopupOpen, setViewPopupOpen] = useState(false);
-  const [viewPopupData, setViewPopupData] = useState<ReportData | null>(null);
-  const skeletonKeys = Array.from({ length: 4 }, () => uuidv4());
-
-  const ExitKpiData = [
-    {
-      title: "Blocked Emergency Exit",
-      value: "9",
-      tooltipMessage:
-        "Shows the total number of emergency exits that are currently blocked.",
-      icon: Block,
-    },
-    {
-      title: "Clear Emergency Exit Routes",
-      value: "12",
-      tooltipMessage:
-        "Shows the total number of emergency exits that are currently clear and safe for use.",
-      icon: CheckCircle,
-      trendColor: "#4caf50",
-      color: "#4caf50",
-      bgColor: "#e8f5e9",
-      borderColor: "#4caf50",
-      iconBg: "rgba(76, 175, 80, 0.1)",
-    },
-    {
-      title: "Affected Zones (Last 3)",
-      value: "Zone A, Zone B, Zone C",
-      tooltipMessage:
-        "Displays the last three zones where blocked emergency exits were detected.",
-      icon: LocationOn,
-    },
-  ];
-
-  const backendExitBlockageData = [
-    {
-      id: 501,
-      blockage: true,
-      alarmTriggered: true,
-      snapshot: "/img/e1.jpg",
-      zone: "Emergency Exit A",
-      camera: "CAM-14",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 19:06",
-    },
-
-    {
-      id: 503,
-      blockage: true,
-      alarmTriggered: true,
-      snapshot: "/img/e2.jpg",
-      zone: "Assembly Line Exit",
-      camera: "CAM-16",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 19:21",
-    },
-    {
-      id: 504,
-      blockage: true,
-      alarmTriggered: true,
-      snapshot: "/img/e3.jpg",
-      zone: "Emergency Exit A",
-      camera: "CAM-14",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 19:06",
-    },
-
-    {
-      id: 505,
-      blockage: true,
-      alarmTriggered: true,
-      snapshot: "/img/e1.jpg",
-      zone: "Assembly Line Exit",
-      camera: "CAM-16",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 19:21",
-    },
-    {
-      id: 503,
-      blockage: true,
-      alarmTriggered: true,
-      snapshot: "/img/e2.jpg",
-      zone: "Assembly Line Exit",
-      camera: "CAM-16",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 19:21",
-    },
-
-    {
-      id: 504,
-      blockage: true,
-      alarmTriggered: true,
-      snapshot: "/img/e3.jpg",
-      zone: "Emergency Exit A",
-      camera: "CAM-14",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 19:06",
-    },
-    {
-      id: 505,
-      blockage: true,
-      alarmTriggered: true,
-      snapshot: "/img/e2.jpg",
-      zone: "Assembly Line Exit",
-      camera: "CAM-16",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 19:21",
-    },
-    {
-      id: 503,
-      blockage: true,
-      alarmTriggered: true,
-      snapshot: "/img/e3.jpg",
-      zone: "Assembly Line Exit",
-      camera: "CAM-16",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 19:21",
-    },
-    {
-      id: 505,
-      blockage: true,
-      alarmTriggered: true,
-      snapshot: "/img/e1.jpg",
-      zone: "Assembly Line Exit",
-      camera: "CAM-16",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 19:21",
-    },
-  ];
-
-  // Map backend data to recentViolations format
-  const recentExitBlockageViolations: ReportData[] =
-    backendExitBlockageData.map((item) => {
-      const titleParts = [];
-
-      if (item.blockage === true) titleParts.push("Emergency exit blocked");
-
-      return {
-        voilation: titleParts.join(", ") ?? "No violation",
-        zone: item.zone,
-        time: item.createdAt,
-        imageUrl: item.snapshot,
-        cameraId: item.camera,
-        alarmTriggered: item.alarmTriggered,
-      };
-    });
-
-  console.log(
-    "emergency exit bolockage voilation",
-    recentExitBlockageViolations
+  const { user } = useSelector(
+    (state: RootState) => state.auth,
   );
 
-  const zoneViolationsData = [
-    {
-      zone: "Emergency Exit A",
-      BlockedExit: 3,
+  const tenantId = user?.org_id ?? "";
+
+  /* ---------------------------------- */
+  /* STATE */
+  /* ---------------------------------- */
+
+  const [filters, setFilters] =
+    useState<EmergencyExitBlockageFilterParams>(
+      {},
+    );
+
+  const [page, setPage] = useState(0);
+
+  const [limit, setLimit] = useState(10);
+
+  const [isExporting, setIsExporting] =
+    useState(false);
+
+  const [downloadingRows, setDownloadingRows] =
+    useState<Set<number>>(new Set());
+
+  const [viewPopupOpen, setViewPopupOpen] =
+    useState(false);
+
+  const [viewPopupData, setViewPopupData] =
+    useState<EmergencyExitBlockageRecentViolation | null>(
+      null,
+    );
+
+  const [isLiveMode, setIsLiveMode] =
+    useState(true);
+
+  const [displayKpi, setDisplayKpi] =
+    useState<EmergencyExitBlockageKpiItem[]>(
+      [],
+    );
+
+  const [
+    displayZoneViolations,
+    setDisplayZoneViolations,
+  ] = useState<
+    EmergencyExitBlockageZoneViolation[]
+  >([]);
+
+  const [
+    recentViolationsLive,
+    setRecentViolationsLive,
+  ] = useState<
+    EmergencyExitBlockageRecentViolation[]
+  >([]);
+
+  const [detailedReport, setDetailedReport] =
+    useState<EmergencyExitBlockageDetailedReportResponse | null>(
+      null,
+    );
+
+  /* ---------------------------------- */
+  /* API */
+  /* ---------------------------------- */
+
+  const { data: orgShifts } =
+    useGetOrgShiftTimeDataQuery(
+      { tenantId },
+      { skip: !tenantId },
+    );
+
+  const [
+    fetchOverviewData,
+    { isFetching: overviewLoading },
+  ] =
+    useLazyGetEmergencyExitBlockageDetectionDataQuery();
+
+  const [
+    fetchDetailedReport,
+    { isFetching: detailedLoading },
+  ] =
+    useLazyGetEmergencyExitBlockageDetectionDetailedReportQuery();
+
+  const [downloadSinglePdf] =
+    useGetEmergencyExitBlockageDetectionSingleReportPdfMutation();
+
+  const [downloadCsvReport] =
+    useGetEmergencyExitBlockageDetectionDetailedCsvReportMutation();
+
+  const [downloadPdfReport] =
+    useGetEmergencyExitBlockageDetectionDetailedPdfReportMutation();
+
+  /* ---------------------------------- */
+  /* INITIAL LOAD */
+  /* ---------------------------------- */
+
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const loadInitial = async () => {
+      const response =
+        await fetchOverviewData({
+          tenantId,
+        }).unwrap();
+
+      setDisplayKpi(
+        response?.kpi || [],
+      );
+
+      setDisplayZoneViolations(
+        response?.zoneViolations || [],
+      );
+
+      setRecentViolationsLive(
+        response?.recentViolations || [],
+      );
+    };
+
+    loadInitial().catch(console.error);
+  }, [tenantId, fetchOverviewData]);
+
+  /* ---------------------------------- */
+  /* DETAILED REPORT */
+  /* ---------------------------------- */
+
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const loadDetailed = async () => {
+      const response =
+        await fetchDetailedReport({
+          tenantId,
+
+          page: page + 1,
+
+          limit,
+
+          emergencyExitRoute:
+            filters?.emergencyExitRoute ||
+            undefined,
+
+          zone:
+            filters?.zone || undefined,
+
+          camera:
+            filters?.camera || undefined,
+
+          alarmTriggered:
+            filters?.alarmTriggered ===
+            undefined
+              ? undefined
+              : filters.alarmTriggered ===
+                "True",
+
+          startDate: formatLocalDateTime(
+            filters?.startDate,
+          ),
+
+          endDate: formatLocalDateTime(
+            filters?.endDate,
+          ),
+        }).unwrap();
+
+      setDetailedReport(response);
+    };
+
+    loadDetailed().catch(console.error);
+  }, [
+    tenantId,
+    page,
+    limit,
+    filters,
+    fetchDetailedReport,
+  ]);
+
+  /* ---------------------------------- */
+  /* SOCKET */
+  /* ---------------------------------- */
+
+  useSocketEvent({
+    tenantId,
+
+    enabled: isLiveMode,
+
+    event:
+      SOCKET_EVENTS.EMERGENCY_EXIT_BLOCKAGE_UPDATE,
+
+    handler: (payload: EmergencyExitBlockageResponse) => {
+      setDisplayKpi(
+        payload?.kpi || [],
+      );
+
+      setDisplayZoneViolations(
+        payload?.zoneViolations || [],
+      );
+
+      setRecentViolationsLive(
+        payload?.recentViolations || [],
+      );
     },
+  });
+
+  /* ---------------------------------- */
+  /* TIME FILTER */
+  /* ---------------------------------- */
+
+  const handleRangeChange =
+    useCallback(
+      async (range: {
+        start?: string;
+        end?: string;
+      }) => {
+        if (!range.start && !range.end) {
+          setIsLiveMode(true);
+
+          const response =
+            await fetchOverviewData({
+              tenantId,
+            }).unwrap();
+
+          setDisplayKpi(
+            response?.kpi || [],
+          );
+
+          setDisplayZoneViolations(
+            response?.zoneViolations || [],
+          );
+
+          setRecentViolationsLive(
+            response?.recentViolations || [],
+          );
+
+          return;
+        }
+
+        setIsLiveMode(false);
+
+        const response =
+          await fetchOverviewData({
+            tenantId,
+
+            startDate: range.start,
+
+            endDate: range.end,
+          }).unwrap();
+
+        setDisplayKpi(
+          response?.kpi || [],
+        );
+
+        setDisplayZoneViolations(
+          response?.zoneViolations || [],
+        );
+
+        setRecentViolationsLive(
+          response?.recentViolations || [],
+        );
+      },
+      [tenantId, fetchOverviewData],
+    );
+
+  /* ---------------------------------- */
+  /* KPI DATA */
+  /* ---------------------------------- */
+
+  const kpiData = useMemo(() => {
+    return displayKpi.map(
+      (item) => ({
+        title: item.title,
+
+        value: item.value,
+
+        tooltipMessage:
+          item.title ===
+          "Blocked Emergency Exit"
+            ? "Shows total blocked emergency exits detected."
+            : item.title ===
+                "Clear Emergency Exit Routes"
+              ? "Shows total clear emergency exit routes."
+              : "Shows affected zones.",
+
+        icon:
+          item.title ===
+          "Blocked Emergency Exit"
+            ? Block
+            : item.title ===
+                "Clear Emergency Exit Routes"
+              ? CheckCircle
+              : LocationOn,
+
+        colour: item.color,
+      }),
+    );
+  }, [displayKpi]);
+
+    const zoneViolationsForUi = useMemo(() => {
+    return displayZoneViolations.map((z) => ({
+      zone: z.zone,
+      BlockedExit: z.violations,
+    }));
+  }, [displayZoneViolations]);
+
+  /* ---------------------------------- */
+  /* TABLE CONFIG */
+  /* ---------------------------------- */
+
+  const tableColumns = [
     {
-      zone: "Assembly Line Exit",
-      BlockedExit: 6,
+      id: "violation",
+      label: "Violation",
+      minWidth: 180,
+    },
+
+    {
+      id: "emergencyExitRoute",
+      label:
+        "Emergency Exit Route",
+      minWidth: 180,
+    },
+
+    {
+      id: "time",
+      label: "Time",
+      minWidth: 150,
+    },
+
+    {
+      id: "zone",
+      label: "Zone",
+      minWidth: 120,
+    },
+
+    {
+      id: "camera",
+      label: "Camera",
+      minWidth: 120,
+    },
+
+    {
+      id: "alarmTriggered",
+      label:
+        "Alarm Triggered",
+      minWidth: 150,
     },
   ];
-  interface FilterParams {
-    status?: string;
-    employeeName?: string;
-    startDate?: string;
-    endDate?: string;
-  }
-  const handleSubmitFilter = async (filters: FilterParams) => {
-    console.log("Selected Filters:", filters);
-    // Example: { status: "Active", employeeName: "John", startDate: "2025-09-01", endDate: "2025-09-05" }
-  };
 
-  const handleReset = () => {
-    console.log("reset button clickedd");
-  };
+  const tableFilters = [
+    {
+      id: "emergencyExitRoute",
+      label:
+        "Emergency Exit Route",
+      type: "select" as const,
+      options:
+        detailedReport
+          ?.emergencyExitRoutes || [],
+    },
 
-  const handleExport = (format: "csv" | "pdf") => {
-    console.log("Export requested clikcedd:", format);
-  };
-  const handleViewSingle = (row: Record<string, string | number | boolean>) => {
-    console.log("view single row", row);
-    setViewPopupData(row as ReportData);
-    setViewPopupOpen(true);
-  };
-  const KpiCardLoading = false;
+    {
+      id: "zone",
+      label: "Zone",
+      type: "select" as const,
+      options:
+        detailedReport?.zones || [],
+    },
+
+    {
+      id: "camera",
+      label: "Camera",
+      type: "select" as const,
+      options:
+        detailedReport?.cameras || [],
+    },
+
+    {
+      id: "alarmTriggered",
+      label:
+        "Alarm Triggered",
+      type: "select" as const,
+      options: [
+        "True",
+        "False",
+      ],
+    },
+
+    {
+      id: "startDate",
+      label: "Start Date",
+      type: "date" as const,
+    },
+
+    {
+      id: "endDate",
+      label: "End Date",
+      type: "date" as const,
+    },
+  ];
+
+  /* ---------------------------------- */
+  /* HANDLERS */
+  /* ---------------------------------- */
+
+  const handleSubmitFilter =
+    useCallback(
+      (
+        newFilters: EmergencyExitBlockageFilterParams,
+      ) => {
+        setPage(0);
+
+        setFilters(newFilters);
+      },
+      [],
+    );
+
+  const handleReset = useCallback(() => {
+    setFilters({});
+
+    setPage(0);
+  }, []);
+
+  const handleExport = useCallback(
+    async (
+      format: "csv" | "pdf",
+      exportFilters: EmergencyExitBlockageFilterParams,
+    ) => {
+      try {
+        setIsExporting(true);
+
+        const payload = {
+          tenantId,
+
+          emergencyExitRoute:
+            exportFilters.emergencyExitRoute ||
+            undefined,
+
+          zone:
+            exportFilters.zone ||
+            undefined,
+
+          camera:
+            exportFilters.camera ||
+            undefined,
+
+          startDate:
+            formatLocalDateTime(
+              exportFilters.startDate,
+            ),
+
+          endDate:
+            formatLocalDateTime(
+              exportFilters.endDate,
+            ),
+        };
+
+        if (format === "csv") {
+          await downloadCsvReport(
+            payload,
+          );
+        }
+
+        if (format === "pdf") {
+          await downloadPdfReport(
+            payload,
+          ).unwrap();
+        }
+      } catch (error) {
+        console.error(
+          "Export failed",
+          error,
+        );
+      } finally {
+        setIsExporting(false);
+      }
+    },
+    [
+      tenantId,
+      downloadCsvReport,
+      downloadPdfReport,
+    ],
+  );
+
+  const handleDownloadSingle =
+    useCallback(
+      async (
+        row: EmergencyExitBlockageRecentViolation,
+        index: number,
+      ) => {
+        try {
+          setDownloadingRows(
+            (prev) =>
+              new Set(prev).add(index),
+          );
+
+          await downloadSinglePdf({
+            tenantId,
+
+            violation:
+              row.violation,
+
+            emergencyExitRoute:
+              row.emergencyExitRoute,
+
+            zone: row.zone,
+
+            camera: row.camera,
+
+            imageUrl:
+              row.imageUrl,
+
+            time: row.time,
+
+            alarmTriggered:
+              row.alarmTriggered,
+          }).unwrap();
+        } catch (error) {
+          console.error(
+            "Single PDF download failed",
+            error,
+          );
+        } finally {
+          setDownloadingRows(
+            (prev) => {
+              const next =
+                new Set(prev);
+
+              next.delete(index);
+
+              return next;
+            },
+          );
+        }
+      },
+      [tenantId, downloadSinglePdf],
+    );
+
+  const handleViewSingle =
+    useCallback(
+      (
+        row: EmergencyExitBlockageRecentViolation,
+      ) => {
+        setViewPopupData(row);
+
+        setViewPopupOpen(true);
+      },
+      [],
+    );
+
+  /* ---------------------------------- */
+  /* RENDER */
+  /* ---------------------------------- */
+
   return (
     <Box>
       <Paper
         sx={{
-          p: 3,
+          p: 2.5,
           mb: 4,
-          backgroundColor: "#ffffff",
+          backgroundColor:
+            "#ffffff",
           borderRadius: 2,
         }}
       >
+        {/* Header */}
+
         <Box
           sx={{
             display: "flex",
-            justifyContent: "space-between",
+            justifyContent:
+              "space-between",
             alignItems: "center",
             mb: 2,
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            {/* <ShowChartIcon sx={{ color: "#1976d2", fontSize: 24 }} /> */}
-            <Typography variant="h6" sx={{ fontWeight: "bold", fontSize: 18 }}>
-              <Box component="span" sx={{ mr: 2 }}>
-                📊 Overview
-              </Box>
-            </Typography>
-          </Box>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: "bold",
+              fontSize: 18,
+            }}
+          >
+            📊 Overview
+          </Typography>
 
-          <TimeFilter onRangeChange={function (range: { start: string; end: string; }): void {
-            throw new Error("Function not implemented.");
-          } } />
+          <TimeFilter
+            onRangeChange={
+              handleRangeChange
+            }
+            shifts={
+              orgShifts || []
+            }
+          />
         </Box>
-        <Grid container spacing={2.5} sx={{ mb: 4 }} alignItems="stretch">
-          {KpiCardLoading
-            ? // Show skeletons while loading
-              skeletonKeys.map((index) => (
+
+        {/* KPI */}
+
+        <Grid
+          container
+          spacing={2.5}
+          sx={{ mb: 4 }}
+        >
+          {overviewLoading ||
+          !kpiData.length
+            ? Array.from({
+                length: 3,
+              }).map((_, i) => (
                 <Grid
-                  size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-                  key={uuidv4() + index}
+                  key={`skeleton-${i}`}
+                  size={{
+                    xs: 12,
+                    sm: 6,
+                    md: 4,
+                    lg: 3,
+                    xl: 2,
+                  }}
                 >
                   <KpiCardSkeleton />
                 </Grid>
               ))
-            : // Show actual KPI cards
-              ExitKpiData.map((kpi, index) => (
+            : kpiData.map((kpi) => (
                 <Grid
-                  size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-                  key={uuidv4() + index}
+                  key={kpi.title}
+                  size={{
+                    xs: 12,
+                    sm: 6,
+                    md: 4,
+                    lg: 3,
+                    xl: 2,
+                  }}
                 >
-                  <KpiCard {...kpi} />
+                  <KpiCard
+                    {...kpi}
+                  />
                 </Grid>
               ))}
         </Grid>
 
-        {/* Content Grid */}
+        {/* Recent + Zone */}
+
         <Grid container spacing={3}>
-          {/* Recent  Violations */}
-          <Grid size={{ xs: 12, lg: 8 }}>
+          <Grid
+            size={{
+              xs: 12,
+              lg: 8,
+            }}
+          >
             <RecentViolations
               label="Recent Violations"
-              violations={recentExitBlockageViolations}
-              loading={false}
-              tooltipMessage="Latest 20 detected emergency exit blockage with details."
+              tooltipMessage="Latest emergency exit blockage detections."
+              violations={
+                recentViolationsLive
+              }
+              loading={
+                overviewLoading
+              }
             />
           </Grid>
-          {/*  Compliance by Zone */}
 
-          <Grid size={{ xs: 12, lg: 4 }}>
+          <Grid
+            size={{
+              xs: 12,
+              lg: 4,
+            }}
+          >
             <ZoneViolations
-              violationsZone={zoneViolationsData}
-              loading={false}
-              tooltipMessage="Shows emergency exit blockage per zone"
+              violationsZone={
+                zoneViolationsForUi
+              }
+              loading={
+                overviewLoading
+              }
+              tooltipMessage="Emergency exit blockage violations per zone."
             />
           </Grid>
         </Grid>
       </Paper>
 
-      {/*  Violations Report */}
+      {/* Detailed Report */}
+
       <ReportTable
         title="Detailed Report"
-        columns={[
-          { id: "voilation", label: "Violation", minWidth: 200 },
-          { id: "time", label: "Time", minWidth: 120 },
-          { id: "zone", label: "Zone", minWidth: 120 },
-          { id: "cameraId", label: "Cameras", minWidth: 120 },
-          { id: "alarmTriggered", label: "Alarm Triggered", minWidth: 120 },
-        ]}
-        data={recentExitBlockageViolations}
-        filters={[
-          {
-            id: "zone",
-            label: "Zone",
-            type: "select",
-            options: [
-              "Main Entrance",
-              "Loading Dock",
-              "Assembly Area",
-              "Parking Lot",
-            ],
-          },
-          {
-            id: "cameraId",
-            label: "Cameras",
-            type: "select",
-            options: Array.from(
-              new Set(recentExitBlockageViolations.map((item) => item.cameraId))
-            ),
-          },
-          {
-            id: "alarmTriggered",
-            label: "Alarm Triggered",
-            type: "select",
-            options: ["True", "False"],
-          },
-          { id: "startDate", label: "Start Date", type: "date" },
-          { id: "endDate", label: "End Date", type: "date" },
-        ]}
-        downloadFileName="emergency-exit-blockage-report"
-        onSubmit={handleSubmitFilter}
+        tooltipMessage="Detailed emergency exit blockage report."
+        data={
+          detailedReport?.data ||
+          []
+        }
+        columns={tableColumns}
+        filters={tableFilters}
+        onSubmit={
+          handleSubmitFilter
+        }
         onReset={handleReset}
         onExport={handleExport}
-        loading={false}
-        onView={handleViewSingle}
-        tooltipMessage="Detailed violations report with filter, reset, and CSV/PDF download options." totalCount={0} page={0} rowsPerPage={0}      />
-      {/* View Alert Popup */}
-      {viewPopupData && (
-        <ViewAlertPopup
-          open={viewPopupOpen}
-          handleClose={() => setViewPopupOpen(false)}
-          details={viewPopupData}
-          imageKey="imageUrl"
-          onDownload={(url) => console.log("Download:", url)}
-        />
-      )}
+        exportLoading={
+          isExporting
+        }
+        onDownload={(
+          row,
+          index,
+        ) =>
+          handleDownloadSingle(
+            row as EmergencyExitBlockageRecentViolation,
+            index,
+          )
+        }
+        downloadingRows={
+          downloadingRows
+        }
+        onView={(row) =>
+          handleViewSingle(
+            row as EmergencyExitBlockageRecentViolation,
+          )
+        }
+        downloadFileName="emergency-exit-blockage-report"
+        loading={
+          detailedLoading
+        }
+        totalCount={
+          detailedReport?.total ||
+          0
+        }
+        page={page}
+        rowsPerPage={limit}
+        onPageChange={(
+          newPage,
+        ) => setPage(newPage)}
+        onRowsPerPageChange={(
+          rows,
+        ) => {
+          setLimit(rows);
+
+          setPage(0);
+        }}
+      />
+
+      {/* Popup */}
+
+      <ViewAlertPopup
+        open={viewPopupOpen}
+        handleClose={() =>
+          setViewPopupOpen(false)
+        }
+        details={
+          viewPopupData
+        }
+        imageKey="imageUrl"
+        onDownload={() => {
+          if (
+            !viewPopupData
+          )
+            return;
+
+          handleDownloadSingle(
+            viewPopupData,
+            0,
+          );
+        }}
+      />
     </Box>
   );
 };

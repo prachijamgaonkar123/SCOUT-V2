@@ -1,84 +1,107 @@
+"use client";
 import React from "react";
-import { Box, Typography, Paper, Divider } from "@mui/material";
+import { Box, Typography } from "@mui/material";
+import ChecklistIcon from "@mui/icons-material/Checklist";
+import { DASHBOARD_COLORS, MuiIcon } from "@/app/config/dashboardTheme";
 
-export interface BreakdownItem {
+export type BreakdownTone = "red" | "info";
+
+const TONE_STYLES: Record<BreakdownTone, { bg: string; color: string }> = {
+  red: { bg: DASHBOARD_COLORS.errorTint, color: DASHBOARD_COLORS.error },
+  info: { bg: DASHBOARD_COLORS.accentTint, color: DASHBOARD_COLORS.accent },
+};
+
+export interface BreakdownMetric {
+  icon: MuiIcon;
+  value: string | number;
   label: string;
-  count: number;
+  /** Icon tint — defaults to "red". Use "info" for neutral facts like a zone name or timestamp. */
+  tone?: BreakdownTone;
+  /** Override the value's font size (px) — useful for long strings like timestamps. */
+  valueFontSize?: number;
 }
 
 export interface ViolationBreakdownProps {
-  totalViolations: number;
-  breakdown: BreakdownItem[];
-  lastDetection: string; // e.g., "14:28:46"
+  title?: string;
+  /** Flexible metric list so this card can be reused across pages with different data. */
+  metrics: BreakdownMetric[];
 }
 
+/** Content only — no card chrome, so the caller can place this inside its own card/layout. */
 const ViolationBreakdown: React.FC<ViolationBreakdownProps> = ({
-  totalViolations,
-  breakdown,
-  lastDetection,
+  title = "Violation Breakdown",
+  metrics,
 }) => {
   return (
-    <Paper
-      sx={{
-        p: 3,
-        borderRadius: 2,
-        bgcolor: "#ffffff",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <Typography variant="subtitle1" fontWeight={600} color="text.secondary" gutterBottom>
-        Violation Breakdown
-      </Typography>
-
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mt: 1 }}>
-        {/* Total */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="body2" fontWeight={500} color="text.secondary">
-            Total Violations
-          </Typography>
-          <Typography variant="h6" fontWeight={700}>
-            {totalViolations}
-          </Typography>
-        </Box>
-
-        <Divider />
-
-        {/* Breakdown items */}
-        {breakdown.map((item, index) => (
-          <Box
-            key={index}
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              pl: 1,
-            }}
-          >
-            <Typography variant="body2" color="text.secondary">
-              {item.label}
-            </Typography>
-            <Typography variant="body2" fontWeight={600}>
-              {item.count}
-            </Typography>
-          </Box>
-        ))}
-
-        <Divider />
-
-        {/* Last Detection */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 1 }}>
-          <Typography variant="body2" color="text.secondary">
-            Last Detection
-          </Typography>
-          <Typography variant="body2" fontWeight={600} color="primary">
-            {lastDetection}
-          </Typography>
-        </Box>
+    <Box sx={{ height: "100%" }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: "8px", mb: "18px" }}>
+        <ChecklistIcon sx={{ fontSize: 17, color: DASHBOARD_COLORS.secondary }} />
+        <Typography sx={{ fontSize: 13, fontWeight: 700, color: DASHBOARD_COLORS.textPrimary }}>
+          {title}
+        </Typography>
       </Box>
-    </Paper>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          columnGap: "12px",
+          rowGap: "22px",
+        }}
+      >
+        {metrics.map((metric, index) => {
+          const { bg, color } = TONE_STYLES[metric.tone ?? "red"];
+          const Icon = metric.icon;
+          return (
+            <Box key={index} sx={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+              <Box
+                sx={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  backgroundColor: bg,
+                  color,
+                }}
+              >
+                <Icon sx={{ fontSize: 16 }} />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    fontSize: metric.valueFontSize ?? 16,
+                    fontWeight: 800,
+                    lineHeight: 1,
+                    color: DASHBOARD_COLORS.textPrimary,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {metric.value}
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: "10.5px",
+                    fontWeight: 600,
+                    color: DASHBOARD_COLORS.textSecondary,
+                    mt: "2px",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {metric.label}
+                </Typography>
+              </Box>
+            </Box>
+          );
+        })}
+      </Box>
+    </Box>
   );
 };
 

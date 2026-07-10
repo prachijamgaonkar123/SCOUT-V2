@@ -1,265 +1,376 @@
+
+
+
 "use client";
 
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ReportTable from "@/app/components/organisms/ReportTable/ReportTable";
 import { Box, Grid, Paper, Typography } from "@mui/material";
-import { Groups, LocationOn, AccessTime } from "@mui/icons-material";
+import { Groups } from "@mui/icons-material";
 import KpiCard from "@/app/components/molecules/KpiCard/KpiCard";
 import RecentViolations from "@/app/components/molecules/RecentViolations/RecentViolations";
-import { v4 as uuidv4 } from "uuid";
 import KpiCardSkeleton from "@/app/components/molecules/KpiCardSkeleton/KpiCardSkeleton";
 import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolations";
 import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
 import TimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/TimeFilter";
-import { getOneHourBefore } from "../../(safetyAndCompliance)/PPEKitDetection/PPEKitDetection";
+import {
+  
+  useGetOrgShiftTimeEmpCriticalDataQuery,
+  useGetEmployeePresenceCriticalAreaDetailedCsvReportMutation,
+  useGetEmployeePresenceCriticalAreaDetailedPdfReportMutation,
+  useGetEmployeePresenceCriticalAreaSingleReportPdfMutation,
+  useLazyGetEmployeePresenceCriticalAreaDataQuery,
+  useLazyGetEmployeePresenceCriticalAreaDetailedReportQuery,
+} from "./EmployeePresenceCriticalAreaApi";
+import { RootState } from "@/app/store/store";
+import { useSelector } from "react-redux";
+import { useSocketEvent } from "@/customhooks/useSocketEvent";
+import { SOCKET_EVENTS } from "@/sockets/socket.events";
+import { Violation } from "@/app/components/molecules/ViolationCard/ViolationCard";
+import { EmployeePresenceCriticalAreaKpiConfig } from "./EmployeePresenceCriticalAreaConfig";
+import {
+  EmployeePresenceCriticalAreaDetailedReportResponse,
+  EmployeePresenceCriticalAreaFilterParams,
+  EmployeePresenceCriticalAreaViolation,
+  EmployeePresenceCriticalAreaKpiItem,
+  EmployeePresenceCriticalAreaZoneViolation,
+  EmployeePresenceCriticalAreaSocketPayload,
+} from "./EmployeePresenceCriticalArea.types";
+import { formatLocalDateTime } from "@/utils/formatLocalDateTime";
 
 const EmployeePresence: React.FC = () => {
-  interface EmployeePresenceViolation {
-    voilation: string;
-    zone: string;
-    time: string;
-    imageUrl: string;
-    cameraId: string;
-    alarmTriggered: boolean;
-    [key: string]: string | number | boolean;
-  }
+  const { user } = useSelector((state: RootState) => state.auth);
+  const tenantId: string = user?.org_id ?? "";
 
+  /* ---------- STATE ---------- */
+  const [filters, setFilters] =
+    useState<EmployeePresenceCriticalAreaFilterParams>({});
+  const [page, setPage] = useState(0);
+  const [limit, setLimit] = useState(10);
+  const [isExporting, setIsExporting] = useState(false);
+  const [downloadingRows, setDownloadingRows] = useState<Set<number>>(new Set());
   const [viewPopupOpen, setViewPopupOpen] = useState(false);
   const [viewPopupData, setViewPopupData] =
-    useState<EmployeePresenceViolation | null>(null);
-  const employeeKpiData = [
-    {
-      title: "Employees in Critical Area",
-      value: "12",
-      icon: Groups,
+    useState<EmployeePresenceCriticalAreaViolation | null>(null);
 
-      tooltipMessage:
-        "Shows the number of employees detected in critical areas.",
-    },
-    {
-      title: "Zone Violations",
-      value: "3 (Zone A, Zone B, Zone C)",
-      icon: LocationOn,
-      tooltipMessage:
-        "Displays the count and name of critical zones where employees entered .",
-    },
-    {
-      title: "Last Incidence",
-      value: getOneHourBefore().time,
-      icon: AccessTime,
-      tooltipMessage:
-        "Most recent time employees were detected in critical zones.",
-    },
-  ];
-  const backendEmployeePresenceData = [
-    {
-      id: 201,
-      snapshot: "https://picsum.photos/400/200?random=11",
-      zone: "Critical Zone A",
-      camera: "CAM-11",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-25 09:16",
-      alarmTriggered: true,
-    },
-    {
-      id: 202,
-      snapshot: "https://picsum.photos/400/200?random=12",
-      zone: "Critical Zone B",
-      camera: "CAM-12",
-      createdAt:getOneHourBefore().fullDate,
-      updatedAt: "2025-09-25 09:26",
-      alarmTriggered: true,
-    },
-    {
-      id: 203,
-      snapshot: "https://picsum.photos/400/200?random=13",
-      zone: "Critical Zone C",
-      camera: "CAM-13",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-25 09:41",
-      alarmTriggered: true,
-    },
-  ];
+  // Live mode flag — false when time filter range is active
+  const [isLiveMode, setIsLiveMode] = useState(true);
 
-  const recentEmployeeViolations = backendEmployeePresenceData.map((item) => {
-    return {
-      voilation: item.alarmTriggered ? "Employee not detected" : "No violation",
-      zone: item.zone,
-      time: item.createdAt,
-      imageUrl: item.snapshot,
-      cameraId: item.camera,
-      alarmTriggered: item.alarmTriggered,
+  // Overview display state — fed by initial fetch, time filter fetch, OR socket
+  const [displayKpi, setDisplayKpi] = useState<EmployeePresenceCriticalAreaKpiItem[]>([]);
+  const [displayZoneViolations, setDisplayZoneViolations] = useState<EmployeePresenceCriticalAreaZoneViolation[]>([]);
+  const [recentViolationsLive, setRecentViolationsLive] = useState<EmployeePresenceCriticalAreaViolation[]>([]);
+
+  const [detailedReport, setDetailedReport] =
+    useState<EmployeePresenceCriticalAreaDetailedReportResponse | null>(null);
+
+  /* ---------- API HOOKS ---------- */
+  const { data: orgShifts } =
+    useGetOrgShiftTimeEmpCriticalDataQuery(
+      { tenantId },
+      { skip: !tenantId },
+    );
+
+  // One call → gets kpi + zoneViolations + recentViolations together
+  const [fetchOverviewData, { isFetching: overviewLoading }] =
+    useLazyGetEmployeePresenceCriticalAreaDataQuery();
+
+  const [fetchDetailedReportApi, { isFetching: detailedReportLoading }] =
+    useLazyGetEmployeePresenceCriticalAreaDetailedReportQuery();
+
+  const [downloadSinglePdf] =
+    useGetEmployeePresenceCriticalAreaSingleReportPdfMutation();
+  const [downloadCsvReport] =
+    useGetEmployeePresenceCriticalAreaDetailedCsvReportMutation();
+  const [downloadPdfReport] =
+    useGetEmployeePresenceCriticalAreaDetailedPdfReportMutation();
+
+  /* ---------- INITIAL LOAD ---------- */
+  useEffect(() => {
+    if (!tenantId) return;
+    const loadInitial = async () => {
+      const data = await fetchOverviewData({ tenantId }).unwrap();
+      setDisplayKpi(data?.kpi ?? []);
+      setDisplayZoneViolations(data?.zoneViolations ?? []);
+      setRecentViolationsLive(data?.recentViolations ?? []);
     };
+    loadInitial().catch(console.error);
+  }, [tenantId, fetchOverviewData]);
+
+  /* ---------- DETAILED REPORT — re-fetches on page / filter change ---------- */
+  useEffect(() => {
+    if (!tenantId) return;
+    const loadDetailedReport = async () => {
+      const alarmValue =
+        filters?.alarmTriggered === undefined
+          ? undefined
+          : filters.alarmTriggered === "True";
+
+      const body = {
+        tenantId,
+        page: page + 1,
+        limit,
+        zone: filters?.zone || undefined,
+        cameraName: filters?.camera|| undefined,
+        alarmTriggered: alarmValue,
+        startDate: formatLocalDateTime(filters?.startDate),
+        endDate: formatLocalDateTime(filters?.endDate),
+      };
+      const response = await fetchDetailedReportApi(body).unwrap();
+      setDetailedReport(response);
+    };
+    loadDetailedReport().catch(console.error);
+  }, [tenantId, page, limit, filters, fetchDetailedReportApi]);
+
+  /* ---------- SOCKET — only active in live mode ---------- */
+  useSocketEvent<EmployeePresenceCriticalAreaSocketPayload>({
+    tenantId,
+    enabled: isLiveMode,
+    event: SOCKET_EVENTS.EMPLOYEE_PRESENCE_DETECTION_IN_CRITICAL_AREAS_UPDATE,
+    handler: (payload) => {
+      setDisplayKpi(payload.kpi ?? []);
+      setDisplayZoneViolations(payload.zoneViolations ?? []);
+      setRecentViolationsLive(payload.recentViolations ?? []);
+    },
   });
 
-  const zoneViolationsData = [
-    {
-      zone: "Critical Zone A",
-      violations: 10,
+  /* ---------- TIME FILTER — updates overview only, not the report table ---------- */
+  const handleRangeChange = useCallback(
+    async (range: { start?: string; end?: string }) => {
+      if (!range.start && !range.end) {
+        // Range cleared → resume live mode
+        setIsLiveMode(true);
+        const data = await fetchOverviewData({ tenantId }).unwrap();
+        setDisplayKpi(data?.kpi ?? []);
+        setDisplayZoneViolations(data?.zoneViolations ?? []);
+        setRecentViolationsLive(data?.recentViolations ?? []);
+        return;
+      }
+
+      // Range selected → freeze socket, fetch historical data
+      setIsLiveMode(false);
+      const data = await fetchOverviewData({
+        tenantId,
+        startDate: range.start,
+        endDate: range.end,
+      }).unwrap();
+      setDisplayKpi(data?.kpi ?? []);
+      setDisplayZoneViolations(data?.zoneViolations ?? []);
+      setRecentViolationsLive(data?.recentViolations ?? []);
     },
-    {
-      zone: "Critical Zone B",
-      violations: 5,
-    },
-    {
-      zone: "Critical Zone C",
-      violations: 3,
-    },
+    [tenantId, fetchOverviewData],
+  );
+
+  /* ---------- DERIVED DATA ---------- */
+  const kpiData = useMemo(() => {
+    return displayKpi.map((item) => {
+      const config = EmployeePresenceCriticalAreaKpiConfig[item.title];
+      return {
+        title: item.title,
+        value: item.value,
+        icon: config?.icon || Groups,
+        tooltipMessage: config?.tooltipMessage,
+      };
+    });
+  }, [displayKpi]);
+
+  const zoneViolationsForUi = useMemo(
+    () => displayZoneViolations.map((z) => ({ zone: z.zone, violation: z.violations })),
+    [displayZoneViolations],
+  );
+
+  /* ---------- TABLE CONFIG ---------- */
+  const tableColumns = [
+    { id: "violation", label: "Violation" },
+    { id: "time", label: "Time" },
+    { id: "zone", label: "Zone" },
+    { id: "camera", label: "Cameras" },
+    { id: "alarmTriggered", label: "Alarm Triggered" },
   ];
-  const KpiCardLoading = false;
 
-  const skeletonKeys = Array.from({ length: 6 }, () => uuidv4());
+  const tableFilters = [
+    { id: "zone", label: "Zone", type: "select" as const, options: detailedReport?.zones || [] },
+    { id: "camera", label: "Cameras", type: "select" as const, options: detailedReport?.cameras || [] },
+    { id: "alarmTriggered", label: "Alarm Triggered", type: "select" as const, options: ["True", "False"] },
+    { id: "startDate", label: "Start Date", type: "date" as const },
+    { id: "endDate", label: "End Date", type: "date" as const },
+  ];
 
-  const handleReset = () => {
-    console.log("reset button clickedd");
+  /* ---------- HANDLERS ---------- */
+  const handleSubmitFilter = useCallback(
+    (newFilters: EmployeePresenceCriticalAreaFilterParams) => {
+      setPage(0);
+      setFilters(newFilters);
+    },
+    [],
+  );
+
+  const handleReset = useCallback(() => {
+    setFilters({});
+    setPage(0);
+  }, []);
+
+  const handleExport = useCallback(
+    async (format: "csv" | "pdf", exportFilters: EmployeePresenceCriticalAreaFilterParams) => {
+      try {
+        setIsExporting(true);
+        const payload = {
+          tenantId,
+          zone: exportFilters.zone || undefined,
+          camera: exportFilters.camera || undefined,
+          startDate: formatLocalDateTime(exportFilters.startDate),
+          endDate: formatLocalDateTime(exportFilters.endDate),
+        };
+
+        if (format === "csv") await downloadCsvReport(payload);
+        if (format === "pdf") await downloadPdfReport(payload).unwrap();
+      } catch (error) {
+        console.error("❌ Export failed:", error);
+      } finally {
+        setIsExporting(false);
+      }
+    },
+    [tenantId, downloadCsvReport, downloadPdfReport],
+  );
+
+  const handleDownloadSingle = useCallback(
+    async (row: EmployeePresenceCriticalAreaViolation, index: number) => {
+      try {
+        setDownloadingRows((prev) => new Set(prev).add(index));
+        await downloadSinglePdf({
+          tenantId,
+          violation: String(row.violation),
+          zone: row.zone,
+          time: row.time,
+          camera: row.camera,
+          imageUrl: row.imageUrl,
+          alarmTriggered: row.alarmTriggered,
+        });
+      } catch (error) {
+        console.error("❌ Single PDF download failed", error);
+      } finally {
+        setDownloadingRows((prev) => {
+          const next = new Set(prev);
+          next.delete(index);
+          return next;
+        });
+      }
+    },
+    [tenantId, downloadSinglePdf],
+  );
+
+  const handleViewSingle = useCallback(
+    (row: EmployeePresenceCriticalAreaViolation) => {
+      setViewPopupData(row);
+      setViewPopupOpen(true);
+    },
+    [],
+  );
+
+  const handleDownloadViolation = async (url: string, violation: Violation) => {
+    if (!violation) return;
+    const v = violation as EmployeePresenceCriticalAreaViolation;
+    try {
+      await downloadSinglePdf({
+        tenantId,
+        violation: String(v.violation),
+        zone: v.zone,
+        time: v.time,
+        camera: v.camera,
+        imageUrl: url,
+        alarmTriggered: v.alarmTriggered,
+      });
+    } catch (err) {
+      console.error("PDF download failed", err);
+    }
   };
 
-  const handleExport = (format: "csv" | "pdf") => {
-    console.log("Export requested clikcedd:", format);
-  };
-  const handleDownloadSingle = () => {
-    console.log("download single row");
-  };
-  const handleViewSingle = (row: Record<string, string | number | boolean>) => {
-    console.log("view single row", row);
-    setViewPopupData(row as EmployeePresenceViolation);
-    setViewPopupOpen(true);
-  };
-
+  /* ---------- RENDER ---------- */
   return (
     <Box>
-      <Paper
-        sx={{
-          p: 3,
-          mb: 4,
-          backgroundColor: "#ffffff",
-          borderRadius: 2,
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 2,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            {/* <ShowChartIcon sx={{ color: "#1976d2", fontSize: 24 }} /> */}
-            <Typography variant="h6" sx={{ fontWeight: "bold", fontSize: 18 }}>
-              <Box component="span" sx={{ mr: 2 }}>
-                📊 Overview
-              </Box>
-            </Typography>
-          </Box>
-
-          <TimeFilter onRangeChange={function (range: { start: string; end: string; }): void {
-            throw new Error("Function not implemented.");
-          } } />
+      <Paper sx={{ p: 3, mb: 4, backgroundColor: "#ffffff", borderRadius: 2 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: "bold", fontSize: 18 }}>
+            📊 Overview
+          </Typography>
+          <TimeFilter onRangeChange={handleRangeChange} shifts={orgShifts || []} />
         </Box>
-        {/* KPI Cards */}
 
-        <Grid container spacing={2.5} sx={{ mb: 4 }} alignItems="stretch">
-          {KpiCardLoading
-            ? // Show skeletons while loading
-              skeletonKeys.map((index) => (
-                <Grid
-                  size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-                  key={uuidv4() + index}
-                >
+        {/* KPI Cards */}
+        <Grid container spacing={2.5} sx={{ mb: 4 }}>
+          {overviewLoading || !kpiData.length
+            ? Array.from({ length: 6 }).map((_, index) => (
+                <Grid key={`skeleton-${index + 1}`} size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}>
                   <KpiCardSkeleton />
                 </Grid>
               ))
-            : // Show actual KPI cards
-              employeeKpiData.map((kpi, index) => (
-                <Grid
-                  size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-                  key={uuidv4() + index}
-                >
+            : kpiData.map((kpi) => (
+                <Grid key={kpi.title} size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}>
                   <KpiCard {...kpi} />
                 </Grid>
               ))}
         </Grid>
 
-        {/* Content Grid */}
+        {/* Recent Violations + Zone Violations */}
         <Grid container spacing={3}>
-          {/* Active Critical Zone Personnel */}
           <Grid size={{ xs: 12, lg: 8 }}>
             <RecentViolations
               label="Recent Violations"
-              violations={recentEmployeeViolations}
-              loading={false}
-              tooltipMessage="Latest 20 violations where employee entred in critical areas with details."
+              tooltipMessage="Latest 20 violations where employee entered in critical areas with details."
+              violations={recentViolationsLive}
+              loading={overviewLoading}
+              onDownload={handleDownloadViolation}
             />
           </Grid>
-          {/* Critical Zones Status */}
-
           <Grid size={{ xs: 12, lg: 4 }}>
             <ZoneViolations
-              violationsZone={zoneViolationsData}
-              loading={false}
-              tooltipMessage="Shows employee entred in critical zone"
+              violationsZone={zoneViolationsForUi}
+              loading={overviewLoading}
+              tooltipMessage="Shows employee entered in critical zone"
             />
           </Grid>
         </Grid>
       </Paper>
-      {/* Employee Presence Report */}
+
+      {/* Detailed Report Table */}
       <ReportTable
         title="Detailed Report"
-        columns={[
-          { id: "voilation", label: "Violation", minWidth: 200 },
-          { id: "time", label: "Time", minWidth: 140 },
-          { id: "zone", label: "Zone", minWidth: 150 },
-
-          { id: "cameraId", label: "Cameras", minWidth: 120 },
-          { id: "alarmTriggered", label: "Alarm Triggered", minWidth: 140 },
-        ]}
-        data={recentEmployeeViolations}
-        filters={[
-          {
-            id: "zone",
-            label: "Zone",
-            type: "select",
-            options: Array.from(
-              new Set(recentEmployeeViolations.map((v) => v.zone))
-            ),
-          },
-          {
-            id: "cameraId",
-            label: "Cameras",
-            type: "select",
-            options: Array.from(
-              new Set(recentEmployeeViolations.map((v) => v.cameraId))
-            ),
-          },
-          {
-            id: "alarmTriggered",
-            label: "Alarm Triggered",
-            type: "select",
-            options: ["true", "false"],
-          },
-          { id: "time", label: "Start Date", type: "date" },
-          { id: "time", label: "End Date", type: "date" },
-        ]}
-        downloadFileName="employee-presence-critical-report"
-        loading={false}
-        //   onSubmit={handleSubmitFilter}
+        tooltipMessage="Detailed violations report with filter, reset, and CSV/PDF download options."
+        data={detailedReport?.data || []}
+        columns={tableColumns}
+        filters={tableFilters}
+        onSubmit={handleSubmitFilter}
         onReset={handleReset}
         onExport={handleExport}
-        onDownload={handleDownloadSingle}
-        onView={handleViewSingle}
-        tooltipMessage="Detailed violations report with filter, reset, and CSV/PDF download options." totalCount={0} page={0} rowsPerPage={0}      />
+        exportLoading={isExporting}
+        onDownload={(row, index) =>
+          handleDownloadSingle(row as EmployeePresenceCriticalAreaViolation, index)
+        }
+        downloadingRows={downloadingRows}
+        onView={(row) => handleViewSingle(row as EmployeePresenceCriticalAreaViolation)}
+        downloadFileName="employee-presence-critical-report"
+        loading={detailedReportLoading}
+        totalCount={detailedReport?.total || 0}
+        page={page}
+        rowsPerPage={limit}
+        onPageChange={(newPage) => setPage(newPage)}
+        onRowsPerPageChange={(rows) => {
+          setLimit(rows);
+          setPage(0);
+        }}
+      />
 
       {/* View Alert Popup */}
-      {viewPopupData && (
-        <ViewAlertPopup
-          open={viewPopupOpen}
-          handleClose={() => setViewPopupOpen(false)}
-          details={viewPopupData}
-          imageKey="imageUrl"
-          onDownload={(url) => console.log("Download:", url)}
-        />
-      )}
+      <ViewAlertPopup
+        open={viewPopupOpen}
+        handleClose={() => setViewPopupOpen(false)}
+        details={viewPopupData}
+        imageKey="imageUrl"
+        onDownload={(url) => {
+          if (!viewPopupData) return;
+          handleDownloadViolation(url, viewPopupData);
+        }}
+      />
     </Box>
   );
 };
