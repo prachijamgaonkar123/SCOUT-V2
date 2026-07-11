@@ -30,13 +30,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <ThemeRegistry>
-          <GlobalReduxProvider>
+        <GlobalReduxProvider>
+          <ThemeRegistry>
             <Toaster />
             <LanguageInitializer />
             {children}
-          </GlobalReduxProvider>
-        </ThemeRegistry>
+          </ThemeRegistry>
+        </GlobalReduxProvider>
       </body>
     </html>
   );

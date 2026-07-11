@@ -21,7 +21,7 @@ import { surveillanceDashboardConfig } from "./SurveillanceMonitoringDashboardCo
 
 import KpiCardSkeleton from "@/app/components/molecules/KpiCardSkeleton/KpiCardSkeleton";
 import {
-  
+  PieChartItem,
   SurveillanceDashboardResponse,
   SurveillanceSocketPayload,
   TrendResponse,
@@ -196,7 +196,7 @@ const movementGraphData =
 //camera tampering pie chart 
 const onlinePieData =
   cameraTamperingDashboard?.graphs?.pieCharts?.onlineCameras?.map(
-    (item: CameraZoneData) => ({
+    (item: PieChartItem) => ({
       label: item.zone,
       value: item.count,
   color: item.color || "#999999",    }),
@@ -204,7 +204,7 @@ const onlinePieData =
 
 const offlinePieData =
   cameraTamperingDashboard?.graphs?.pieCharts?.offlineCameras?.map(
-    (item: CameraZoneData) => ({
+    (item: PieChartItem) => ({
       label: item.zone,
       value: item.count,
   color: item.color || "#999999",    }),
@@ -212,7 +212,7 @@ const offlinePieData =
 
 const tamperedPieData =
   cameraTamperingDashboard?.graphs?.pieCharts?.tamperedCameras?.map(
-    (item: CameraZoneData) => ({
+    (item: PieChartItem) => ({
       label: item.zone,
       value: item.count,
   color: item.color || "#999999",    }),

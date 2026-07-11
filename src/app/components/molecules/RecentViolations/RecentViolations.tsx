@@ -45,6 +45,7 @@ export default function RecentViolations(
     null,
   );
   const [open, setOpen] = useState(false);
+  const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const handleOpen = (violation: Violation) => {
@@ -98,11 +99,19 @@ export default function RecentViolations(
     </Box>
   );
 
+  const canScroll = violations.length > VISIBLE_TILES;
+
   const renderViolations = () => (
-    <Box sx={{ position: "relative" }}>
+    <Box
+      sx={{
+        position: "relative",
+        "&:hover .rv-next-btn": { opacity: 1, pointerEvents: "auto" },
+      }}
+    >
       {/* No reserved right padding here — 3 tiles must span the full width with
           zero dead space, otherwise sub-pixel rounding can let a sliver of the
-          4th tile peek through. The arrow button floats on top of tile 3 instead. */}
+          4th tile peek through. The arrow button floats on top of tile 3, but
+          stays hidden until hover so it never obscures the tile at rest. */}
       <Box
         ref={scrollRef}
         sx={{
@@ -119,7 +128,11 @@ export default function RecentViolations(
             violation.violation || violation.incident || violation.usage || "Violation";
           const cameraId = violation.cameraId ? String(violation.cameraId) : "";
           const meta = [violation.zone, cameraId].filter(Boolean).join(" · ");
-          const isAlarmed = violation.alarmTriggered === true;
+          const imageUrl = violation[imageKey];
+          const hasImage =
+            typeof imageUrl === "string" &&
+            imageUrl.length > 0 &&
+            !failedImages.has(index);
 
           return (
             <Box
@@ -147,27 +160,26 @@ export default function RecentViolations(
                   alignItems: "center",
                   justifyContent: "center",
                   bgcolor: "#374151",
+                  overflow: "hidden",
                 }}
               >
-                {isAlarmed && (
+                {hasImage ? (
                   <Box
+                    component="img"
+                    src={imageUrl}
+                    alt={String(title)}
+                    onError={() =>
+                      setFailedImages((prev) => new Set(prev).add(index))
+                    }
                     sx={{
-                      position: "absolute",
-                      top: 8,
-                      right: 8,
-                      fontSize: "9.5px",
-                      fontWeight: 800,
-                      color: "#fff",
-                      bgcolor: "rgba(220,38,38,.92)",
-                      borderRadius: "5px",
-                      px: "7px",
-                      py: "3px",
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
                     }}
-                  >
-                    HIGH
-                  </Box>
+                  />
+                ) : (
+                  <TileIcon sx={{ fontSize: 32, color: "rgba(255,255,255,.4)" }} />
                 )}
-                <TileIcon sx={{ fontSize: 32, color: "rgba(255,255,255,.4)" }} />
               </Box>
               <Box sx={{ p: "11px 12px 13px 12px" }}>
                 <Typography
@@ -208,25 +220,31 @@ export default function RecentViolations(
         })}
       </Box>
 
-      <IconButton
-        onClick={scrollNext}
-        sx={{
-          position: "absolute",
-          right: 4,
-          top: "50%",
-          transform: "translateY(-50%)",
-          zIndex: 1,
-          width: 32,
-          height: 32,
-          border: "1px solid #E5E7EB",
-          bgcolor: "#fff",
-          boxShadow: "0 2px 6px rgba(0,0,0,.10)",
-          color: "#6B7280",
-          "&:hover": { color: "#2563EB" },
-        }}
-      >
-        <ChevronRight fontSize="small" />
-      </IconButton>
+      {canScroll && (
+        <IconButton
+          className="rv-next-btn"
+          onClick={scrollNext}
+          sx={{
+            position: "absolute",
+            right: 4,
+            top: "50%",
+            transform: "translateY(-50%)",
+            zIndex: 1,
+            width: 32,
+            height: 32,
+            border: "1px solid #E5E7EB",
+            bgcolor: "#fff",
+            boxShadow: "0 2px 6px rgba(0,0,0,.10)",
+            color: "#6B7280",
+            opacity: 0,
+            pointerEvents: "none",
+            transition: "opacity .15s ease",
+            "&:hover": { color: "#2563EB" },
+          }}
+        >
+          <ChevronRight fontSize="small" />
+        </IconButton>
+      )}
     </Box>
   );
 

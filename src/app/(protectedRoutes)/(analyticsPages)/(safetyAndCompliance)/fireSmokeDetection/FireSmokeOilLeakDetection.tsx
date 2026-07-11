@@ -1,27 +1,27 @@
 "use client";
-import React, { useState } from "react";
 import ReportTable from "@/app/components/organisms/ReportTable/ReportTable";
 import { Box, Grid, Paper } from "@mui/material";
-import RecentViolations from "@/app/components/molecules/RecentViolations/RecentViolations";
 import {
-  CheckCircle,
-  Schedule,
-  ReportProblem,
-  Whatshot,
+  LocalFireDepartment,
+  SmokeFree,
+  LocationOn,
+  AccessTime,
 } from "@mui/icons-material";
+import RecentViolations from "@/app/components/molecules/RecentViolations/RecentViolations";
+import { useState } from "react";
 import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
 import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolation";
 import CollapsibleTimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/CollapsibleTimeFilter";
+import { getOneHourBefore } from "@/utils/getOneHrBefore";
 import ViolationBreakdown, {
   BreakdownMetric,
 } from "@/app/components/molecules/ViolationBreakdown/ViolationBreakdown";
 import ViolationsTrend from "@/app/components/molecules/ViolationsTrend/ViolationsTrend";
 import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
-import { getOneHourBefore } from "@/utils/getOneHrBefore";
 
-const FallDetection: React.FC = () => {
+const FireSmokeOilLeakDetection: React.FC = () => {
   interface RecentViolationData {
-    voilation: string;
+    incident: string;
     zone: string;
     time: string;
     imageUrl: string;
@@ -33,174 +33,202 @@ const FallDetection: React.FC = () => {
   const [viewPopupOpen, setViewPopupOpen] = useState(false);
   const [viewPopupData, setViewPopupData] =
     useState<RecentViolationData | null>(null);
-
-  const fallKpiData = [
+  const backendFireData = [
     {
-      title: "Total Fall Incidents",
-      value: "9",
-      icon: ReportProblem,
-      tooltipMessage:
-        "Total number of fall, laydown, or sleeping incidents detected across all monitored zones.",
+      id: 201,
+      detection: true,
+      objectname: "fire",
+      snapshot: "/img/f1.jpg",
+      zone: "Production Floor A",
+      camera: "CAM-06",
+      timestamp: "2025-09-23 16:00",
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 16:01",
+    },
+    {
+      id: 202,
+      detection: true,
+      objectname: "smoke",
+      snapshot: "/img/f2.jpg",
+      zone: "Welding Station",
+      camera: "CAM-07",
+      timestamp: "2025-09-23 16:10",
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 16:12",
+    },
+    {
+      id: 203,
+      detection: true,
+      objectname: "fire",
+      snapshot: "/img/f3.jpg",
+      zone: "Chemical Storage",
+      camera: "CAM-08",
+      timestamp: "2025-09-23 16:20",
+      alarmTriggered: false,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 16:21",
+    },
+    {
+      id: 202,
+      detection: true,
+      objectname: "smoke",
+      snapshot: "/img/f1.jpg",
+      zone: "Welding Station",
+      camera: "CAM-07",
+      timestamp: "2025-09-23 16:10",
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 16:12",
     },
 
     {
-      title: "Incident-Free Zones",
-      value: "2 / 5",
-      icon: CheckCircle,
+      id: 202,
+      detection: true,
+      objectname: "smoke",
+      snapshot: "/img/f2.jpg",
+      zone: "Welding Station",
+      camera: "CAM-07",
+      timestamp: "2025-09-23 16:10",
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 16:12",
+    },
+
+    {
+      id: 203,
+      detection: true,
+      objectname: "fire",
+      snapshot: "/img/f3.jpg",
+      zone: "Chemical Storage",
+      camera: "CAM-08",
+      timestamp: "2025-09-23 16:20",
+      alarmTriggered: false,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 16:21",
+    },
+    {
+      id: 202,
+      detection: true,
+      objectname: "smoke",
+      snapshot: "/img/f1.jpg",
+      zone: "Welding Station",
+      camera: "CAM-07",
+      timestamp: "2025-09-23 16:10",
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 16:12",
+    },
+    {
+      id: 203,
+      detection: true,
+      objectname: "fire",
+      snapshot: "/img/f3.jpg",
+      zone: "Chemical Storage",
+      camera: "CAM-08",
+      timestamp: "2025-09-23 16:20",
+      alarmTriggered: false,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 16:21",
+    },
+  ];
+
+  const recentFireViolations = backendFireData.map((item) => ({
+    incident: `${
+      item.objectname.charAt(0).toUpperCase() + item.objectname.slice(1)
+    } detected`,
+    zone: item.zone,
+    time: item.createdAt,
+    imageUrl: item.snapshot,
+    cameraId: item.camera,
+    alarmTriggered: item.alarmTriggered,
+  }));
+  console.log("RECENT VOILATION FIRE,SMOKE", recentFireViolations);
+  const FireSmokeOilKpiData = [
+    {
+      title: "Fire Incidence",
+      value: "4",
+      icon: LocalFireDepartment,
       tooltipMessage:
-        "Number of zones without any fall or laydown incidents out of the total monitored zones.",
+        "Total number of fire detections recorded across all monitored zones.",
+    },
+    {
+      title: "Smoke Incidence",
+      value: "4",
+      icon: SmokeFree,
+      tooltipMessage:
+        "Total number of smoke detections recorded across all monitored zones.",
     },
     {
       title: "Last Detection Time",
       value: getOneHourBefore().time,
-      icon: Schedule,
+      icon: AccessTime,
       tooltipMessage:
-        "The time when the most recent fall, laydown, or sleeping incident was detected.",
+        "The time when the last fire or smoke detection was recorded.",
     },
     {
-      title: "Most Incident-Prone Zone",
-      value: "Zone B",
-      icon: Whatshot,
+      title: "Last Detection Zone",
+      value: "Zone A",
+      icon: LocationOn,
       tooltipMessage:
-        "The zone with the highest number of fall, laydown, or sleeping incidents recorded.",
-      trendColor: "#f44336",
-      color: "#f44336",
-      bgColor: "#ffebee",
-      borderColor: "#f44336",
-      iconBg: "rgba(244, 67, 54, 0.1)",
+        "The zone where the most recent fire or smoke detection occurred.",
     },
   ];
-
-  const backendLaydownData = [
-    {
-      id: 401,
-      snapshot: "/img/fall.avif",
-      zone: "Production Floor A",
-      camera: "CAM-11",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:06",
-      alarmTriggered: true,
-    },
-    {
-      id: 402,
-      snapshot: "/img/fall2.webp",
-      zone: "Warehouse",
-      camera: "CAM-12",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:13",
-      alarmTriggered: false,
-    },
-    {
-      id: 403,
-      snapshot: "/img/fall3.webp",
-      zone: "Maintenance Area",
-      camera: "CAM-13",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:19",
-      alarmTriggered: true,
-    },
-    {
-      id: 404,
-      snapshot: "/img/fall.avif",
-      zone: "Production Floor A",
-      camera: "CAM-11",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:06",
-      alarmTriggered: true,
-    },
-    {
-      id: 405,
-      snapshot: "/img/fall.avif",
-      zone: "Warehouse",
-      camera: "CAM-12",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:13",
-      alarmTriggered: false,
-    },
-    {
-      id: 406,
-      snapshot: "/img/fall.avif",
-      zone: "Maintenance Area",
-      camera: "CAM-13",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:19",
-      alarmTriggered: true,
-    },
-    {
-      id: 403,
-      snapshot: "/img/fall3.webp",
-      zone: "Maintenance Area",
-      camera: "CAM-13",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:19",
-      alarmTriggered: true,
-    },
-    {
-      id: 404,
-      snapshot: "/img/fall.avif",
-      zone: "Production Floor A",
-      camera: "CAM-11",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:06",
-      alarmTriggered: true,
-    },
-    {
-      id: 405,
-      snapshot: "/img/fall2.webp",
-      zone: "Warehouse",
-      camera: "CAM-12",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:13",
-      alarmTriggered: false,
-    },
-  ];
-
-  // Map backend data to recentViolations format
-  const recentLaydownViolations = backendLaydownData.map((item) => {
-    return {
-      voilation: "Fall / Laydown detected",
-      zone: item.zone,
-      time: item.createdAt,
-      imageUrl: item.snapshot,
-      cameraId: item.camera,
-      alarmTriggered: item.alarmTriggered,
-    };
-  });
-
-  console.log("laydown recent voilation", recentLaydownViolations);
 
   const zoneViolationsData = [
     {
       zone: "Production Floor A",
-      violations: 3,
-    },
-    {
-      zone: "Warehouse",
-      violations: 3,
-    },
+      incident: 5,
 
+      subViolations: [
+        {
+          label: "Fire",
+          value: 2,
+          icon: LocalFireDepartment,
+        },
+        {
+          label: "Smoke",
+          value: 3,
+          icon: SmokeFree,
+        },
+      ],
+    },
     {
-      zone: "Maintenance Area",
-      violations: 3,
+      zone: "Welding Station",
+      incident: 8,
+
+      subViolations: [
+        {
+          label: "Fire",
+          value: 4,
+          icon: LocalFireDepartment,
+        },
+        {
+          label: "Smoke",
+          value: 4,
+          icon: SmokeFree,
+        },
+      ],
+    },
+    {
+      zone: "Chemical Storage",
+      incident: 3,
+
+      subViolations: [
+        {
+          label: "Gas Leak",
+          value: 1,
+          icon: LocalFireDepartment,
+        },
+        {
+          label: "Smoke",
+          value: 2,
+          icon: SmokeFree,
+        },
+      ],
     },
   ];
-  interface FilterParams {
-    status?: string;
-    employeeName?: string;
-    startDate?: string;
-    endDate?: string;
-  }
-  const handleSubmitFilter = async (filters: FilterParams) => {
-    console.log("Selected Filters:", filters);
-  };
-
-  const handleReset = () => {
-    console.log("reset button clickedd");
-  };
-
-  const handleExport = (format: "csv" | "pdf") => {
-    console.log("Export requested clikcedd:", format);
-  };
 
   const handleViewSingle = (row: Record<string, string | number | boolean>) => {
     console.log("view single row", row);
@@ -209,7 +237,7 @@ const FallDetection: React.FC = () => {
   };
 
   // Location/time metrics get the "info" tint; violation counts get red — matches PPE.
-  const breakdownMetrics: BreakdownMetric[] = fallKpiData.map((kpi) => ({
+  const breakdownMetrics: BreakdownMetric[] = FireSmokeOilKpiData.map((kpi) => ({
     icon: kpi.icon,
     value: kpi.value,
     label: kpi.title,
@@ -293,55 +321,66 @@ const FallDetection: React.FC = () => {
 
         {/* Content Grid */}
         <Grid container spacing={3}>
-          {/* Recent  Violations */}
+          {/* Recent Violations */}
           <Grid size={{ xs: 12, lg: 8 }}>
             <RecentViolations
-              label="Recent Violations"
-              violations={recentLaydownViolations}
+              label="Recent Incident"
+              violations={recentFireViolations}
               loading={false}
-              tooltipMessage="Latest 20 detected laydown/sleeping/falldown violations with details."
+              tooltipMessage="Latest 20 detected fire & smoke incident with details."
             />
           </Grid>
-          {/* Compliance by Zone */}
+          {/*  Zone violations */}
 
           <Grid size={{ xs: 12, lg: 4 }}>
             <ZoneViolations
+              label="Zone Incident"
               violationsZone={zoneViolationsData}
               loading={false}
-              tooltipMessage="Shows laydown/sleeping/falldown violations per zone"
+              tooltipMessage="Shows fire & smoke incident per zone"
             />
           </Grid>
         </Grid>
       </Paper>
+      {/*  Fire, Smoke, Oil and Gas Leak Detection Report */}
 
-      {/* Report */}
       <ReportTable
         title="Detailed Report"
         tooltipMessage="Detailed violations report with filter, reset, and CSV/PDF download options."
         columns={[
-          { id: "voilation", label: "Violation", minWidth: 200 },
+          { id: "incident", label: "Incident", minWidth: 200 },
           { id: "time", label: "Time", minWidth: 120 },
           { id: "zone", label: "Zone", minWidth: 120 },
           { id: "cameraId", label: "Cameras", minWidth: 120 },
           { id: "alarmTriggered", label: "Alarm Triggered", minWidth: 120 },
         ]}
-        data={recentLaydownViolations}
+        data={recentFireViolations}
         filters={[
+          {
+            id: "incident",
+            label: "Incident",
+            type: "select",
+            options: ["Fire detected", "Smoke detected", "Gas detected"],
+          },
           {
             id: "zone",
             label: "Zone",
             type: "select",
-            options: Array.from(
-              new Set(recentLaydownViolations.map((item) => item.zone)),
-            ),
+            options: [
+              "Production Floor A",
+              "Welding Station",
+              "Chemical Storage",
+              "Emergency Exit Area",
+              "Conference Room B",
+              "Loading Dock",
+              "Parking Lot",
+            ],
           },
           {
             id: "cameraId",
             label: "Cameras",
             type: "select",
-            options: Array.from(
-              new Set(recentLaydownViolations.map((item) => item.cameraId)),
-            ),
+            options: ["CAM-06", "CAM-07", "CAM-08"],
           },
           {
             id: "alarmTriggered",
@@ -352,16 +391,9 @@ const FallDetection: React.FC = () => {
           { id: "time", label: "Start Date", type: "date" },
           { id: "time", label: "End Date", type: "date" },
         ]}
-        onView={handleViewSingle}
-        onSubmit={handleSubmitFilter}
-        onReset={handleReset}
-        onExport={handleExport}
-        downloadFileName="ppe-violations-report"
+        downloadFileName="detection-report"
         loading={false}
-        totalCount={0}
-        page={0}
-        rowsPerPage={0}
-      />
+        onView={handleViewSingle} totalCount={0} page={0} rowsPerPage={0}      />
       {/* View Alert Popup */}
       {viewPopupData && (
         <ViewAlertPopup
@@ -376,4 +408,4 @@ const FallDetection: React.FC = () => {
   );
 };
 
-export default FallDetection;
+export default FireSmokeOilLeakDetection;

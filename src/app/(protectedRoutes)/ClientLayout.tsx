@@ -1,9 +1,8 @@
 "use client";
 import { ReactNode, useState, useEffect } from "react";
-import { ThemeProvider, useTheme } from "@mui/material/styles";
-import { CssBaseline, Box, useMediaQuery } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import { Box, useMediaQuery } from "@mui/material";
 import { usePathname } from "next/navigation";
-import { theme } from "../theme/theme";
 import Sidebar from "../components/organisms/Sidebar/Sidebar";
 import Header from "../components/organisms/Header/Header";
 import { PageType } from "@/app/types";
@@ -65,36 +64,33 @@ export default function ClientLayout({
 
   return (
     // <AuthGuard>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <LocalizationProvider dateAdapter={AdapterDateFns}>
-        <Box sx={{ display: "flex", height: "100vh" }}>
-          <Header collapsed={sidebarCollapsed} />
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <Box sx={{ display: "flex", height: "100vh" }}>
+        <Header collapsed={sidebarCollapsed} />
 
-          <Sidebar onCollapsedChange={setSidebarCollapsed} />
+        <Sidebar onCollapsedChange={setSidebarCollapsed} />
 
-          {/* Main Content */}
-          <Box
-            sx={{
-              flex: 1,
-              display: "flex", // Add flexbox
-              flexDirection: "column", // Stack children vertically
-              pl: 2.5,
-              pr: 2.5,
-              pb: 2,
-              pt: `${HEADER_HEIGHT + 16}px`,
-              backgroundColor: "#f5f7fa",
-              overflow: "auto",
-              minHeight: 0,
-            }}
-          >
-            <FeatureGuardProvider>
-              <PageTransitionWrapper>{children}</PageTransitionWrapper>
-            </FeatureGuardProvider>
-          </Box>
+        {/* Main Content */}
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex", // Add flexbox
+            flexDirection: "column", // Stack children vertically
+            pl: 2.5,
+            pr: 2.5,
+            pb: 2,
+            pt: `${HEADER_HEIGHT + 16}px`,
+            backgroundColor: sidebartheme.palette.background.default,
+            overflow: "auto",
+            minHeight: 0,
+          }}
+        >
+          <FeatureGuardProvider>
+            <PageTransitionWrapper>{children}</PageTransitionWrapper>
+          </FeatureGuardProvider>
         </Box>
-      </LocalizationProvider>
-    </ThemeProvider>
+      </Box>
+    </LocalizationProvider>
     // </AuthGuard>
   );
 }

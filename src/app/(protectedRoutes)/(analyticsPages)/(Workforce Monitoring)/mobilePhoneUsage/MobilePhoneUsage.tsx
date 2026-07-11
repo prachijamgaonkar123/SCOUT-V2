@@ -1,15 +1,18 @@
 "use client";
 import React, { useState } from "react";
 import ReportTable from "@/app/components/organisms/ReportTable/ReportTable";
-import KpiCard from "@/app/components/molecules/KpiCard/KpiCard";
-import { Box, Grid, Paper, Typography } from "@mui/material";
+import { Box, Grid, Paper } from "@mui/material";
 import { PhoneIphone, LocationOn, AccessTime } from "@mui/icons-material";
 import RecentViolations from "@/app/components/molecules/RecentViolations/RecentViolations";
-import KpiCardSkeleton from "@/app/components/molecules/KpiCardSkeleton/KpiCardSkeleton";
-import { v4 as uuidv4 } from "uuid";
-import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolationsOld";
+import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolation";
 import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
-import TimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/TimeFilter";
+import CollapsibleTimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/CollapsibleTimeFilter";
+import { getOneHourBefore } from "@/utils/getOneHrBefore";
+import ViolationBreakdown, {
+  BreakdownMetric,
+} from "@/app/components/molecules/ViolationBreakdown/ViolationBreakdown";
+import ViolationsTrend from "@/app/components/molecules/ViolationsTrend/ViolationsTrend";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
 const MobilePhoneUsage: React.FC = () => {
   interface ViolationData {
@@ -25,11 +28,10 @@ const MobilePhoneUsage: React.FC = () => {
   const [viewPopupData, setViewPopupData] = useState<ViolationData | null>(
     null,
   );
-  const skeletonKeys = Array.from({ length: 4 }, () => uuidv4());
   const MobilePhoneUsageKpiData = [
     {
       title: "Total Violations",
-      value: "18",
+      value: "3",
       icon: PhoneIphone,
       trendColor: "#f44336",
       color: "#f44336",
@@ -42,14 +44,14 @@ const MobilePhoneUsage: React.FC = () => {
     },
     {
       title: "Latest Incidence",
-      value: "10:30 AM",
+      value: getOneHourBefore().time,
       icon: AccessTime,
       tooltipMessage:
         "The time when the most recent mobile phone usage violation was detected.",
     },
     {
       title: "Zone Detection",
-      value: "Assembly Line",
+      value: "Zone A",
       icon: LocationOn,
       tooltipMessage:
         "The zone where the latest mobile phone usage violation was detected.",
@@ -59,31 +61,31 @@ const MobilePhoneUsage: React.FC = () => {
     {
       id: 201,
       voilation: true,
-      snapshot: "https://picsum.photos/400/200?random=11",
-      zone: "Assembly Line",
+      snapshot: "/img/mobile-usage-restricted-zones/m1.avif",
+      zone: "Zone A",
       cameraid: "CAM-11",
       alarmTriggered: true,
-      createdAt: "2025-09-23 16:42",
+      createdAt: getOneHourBefore().fullDate,
       updatedAt: "2025-09-23 16:43",
     },
     {
       id: 202,
       voilation: true,
-      snapshot: "https://picsum.photos/400/200?random=12",
-      zone: "Production Floor A",
+      snapshot: "/img/mobile-usage-restricted-zones/m2.jpg",
+      zone: "Zone B",
       cameraid: "CAM-12",
       alarmTriggered: false,
-      createdAt: "2025-09-23 16:50",
+      createdAt: getOneHourBefore().fullDate,
       updatedAt: "2025-09-23 16:51",
     },
     {
       id: 203,
       voilation: true,
-      snapshot: "https://picsum.photos/400/200?random=13",
-      zone: "Warehouse",
+      snapshot: "/img/mobile-usage-restricted-zones/m3.png",
+      zone: "Zone C",
       cameraid: "CAM-13",
       alarmTriggered: false,
-      createdAt: "2025-09-23 17:05",
+      createdAt: getOneHourBefore().fullDate,
       updatedAt: "2025-09-23 17:06",
     },
     {
@@ -93,7 +95,7 @@ const MobilePhoneUsage: React.FC = () => {
       zone: "Main Entrance",
       cameraid: "CAM-14",
       alarmTriggered: true,
-      createdAt: "2025-09-23 17:20",
+      createdAt: getOneHourBefore().fullDate,
       updatedAt: "2025-09-23 17:21",
     },
     {
@@ -103,7 +105,7 @@ const MobilePhoneUsage: React.FC = () => {
       zone: "Parking Area",
       cameraid: "CAM-15",
       alarmTriggered: false,
-      createdAt: "2025-09-23 17:35",
+      createdAt: getOneHourBefore().fullDate,
       updatedAt: "2025-09-23 17:36",
     },
   ];
@@ -126,23 +128,15 @@ const MobilePhoneUsage: React.FC = () => {
 
   const zoneViolationsData = [
     {
-      zone: "Assembly Line",
+      zone: "Zone A",
       violations: 1,
     },
     {
-      zone: "Production Floor A",
+      zone: "Zone B",
       violations: 1,
     },
     {
-      zone: "Warehouse",
-      violations: 1,
-    },
-    {
-      zone: "Main Entrance",
-      violations: 1,
-    },
-    {
-      zone: "Parking Area",
+      zone: "Zone C",
       violations: 1,
     },
   ];
@@ -166,11 +160,34 @@ const MobilePhoneUsage: React.FC = () => {
     console.log("Export requested clikcedd:", format);
   };
   const handleViewSingle = (row: Record<string, string | number | boolean>) => {
-    const violation = row as ViolationData;
-    setViewPopupData(violation);
+    console.log("view single row", row);
+    setViewPopupData(row as ViolationData);
     setViewPopupOpen(true);
   };
-  const KpiCardLoading = false;
+
+  // Location/time metrics get the "info" tint; violation counts get red — matches PPE.
+  const breakdownMetrics: BreakdownMetric[] = MobilePhoneUsageKpiData.map((kpi) => ({
+    icon: kpi.icon,
+    value: kpi.value,
+    label: kpi.title,
+    tone: /zone|time|incidence/i.test(kpi.title) ? "info" : "red",
+  }));
+
+  // TODO: replace with a real 7-day trend endpoint once one exists on this page's API.
+  // Placeholder mirrors the approved mockup (src/app/.html) until that's wired up.
+  const violationsTrendData = (() => {
+    const values = [3, 4, 2, 5, 4, 3, 5];
+    const now = new Date();
+    return values.map((value, idx) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (values.length - 1 - idx));
+      return {
+        date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        value,
+      };
+    });
+  })();
+
   return (
     <Box>
       <Paper
@@ -184,44 +201,52 @@ const MobilePhoneUsage: React.FC = () => {
         <Box
           sx={{
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 2,
+            alignItems: "flex-start",
+            gap: 2,
+            flexWrap: "wrap",
+            mb: "20px",
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: "bold", fontSize: 18 }}>
-              <Box component="span" sx={{ mr: 2 }}>
-                📊 Overview
-              </Box>
-            </Typography>
+          <Box
+            sx={{
+              flex: "1 1 480px",
+              minWidth: 0,
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              minHeight: { xs: "auto", md: "220px" },
+              border: `1px solid ${DASHBOARD_COLORS.border}`,
+              borderRadius: "12px",
+              boxShadow: "0 1px 2px rgba(0,0,0,.08), 0 1px 3px 1px rgba(0,0,0,.06)",
+              overflow: "hidden",
+            }}
+          >
+            <Box sx={{ flex: "1 1 0", minWidth: 0, p: "24px" }}>
+              <ViolationBreakdown metrics={breakdownMetrics} />
+            </Box>
+            <Box
+              sx={{
+                flex: "1.3 1 0",
+                minWidth: 0,
+                p: "24px",
+                borderLeft: { xs: "none", md: `1px solid ${DASHBOARD_COLORS.border}` },
+                borderTop: { xs: `1px solid ${DASHBOARD_COLORS.border}`, md: "none" },
+              }}
+            >
+              <ViolationsTrend data={violationsTrendData} trendPercentage={18} />
+            </Box>
           </Box>
 
-          <TimeFilter onRangeChange={() => console.log("on ranged chnaged")} />
+          <Box sx={{ flexShrink: 0 }}>
+            <CollapsibleTimeFilter
+              onRangeChange={function (range: {
+                start: string;
+                end: string;
+              }): void {
+                throw new Error("Function not implemented.");
+              }}
+            />
+          </Box>
         </Box>
-        {/* KPI Cards */}
-
-        <Grid container spacing={2.5} sx={{ mb: 4 }} alignItems="stretch">
-          {KpiCardLoading
-            ? // Show skeletons while loading
-              skeletonKeys.map((index) => (
-                <Grid
-                  size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-                  key={uuidv4() + index}
-                >
-                  <KpiCardSkeleton />
-                </Grid>
-              ))
-            : // Show actual KPI cards
-              MobilePhoneUsageKpiData.map((kpi, index) => (
-                <Grid
-                  size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-                  key={uuidv4() + index}
-                >
-                  <KpiCard {...kpi} />
-                </Grid>
-              ))}
-        </Grid>
 
         {/* Content Grid */}
         <Grid container spacing={3}>
@@ -247,9 +272,6 @@ const MobilePhoneUsage: React.FC = () => {
       </Paper>
       {/*  Violations Report */}
       <ReportTable
-        totalCount={4}
-        page={0}
-        rowsPerPage={10}
         title="Detailed Report"
         columns={[
           { id: "voilation", label: "Violation", minWidth: 150 },
@@ -301,6 +323,9 @@ const MobilePhoneUsage: React.FC = () => {
         loading={false}
         onView={handleViewSingle}
         tooltipMessage="Detailed mobile phone usage  report with filter, reset, and CSV/PDF download options."
+        totalCount={0}
+        page={0}
+        rowsPerPage={0}
       />
       {/* View Alert Popup */}
       {viewPopupData && (

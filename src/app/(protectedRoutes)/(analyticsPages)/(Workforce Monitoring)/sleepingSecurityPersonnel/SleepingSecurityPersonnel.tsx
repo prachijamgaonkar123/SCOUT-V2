@@ -1,15 +1,18 @@
 "use client";
 import React, { useState } from "react";
 import ReportTable from "@/app/components/organisms/ReportTable/ReportTable";
-import KpiCard from "@/app/components/molecules/KpiCard/KpiCard";
-import { Box, Grid, Paper, Typography } from "@mui/material";
+import { Box, Grid, Paper } from "@mui/material";
 import RecentViolations from "@/app/components/molecules/RecentViolations/RecentViolations";
-import KpiCardSkeleton from "@/app/components/molecules/KpiCardSkeleton/KpiCardSkeleton";
-import { v4 as uuidv4 } from "uuid";
 import { AccessTime, LocationOn, Security } from "@mui/icons-material";
-import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolationsOld";
+import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolation";
 import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
-import TimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/TimeFilter";
+import CollapsibleTimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/CollapsibleTimeFilter";
+import { getOneHourBefore } from "@/utils/getOneHrBefore";
+import ViolationBreakdown, {
+  BreakdownMetric,
+} from "@/app/components/molecules/ViolationBreakdown/ViolationBreakdown";
+import ViolationsTrend from "@/app/components/molecules/ViolationsTrend/ViolationsTrend";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
 import PersonOffIcon from "@mui/icons-material/PersonOff";
 import HotelIcon from "@mui/icons-material/Hotel";
@@ -27,7 +30,6 @@ const SleepingSecurityPersonnel: React.FC = () => {
   const [viewPopupOpen, setViewPopupOpen] = useState(false);
   const [viewPopupData, setViewPopupData] =
     useState<SleepingSecurityViolation | null>(null);
-  const skeletonKeys = Array.from({ length: 4 }, () => uuidv4());
 
   const SleepingSecurityPersonnelKpiData = [
     {
@@ -44,14 +46,14 @@ const SleepingSecurityPersonnel: React.FC = () => {
     },
     {
       title: "Last Incidence",
-      value: "10:45 AM",
+      value: getOneHourBefore().time,
       icon: AccessTime,
       tooltipMessage:
         "Displays the time of the most recent incident involving security personnel.",
     },
     {
       title: "Zone Violations",
-      value: "Zone A, Zone C",
+      value: "Gate 2,Gate 1",
       icon: LocationOn,
       tooltipMessage:
         "Lists the zones where sleeping security personnel violations were detected.",
@@ -62,20 +64,20 @@ const SleepingSecurityPersonnel: React.FC = () => {
       id: 901,
       sleeping: true,
       absence: false,
-      snapshot: "https://picsum.photos/400/200?random=51",
-      zone: "Main Gate",
+      snapshot: "/img/sleeping-absence-security-guards/s2.avif",
+      zone: "Gate 2",
       camera: "CAM-51",
-      createdAt: "2025-09-24 08:15",
+      createdAt: getOneHourBefore().fullDate,
       updatedAt: "2025-09-24 08:17",
     },
     {
       id: 902,
       sleeping: false,
       absence: true,
-      snapshot: "https://picsum.photos/400/200?random=52",
-      zone: "Assembly Line A",
+      snapshot: "/img/sleeping-absence-security-guards/s1.jpg",
+      zone: "Gate 1",
       camera: "CAM-52",
-      createdAt: "2025-09-24 08:25",
+      createdAt: getOneHourBefore().fullDate,
       updatedAt: "2025-09-24 08:27",
     },
     {
@@ -85,7 +87,7 @@ const SleepingSecurityPersonnel: React.FC = () => {
       snapshot: "https://picsum.photos/400/200?random=51",
       zone: "Main Gate",
       camera: "CAM-51",
-      createdAt: "2025-09-24 08:15",
+      createdAt: getOneHourBefore().fullDate,
       updatedAt: "2025-09-24 08:17",
     },
     {
@@ -95,7 +97,7 @@ const SleepingSecurityPersonnel: React.FC = () => {
       snapshot: "https://picsum.photos/400/200?random=52",
       zone: "Assembly Line A",
       camera: "CAM-52",
-      createdAt: "2025-09-24 08:25",
+      createdAt: getOneHourBefore().fullDate,
       updatedAt: "2025-09-24 08:27",
     },
   ];
@@ -118,24 +120,24 @@ const SleepingSecurityPersonnel: React.FC = () => {
 
   const zoneViolationsData = [
     {
-      zone: "Main Gate",
-      violations: 3,
+      zone: "Gate 2",
+      violations: 1,
       subViolations: [
         {
           label: "Sleeping",
-          value: 2,
+          value: 1,
           icon: HotelIcon,
         },
         {
           label: "Absence",
-          value: 1,
+          value: 0,
           icon: PersonOffIcon,
         },
       ],
     },
     {
-      zone: "Assembly Line A",
-      violations: 2,
+      zone: "Gate 1",
+      violations: 1,
       subViolations: [
         {
           label: "Sleeping",
@@ -144,12 +146,37 @@ const SleepingSecurityPersonnel: React.FC = () => {
         },
         {
           label: "Absence",
-          value: 1,
+          value: 0,
           icon: PersonOffIcon,
         },
       ],
     },
   ];
+
+  // Location/time metrics get the "info" tint; violation counts get red — matches PPE.
+  const breakdownMetrics: BreakdownMetric[] = SleepingSecurityPersonnelKpiData.map(
+    (kpi) => ({
+      icon: kpi.icon,
+      value: kpi.value,
+      label: kpi.title,
+      tone: /zone|time/i.test(kpi.title) ? "info" : "red",
+    }),
+  );
+
+  // TODO: replace with a real 7-day trend endpoint once one exists on this page's API.
+  // Placeholder mirrors the approved mockup (src/app/.html) until that's wired up.
+  const violationsTrendData = (() => {
+    const values = [3, 4, 2, 5, 4, 3, 5];
+    const now = new Date();
+    return values.map((value, idx) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (values.length - 1 - idx));
+      return {
+        date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        value,
+      };
+    });
+  })();
 
   interface FilterParams {
     status?: string;
@@ -170,11 +197,10 @@ const SleepingSecurityPersonnel: React.FC = () => {
     console.log("Export requested clikcedd:", format);
   };
   const handleViewSingle = (row: Record<string, string | number | boolean>) => {
-    const violation = row as SleepingSecurityViolation;
-    setViewPopupData(violation);
+    console.log("view single row", row);
+    setViewPopupData(row as SleepingSecurityViolation);
     setViewPopupOpen(true);
   };
-  const KpiCardLoading = false;
   return (
     <Box>
       <Paper
@@ -188,45 +214,55 @@ const SleepingSecurityPersonnel: React.FC = () => {
         <Box
           sx={{
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 2,
+            alignItems: "flex-start",
+            gap: 2,
+            flexWrap: "wrap",
+            mb: "20px",
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            {/* <ShowChartIcon sx={{ color: "#1976d2", fontSize: 24 }} /> */}
-            <Typography variant="h6" sx={{ fontWeight: "bold", fontSize: 18 }}>
-              <Box component="span" sx={{ mr: 2 }}>
-                📊 Overview
-              </Box>
-            </Typography>
+          <Box
+            sx={{
+              flex: "1 1 480px",
+              minWidth: 0,
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              // Floor, not a fixed height: ViolationsTrend always has data (static
+              // placeholder) and must stay readable even when ViolationBreakdown
+              // has zero metrics and would otherwise collapse the row via flex-stretch.
+              minHeight: { xs: "auto", md: "220px" },
+              border: `1px solid ${DASHBOARD_COLORS.border}`,
+              borderRadius: "12px",
+              boxShadow: "0 1px 2px rgba(0,0,0,.08), 0 1px 3px 1px rgba(0,0,0,.06)",
+              overflow: "hidden",
+            }}
+          >
+            <Box sx={{ flex: "1 1 0", minWidth: 0, p: "24px" }}>
+              <ViolationBreakdown metrics={breakdownMetrics} />
+            </Box>
+            <Box
+              sx={{
+                flex: "1.3 1 0",
+                minWidth: 0,
+                p: "24px",
+                borderLeft: { xs: "none", md: `1px solid ${DASHBOARD_COLORS.border}` },
+                borderTop: { xs: `1px solid ${DASHBOARD_COLORS.border}`, md: "none" },
+              }}
+            >
+              <ViolationsTrend data={violationsTrendData} trendPercentage={18} />
+            </Box>
           </Box>
 
-          <TimeFilter onRangeChange={() => console.log("on range chnaged")} />
+          <Box sx={{ flexShrink: 0 }}>
+            <CollapsibleTimeFilter
+              onRangeChange={function (range: {
+                start: string;
+                end: string;
+              }): void {
+                throw new Error("Function not implemented.");
+              }}
+            />
+          </Box>
         </Box>
-        {/* KPI Cards */}
-
-        <Grid container spacing={2.5} sx={{ mb: 4 }} alignItems="stretch">
-          {KpiCardLoading
-            ? // Show skeletons while loading
-              skeletonKeys.map((index) => (
-                <Grid
-                  size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-                  key={uuidv4() + index}
-                >
-                  <KpiCardSkeleton />
-                </Grid>
-              ))
-            : // Show actual KPI cards
-              SleepingSecurityPersonnelKpiData.map((kpi, index) => (
-                <Grid
-                  size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-                  key={uuidv4() + index}
-                >
-                  <KpiCard {...kpi} />
-                </Grid>
-              ))}
-        </Grid>
 
         {/* Content Grid */}
         <Grid container spacing={3}>
@@ -253,9 +289,6 @@ const SleepingSecurityPersonnel: React.FC = () => {
 
       {/*  Violations Report */}
       <ReportTable
-        totalCount={4}
-        page={0}
-        rowsPerPage={10}
         title="Detailed Report"
         columns={[
           { id: "voilation", label: "Violation", minWidth: 200 },
@@ -307,6 +340,9 @@ const SleepingSecurityPersonnel: React.FC = () => {
         loading={false}
         tooltipMessage="Detailed violations report with filter, reset, and CSV/PDF download options."
         onView={handleViewSingle}
+        totalCount={0}
+        page={0}
+        rowsPerPage={0}
       />
 
       {/* View Alert Popup */}

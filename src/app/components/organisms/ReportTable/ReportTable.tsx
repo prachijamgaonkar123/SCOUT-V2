@@ -24,7 +24,6 @@ import {
 } from "@mui/material";
 import { Description, Visibility, Download } from "@mui/icons-material";
 import InfoOutlineIcon from "@mui/icons-material/InfoOutline";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -60,7 +59,11 @@ const COLORS = {
 // the exact same height, 30px)
 // ----------------------------------------------
 const FILTER_INPUT_SX = {
-  "& .MuiInputBase-root": {
+  // MUI x-date-pickers v8 renders DatePicker/DateTimePicker fields with
+  // MuiPickersInputBase-root / MuiPickersOutlinedInput-root instead of the
+  // classic MuiInputBase-root/MuiOutlinedInput-root used by TextField/Select,
+  // so both sets of selectors are needed to keep every filter at 30px.
+  "& .MuiInputBase-root, & .MuiPickersInputBase-root": {
     minHeight: "30px !important",
     height: "30px",
     fontSize: "12px",
@@ -71,14 +74,20 @@ const FILTER_INPUT_SX = {
   },
   "& .MuiSelect-select": { padding: "4px 8px !important", minHeight: "auto" },
   "& .MuiInputBase-input": { padding: "4px 8px !important", height: "auto" },
+  "& .MuiPickersSectionList-root": { padding: "4px 0 !important" },
   "& .MuiFormHelperText-root": { display: "none" },
   "& .MuiInputAdornment-root": { marginRight: 0 },
   // constrain the calendar/clock icon button so it doesn't
-  // stretch the field taller than the 30px text/select fields
+  // stretch the field taller than the 30px text/select fields.
+  // MUI renders this button with edge="end", which applies a built-in
+  // -12px marginRight calibrated for its default ~34px size - since we
+  // shrink the button to 22px, that same -12px over-corrects and pushes
+  // the icon outside the field's border. Zero it out here.
   "& .MuiInputAdornment-root .MuiIconButton-root": {
     width: 22,
     height: 22,
     padding: 0,
+    marginRight: "0 !important",
   },
 };
 
@@ -150,7 +159,9 @@ const FilterBar = styled(Box)({
   flexWrap: "nowrap",
   gap: "8px",
   padding: "8px 16px",
-  alignItems: "center",
+  // align to the bottom of the row so the action buttons line up with
+  // the input boxes themselves, not the (taller, label-topped) filter columns
+  alignItems: "flex-end",
   background: COLORS.bg,
   borderTop: `1px solid ${COLORS.border}`,
   borderBottom: `1px solid ${COLORS.border}`,
@@ -161,8 +172,8 @@ const FilterBar = styled(Box)({
 
 const FilterField = styled(Box)({
   flex: "0 1 auto",
-  minWidth: "100px",
-  maxWidth: "160px",
+  minWidth: "90px",
+  maxWidth: "120px",
   display: "flex",
   flexDirection: "column",
   justifyContent: "center",
@@ -197,8 +208,9 @@ const ActionButton = styled(Button)({
     backgroundColor: COLORS.primaryTint,
   },
   "&.Mui-disabled": {
-    color: "#9CA3AF",
-    backgroundColor: "#E5E7EB",
+    color: "#B0B7C3",
+    backgroundColor: "transparent",
+    borderColor: "#E9EBEF",
   },
 });
 
@@ -441,15 +453,13 @@ function ReportTable<T extends Record<string, string | number | boolean>>({
     if (filter.type === "date" || filter.type === "datetime") {
       const fieldId = filter.id as string;
       const constraints = getDateConstraints(fieldId);
-      const isDateTime = filter.type === "datetime";
-      // Use DateTimePicker (adds a time column) for "datetime"
-      // filters, plain DatePicker (day/month/year only) for "date"
-      const PickerComponent = isDateTime ? DateTimePicker : DatePicker;
-      const displayFormat = isDateTime ? "DD-MM-YYYY HH:mm" : "DD-MM-YYYY";
+      // Always include the time column (down to seconds) so start/end
+      // date filters let the user narrow down to a specific moment.
+      const displayFormat = "DD-MM-YYYY HH:mm:ss";
 
       return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <PickerComponent
+          <DateTimePicker
             label={filter.label}
             value={dateTimeValues[fieldId] ?? null}
             onChange={(newValue) =>
@@ -457,6 +467,7 @@ function ReportTable<T extends Record<string, string | number | boolean>>({
             }
             minDate={constraints.minDate}
             maxDate={constraints.maxDate}
+            views={["year", "month", "day", "hours", "minutes", "seconds"]}
             format={displayFormat}
             slotProps={{
               textField: {
@@ -616,7 +627,16 @@ function ReportTable<T extends Record<string, string | number | boolean>>({
         {/* Filter Bar */}
         <FilterBar>
           {filters.map((filter, index) => (
-            <FilterField key={index + 1}>{renderFilter(filter)}</FilterField>
+            <FilterField
+              key={index + 1}
+              sx={
+                filter.type === "date" || filter.type === "datetime"
+                  ? { minWidth: "215px", maxWidth: "245px" }
+                  : undefined
+              }
+            >
+              {renderFilter(filter)}
+            </FilterField>
           ))}
 
           <Box

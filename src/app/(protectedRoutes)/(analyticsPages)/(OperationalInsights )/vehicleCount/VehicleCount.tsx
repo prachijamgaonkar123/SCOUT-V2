@@ -1,8 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import ReportTable from "@/app/components/organisms/ReportTable/ReportTable";
-import KpiCard from "@/app/components/molecules/KpiCard/KpiCard";
-import { Box, Grid, Paper, Typography } from "@mui/material";
+import { Box, Grid, Paper } from "@mui/material";
 import {
   DirectionsCar,
   CheckCircle,
@@ -11,11 +10,15 @@ import {
   Logout,
 } from "@mui/icons-material";
 import RecentViolations from "@/app/components/molecules/RecentViolations/RecentViolations";
-import KpiCardSkeleton from "@/app/components/molecules/KpiCardSkeleton/KpiCardSkeleton";
-import { v4 as uuidv4 } from "uuid";
-import TimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/TimeFilter";
-import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolations";
+import CollapsibleTimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/CollapsibleTimeFilter";
+import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolation";
 import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
+import { getOneHourBefore } from "@/utils/getOneHrBefore";
+import ViolationBreakdown, {
+  BreakdownMetric,
+} from "@/app/components/molecules/ViolationBreakdown/ViolationBreakdown";
+import ViolationsTrend from "@/app/components/molecules/ViolationsTrend/ViolationsTrend";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 const VehicleCount: React.FC = () => {
@@ -36,11 +39,10 @@ const VehicleCount: React.FC = () => {
   const [viewPopupData, setViewPopupData] = useState<VehicleCountEvent | null>(
     null,
   );
-  const skeletonKeys = Array.from({ length: 4 }, () => uuidv4());
   const VehicleCountKpiData = [
     {
       title: "Total Vehicle Entries",
-      value: "120",
+      value: "6",
       icon: Login,
       tooltipMessage:
         "Total number of vehicles that entered through all gates during the selected time period.",
@@ -52,7 +54,7 @@ const VehicleCount: React.FC = () => {
     },
     {
       title: "Total Vehicle Exits",
-      value: "92",
+      value: "1",
       icon: Logout,
       tooltipMessage:
         "Total number of vehicles that exited through all gates during the selected time period.",
@@ -64,7 +66,7 @@ const VehicleCount: React.FC = () => {
     },
     {
       title: "Vehicles Inside",
-      value: "28",
+      value: "5",
       icon: DirectionsCar,
       tooltipMessage:
         "Total number of vehicles currently inside the premises (calculated as entries minus exits).",
@@ -76,7 +78,7 @@ const VehicleCount: React.FC = () => {
     },
     {
       title: "Total Valid Numbers",
-      value: "145",
+      value: "0",
       icon: CheckCircle,
       tooltipMessage:
         "Number of detected vehicles with valid license plate numbers.",
@@ -88,7 +90,7 @@ const VehicleCount: React.FC = () => {
     },
     {
       title: "Total Invalid Numbers",
-      value: "7",
+      value: "2",
       icon: ReportProblem,
       tooltipMessage:
         "Number of detected vehicles with invalid or unreadable license plate numbers.",
@@ -98,61 +100,26 @@ const VehicleCount: React.FC = () => {
     {
       id: 201,
       numberDetected: "MH12AB1234",
-      status: "Entry",
-      validNumber: true,
-      snapshot: "https://picsum.photos/400/200?random=11",
-      zone: "Main Gate A",
+      status: "Exit",
+      validNumber: false,
+      snapshot: "/img/vehicle-count-anpr-gates/v1.jpg",
+      zone: "Zone A",
       camera: "CAM-ENTRY-01",
-      createdAt: "2025-09-23 09:42",
+      createdAt: getOneHourBefore().fullDate,
       updatedAt: "2025-09-23 09:43",
       alarmTriggered: false,
     },
-    {
-      id: 202,
-      numberDetected: "MH14XY7890",
-      status: "Exit",
-      validNumber: false,
-      snapshot: "https://picsum.photos/400/200?random=12",
-      zone: "Exit Gate B",
-      camera: "CAM-EXIT-02",
-      createdAt: "2025-09-23 09:58",
-      updatedAt: "2025-09-23 10:00",
-      alarmTriggered: true,
-    },
+
     {
       id: 203,
       numberDetected: "GJ05TR5678",
       status: "Entry",
-      validNumber: true,
-      snapshot: "https://picsum.photos/400/200?random=13",
-      zone: "Warehouse Entry",
-      camera: "CAM-ENTRY-03",
-      createdAt: "2025-09-23 10:12",
-      updatedAt: "2025-09-23 10:14",
-      alarmTriggered: false,
-    },
-    {
-      id: 204,
-      numberDetected: "DL09GH4567",
-      status: "Exit",
       validNumber: false,
-      snapshot: "https://picsum.photos/400/200?random=14",
-      zone: "Service Exit",
-      camera: "CAM-EXIT-04",
-      createdAt: "2025-09-23 10:30",
-      updatedAt: "2025-09-23 10:32",
-      alarmTriggered: true,
-    },
-    {
-      id: 205,
-      numberDetected: "MH15PQ2345",
-      status: "Entry",
-      validNumber: true,
-      snapshot: "https://picsum.photos/400/200?random=15",
-      zone: "Visitor Gate",
-      camera: "CAM-ENTRY-05",
-      createdAt: "2025-09-23 11:00",
-      updatedAt: "2025-09-23 11:02",
+      snapshot: "/img/vehicle-count-anpr-gates/v3.png",
+      zone: "Zone B",
+      camera: "CAM-ENTRY-03",
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 10:14",
       alarmTriggered: false,
     },
   ];
@@ -181,38 +148,17 @@ const VehicleCount: React.FC = () => {
 
   const vehicleZoneViolationsData = [
     {
-      zone: "Main Gate A",
-      violations: 5,
+      zone: "Zone A",
+      violations: 1,
       subViolations: [
-        { label: "Invalid Number Plate", value: 3, icon: ErrorOutlineIcon },
+        { label: "Invalid Number Plate", value: 1, icon: ErrorOutlineIcon },
       ],
     },
     {
-      zone: "Exit Gate B",
-      violations: 7,
+      zone: "Zone B",
+      violations: 1,
       subViolations: [
-        { label: "Invalid Number Plate", value: 4, icon: ErrorOutlineIcon },
-      ],
-    },
-    {
-      zone: "Warehouse Entry",
-      violations: 4,
-      subViolations: [
-        { label: "Invalid Number Plate", value: 2, icon: ErrorOutlineIcon },
-      ],
-    },
-    {
-      zone: "Service Exit",
-      violations: 6,
-      subViolations: [
-        { label: "Invalid Number Plate", value: 3, icon: ErrorOutlineIcon },
-      ],
-    },
-    {
-      zone: "Visitor Gate",
-      violations: 3,
-      subViolations: [
-        { label: "Invalid Number Plate", value: 2, icon: ErrorOutlineIcon },
+        { label: "Invalid Number Plate", value: 1, icon: ErrorOutlineIcon },
       ],
     },
   ];
@@ -243,7 +189,30 @@ const VehicleCount: React.FC = () => {
     setViewPopupData(violation);
     setViewPopupOpen(true);
   };
-  const KpiCardLoading = false;
+
+  // Location/time metrics get the "info" tint; violation counts get red — matches PPE.
+  const breakdownMetrics: BreakdownMetric[] = VehicleCountKpiData.map((kpi) => ({
+    icon: kpi.icon,
+    value: kpi.value,
+    label: kpi.title,
+    tone: /zone|time|incidence/i.test(kpi.title) ? "info" : "red",
+  }));
+
+  // TODO: replace with a real 7-day trend endpoint once one exists on this page's API.
+  // Placeholder mirrors the approved mockup (src/app/.html) until that's wired up.
+  const violationsTrendData = (() => {
+    const values = [3, 4, 2, 5, 4, 3, 5];
+    const now = new Date();
+    return values.map((value, idx) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (values.length - 1 - idx));
+      return {
+        date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        value,
+      };
+    });
+  })();
+
   return (
     <Box>
       <Paper
@@ -257,44 +226,47 @@ const VehicleCount: React.FC = () => {
         <Box
           sx={{
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 2,
+            alignItems: "flex-start",
+            gap: 2,
+            flexWrap: "wrap",
+            mb: "20px",
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: "bold", fontSize: 18 }}>
-              <Box component="span" sx={{ mr: 2 }}>
-                📊 Overview
-              </Box>
-            </Typography>
+          <Box
+            sx={{
+              flex: "1 1 480px",
+              minWidth: 0,
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              minHeight: { xs: "auto", md: "220px" },
+              border: `1px solid ${DASHBOARD_COLORS.border}`,
+              borderRadius: "12px",
+              boxShadow: "0 1px 2px rgba(0,0,0,.08), 0 1px 3px 1px rgba(0,0,0,.06)",
+              overflow: "hidden",
+            }}
+          >
+            <Box sx={{ flex: "1 1 0", minWidth: 0, p: "24px" }}>
+              <ViolationBreakdown metrics={breakdownMetrics} />
+            </Box>
+            <Box
+              sx={{
+                flex: "1.3 1 0",
+                minWidth: 0,
+                p: "24px",
+                borderLeft: { xs: "none", md: `1px solid ${DASHBOARD_COLORS.border}` },
+                borderTop: { xs: `1px solid ${DASHBOARD_COLORS.border}`, md: "none" },
+              }}
+            >
+              <ViolationsTrend data={violationsTrendData} trendPercentage={18} />
+            </Box>
           </Box>
 
-          <TimeFilter onRangeChange={() => console.log("on range chnaged")} />
+          <Box sx={{ flexShrink: 0 }}>
+            <CollapsibleTimeFilter
+              onRangeChange={() => console.log("on range chnaged")}
+            />
+          </Box>
         </Box>
-        {/* KPI Cards */}
-
-        <Grid container spacing={2.5} sx={{ mb: 4 }} alignItems="stretch">
-          {KpiCardLoading
-            ? // Show skeletons while loading
-              skeletonKeys.map((index) => (
-                <Grid
-                  size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-                  key={uuidv4() + index}
-                >
-                  <KpiCardSkeleton />
-                </Grid>
-              ))
-            : // Show actual KPI cards
-              VehicleCountKpiData.map((kpi, index) => (
-                <Grid
-                  size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-                  key={uuidv4() + index}
-                >
-                  <KpiCard {...kpi} />
-                </Grid>
-              ))}
-        </Grid>
 
         {/* Content Grid */}
         <Grid container spacing={3}>

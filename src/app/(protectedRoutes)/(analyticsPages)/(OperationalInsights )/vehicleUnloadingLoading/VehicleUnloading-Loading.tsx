@@ -1,18 +1,22 @@
 "use client";
 import React, { useState } from "react";
 import ReportTable from "@/app/components/organisms/ReportTable/ReportTable";
-import KpiCard from "@/app/components/molecules/KpiCard/KpiCard";
-import { Box, Grid, Paper, Typography } from "@mui/material";
+import { Box, Grid, Paper } from "@mui/material";
 import RecentViolations from "@/app/components/molecules/RecentViolations/RecentViolations";
-import KpiCardSkeleton from "@/app/components/molecules/KpiCardSkeleton/KpiCardSkeleton";
-import { v4 as uuidv4 } from "uuid";
 import PlayCircleIcon from "@mui/icons-material/PlayCircle";
 import StopCircleIcon from "@mui/icons-material/StopCircle";
 import { LocalShipping, Timeline } from "@mui/icons-material";
-import TimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/TimeFilter";
-import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolations";
+import CollapsibleTimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/CollapsibleTimeFilter";
+import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolation";
 import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import { getOnehalftBefore, getOneHourBefore } from "@/utils/getOneHrBefore";
+import ViolationBreakdown, {
+  BreakdownMetric,
+} from "@/app/components/molecules/ViolationBreakdown/ViolationBreakdown";
+import ViolationsTrend from "@/app/components/molecules/ViolationsTrend/ViolationsTrend";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
+
 const VehicleUnloadingLoading: React.FC = () => {
   interface VehicleLoadingEvent {
     incident: string;
@@ -28,17 +32,16 @@ const VehicleUnloadingLoading: React.FC = () => {
   const [viewPopupOpen, setViewPopupOpen] = useState(false);
   const [viewPopupData, setViewPopupData] =
     useState<VehicleLoadingEvent | null>(null);
-  const skeletonKeys = Array.from({ length: 4 }, () => uuidv4());
   const VehicleUnloadingLoadingKpiData = [
     {
       title: "Total Loading/Unloading Event",
-      value: "87",
+      value: "2",
       icon: LocalShipping,
       tooltipMessage: "Total loading/unloading events recorded.",
     },
     {
       title: "Average Loading/Unloading Time",
-      value: "1.56 hrs",
+      value: "30 mins",
       icon: AccessTimeIcon,
       tooltipMessage:
         "Shows the Average Time for Vehical Loading/Unloading event",
@@ -46,7 +49,7 @@ const VehicleUnloadingLoading: React.FC = () => {
 
     {
       title: "Busiest Zone",
-      value: "Zone A",
+      value: "Loading Bay A,Loading Bay B",
       icon: Timeline,
       tooltipMessage: "Zone with the highest operation activity.",
     },
@@ -56,56 +59,45 @@ const VehicleUnloadingLoading: React.FC = () => {
       id: 301,
       trackId: "TRK-001",
       loadingState: "Start",
-      snapshot: "https://picsum.photos/400/200?random=21",
+      snapshot: "/img/vehicle-loading-unloading-monitoring/v2.jpg",
       zone: "Loading Bay A",
       camera: "CAM-21",
       alarmTriggered: true,
-      createdAt: "2025-10-09 08:15",
+      createdAt: getOneHourBefore().fullDate,
       updatedAt: "2025-10-09 08:20",
     },
     {
       id: 302,
       trackId: "TRK-002",
       loadingState: "Stop",
-      snapshot: "https://picsum.photos/400/200?random=22",
-      zone: "Loading Bay B",
+      snapshot: "/img/vehicle-loading-unloading-monitoring/v2.jpg",
+      zone: "Loading Bay A",
       camera: "CAM-22",
       alarmTriggered: false,
-      createdAt: "2025-10-09 09:30",
+      createdAt: getOnehalftBefore().fullDate,
       updatedAt: "2025-10-09 09:35",
     },
     {
-      id: 303,
-      trackId: "TRK-003",
+      id: 304,
+      trackId: "TRK-004",
       loadingState: "Start",
-      snapshot: "https://picsum.photos/400/200?random=23",
-      zone: "Unloading Bay A",
-      camera: "CAM-23",
-      alarmTriggered: true,
-      createdAt: "2025-10-09 10:00",
-      updatedAt: "2025-10-09 10:05",
+      snapshot: "/img/vehicle-loading-unloading-monitoring/v1.webp",
+      zone: "Unloading Bay B",
+      camera: "CAM-24",
+      alarmTriggered: false,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-10-09 11:05",
     },
     {
       id: 304,
       trackId: "TRK-004",
       loadingState: "Stop",
-      snapshot: "https://picsum.photos/400/200?random=24",
+      snapshot: "/img/vehicle-loading-unloading-monitoring/v1.webp",
       zone: "Unloading Bay B",
       camera: "CAM-24",
       alarmTriggered: false,
-      createdAt: "2025-10-09 11:00",
+      createdAt: getOnehalftBefore().fullDate,
       updatedAt: "2025-10-09 11:05",
-    },
-    {
-      id: 305,
-      trackId: "TRK-005",
-      loadingState: "Start",
-      snapshot: "https://picsum.photos/400/200?random=25",
-      zone: "Loading Bay C",
-      camera: "CAM-25",
-      alarmTriggered: true,
-      createdAt: "2025-10-09 12:15",
-      updatedAt: "2025-10-09 12:20",
     },
   ];
 
@@ -127,42 +119,18 @@ const VehicleUnloadingLoading: React.FC = () => {
   const zoneLoadingData = [
     {
       zone: "Loading Bay A",
-      incident: 12,
+      incident: 1,
       subViolations: [
-        { label: "Start", value: 7, icon: PlayCircleIcon },
-        { label: "Stop", value: 5, icon: StopCircleIcon },
+        { label: "Start", value: 1, icon: PlayCircleIcon },
+        { label: "Stop", value: 1, icon: StopCircleIcon },
       ],
     },
     {
       zone: "Loading Bay B",
-      incident: 9,
+      incident: 1,
       subViolations: [
-        { label: "Start", value: 4, icon: PlayCircleIcon },
-        { label: "Stop", value: 5, icon: StopCircleIcon },
-      ],
-    },
-    {
-      zone: "Unloading Bay A",
-      incident: 15,
-      subViolations: [
-        { label: "Start", value: 9, icon: PlayCircleIcon },
-        { label: "Stop", value: 6, icon: StopCircleIcon },
-      ],
-    },
-    {
-      zone: "Unloading Bay B",
-      incident: 8,
-      subViolations: [
-        { label: "Start", value: 4, icon: PlayCircleIcon },
-        { label: "Stop", value: 4, icon: StopCircleIcon },
-      ],
-    },
-    {
-      zone: "Loading Bay C",
-      incident: 10,
-      subViolations: [
-        { label: "Start", value: 6, icon: PlayCircleIcon },
-        { label: "Stop", value: 4, icon: StopCircleIcon },
+        { label: "Start", value: 1, icon: PlayCircleIcon },
+        { label: "Stop", value: 1, icon: StopCircleIcon },
       ],
     },
   ];
@@ -194,7 +162,32 @@ const VehicleUnloadingLoading: React.FC = () => {
     setViewPopupData(violation);
     setViewPopupOpen(true);
   };
-  const KpiCardLoading = false;
+
+  // Location/time metrics get the "info" tint; violation counts get red — matches PPE.
+  const breakdownMetrics: BreakdownMetric[] = VehicleUnloadingLoadingKpiData.map(
+    (kpi) => ({
+      icon: kpi.icon,
+      value: kpi.value,
+      label: kpi.title,
+      tone: /zone|time|incidence/i.test(kpi.title) ? "info" : "red",
+    }),
+  );
+
+  // TODO: replace with a real 7-day trend endpoint once one exists on this page's API.
+  // Placeholder mirrors the approved mockup (src/app/.html) until that's wired up.
+  const violationsTrendData = (() => {
+    const values = [3, 4, 2, 5, 4, 3, 5];
+    const now = new Date();
+    return values.map((value, idx) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (values.length - 1 - idx));
+      return {
+        date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        value,
+      };
+    });
+  })();
+
   return (
     <Box>
       <Paper
@@ -208,44 +201,47 @@ const VehicleUnloadingLoading: React.FC = () => {
         <Box
           sx={{
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 2,
+            alignItems: "flex-start",
+            gap: 2,
+            flexWrap: "wrap",
+            mb: "20px",
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: "bold", fontSize: 18 }}>
-              <Box component="span" sx={{ mr: 2 }}>
-                📊 Overview
-              </Box>
-            </Typography>
+          <Box
+            sx={{
+              flex: "1 1 480px",
+              minWidth: 0,
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              minHeight: { xs: "auto", md: "220px" },
+              border: `1px solid ${DASHBOARD_COLORS.border}`,
+              borderRadius: "12px",
+              boxShadow: "0 1px 2px rgba(0,0,0,.08), 0 1px 3px 1px rgba(0,0,0,.06)",
+              overflow: "hidden",
+            }}
+          >
+            <Box sx={{ flex: "1 1 0", minWidth: 0, p: "24px" }}>
+              <ViolationBreakdown metrics={breakdownMetrics} />
+            </Box>
+            <Box
+              sx={{
+                flex: "1.3 1 0",
+                minWidth: 0,
+                p: "24px",
+                borderLeft: { xs: "none", md: `1px solid ${DASHBOARD_COLORS.border}` },
+                borderTop: { xs: `1px solid ${DASHBOARD_COLORS.border}`, md: "none" },
+              }}
+            >
+              <ViolationsTrend data={violationsTrendData} trendPercentage={18} />
+            </Box>
           </Box>
 
-          <TimeFilter onRangeChange={() => console.log("on range changed")} />
+          <Box sx={{ flexShrink: 0 }}>
+            <CollapsibleTimeFilter
+              onRangeChange={() => console.log("on range changed")}
+            />
+          </Box>
         </Box>
-        {/* KPI Cards */}
-
-        <Grid container spacing={2.5} sx={{ mb: 4 }} alignItems="stretch">
-          {KpiCardLoading
-            ? // Show skeletons while loading
-              skeletonKeys.map((index) => (
-                <Grid
-                  size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-                  key={uuidv4() + index}
-                >
-                  <KpiCardSkeleton />
-                </Grid>
-              ))
-            : // Show actual KPI cards
-              VehicleUnloadingLoadingKpiData.map((kpi, index) => (
-                <Grid
-                  size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-                  key={uuidv4() + index}
-                >
-                  <KpiCard {...kpi} />
-                </Grid>
-              ))}
-        </Grid>
 
         {/* Content Grid */}
         <Grid container spacing={3}>

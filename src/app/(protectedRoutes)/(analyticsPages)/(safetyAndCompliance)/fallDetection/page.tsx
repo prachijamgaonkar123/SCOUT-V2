@@ -1,5 +1,5 @@
 import FallDetection from "./FallDetection";
 
-export default function FallDetectionPage() {
+export default function PPEDetectionPage() {
   return <FallDetection />;
 }

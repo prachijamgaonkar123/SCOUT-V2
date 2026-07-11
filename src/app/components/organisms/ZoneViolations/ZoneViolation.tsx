@@ -74,7 +74,7 @@ const ZoneViolations: React.FC<ZoneViolationsProps> = ({
         flexDirection: "column",
         borderRadius: 2,
         boxShadow: "0px 2px 8px rgba(0,0,0,0.08)",
-        backgroundColor: "#fff",
+        backgroundColor: DASHBOARD_COLORS.card,
       }}
     >
       <CardContent

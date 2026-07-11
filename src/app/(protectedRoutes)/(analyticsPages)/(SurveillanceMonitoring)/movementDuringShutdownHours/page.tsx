@@ -1,5 +1,5 @@
-import MovementDuringShutdownHours from "./movementDuringShutdownHours";
+import PeoplePresence from "./PeoplePresence";
 
-export default function movementDuringShutdownHoursPage() {
-  return <MovementDuringShutdownHours />;
+export default function PPEDetectionPage() {
+  return <PeoplePresence />;
 }

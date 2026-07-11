@@ -5,12 +5,14 @@ import toasterReducer from "@/app/store/slices/toasterSlice";
 import languageReducer from "./slices/languageSlice";
 import authReducer from "./slices/authSlice";
 import routeLoaderReducer from "./slices/routeLoaderSlice";
+import themeReducer from "./slices/themeSlice";
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     toasterGlobal: toasterReducer,
     language: languageReducer,
     routeLoader: routeLoaderReducer,
+    theme: themeReducer,
 
     // ✅ RTK Query reducers
     [basePublicApi.reducerPath]: basePublicApi.reducer,

@@ -1,5 +1,6 @@
-import FireSmokeDetection from "./fireSmokeDetection";
+
+import FireSmokeOilLeakDetection from "./FireSmokeOilLeakDetection";
 
 export default function page() {
-  return <FireSmokeDetection />;
+    return <FireSmokeOilLeakDetection/>
 }

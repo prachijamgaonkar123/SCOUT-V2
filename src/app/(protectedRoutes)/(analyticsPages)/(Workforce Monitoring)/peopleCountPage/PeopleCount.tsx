@@ -1,404 +1,346 @@
-
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useState } from "react";
 import ReportTable from "@/app/components/organisms/ReportTable/ReportTable";
-import { Box, Grid, Paper, Typography } from "@mui/material";
-import { People } from "@mui/icons-material";
-import KpiCard from "@/app/components/molecules/KpiCard/KpiCard";
+import { Box, Grid, Paper } from "@mui/material";
+import { People, Login, Logout } from "@mui/icons-material";
 import RecentViolations from "@/app/components/molecules/RecentViolations/RecentViolations";
-import KpiCardSkeleton from "@/app/components/molecules/KpiCardSkeleton/KpiCardSkeleton";
-import TimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/TimeFilter";
-import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolationsOld";
-import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
-import {
-  useGetOrgShiftTimeDataQuery,
-  useGetPeopleCountDetailedCsvReportMutation,
-  useGetPeopleCountDetailedPdfReportMutation,
-  useGetPeopleCountSingleReportPdfMutation,
-  useLazyGetPeopleCountDataQuery,
-  useLazyGetPeopleCountDetailedReportQuery,
-} from "./PeopleCountApi";
-import { RootState } from "@/app/store/store";
-import { useSelector } from "react-redux";
-import { useSocketEvent } from "@/customhooks/useSocketEvent";
-import { SOCKET_EVENTS } from "@/sockets/socket.events";
-import { Violation } from "@/app/components/molecules/ViolationCard/ViolationCard";
-import { PeopleCountKpiConfig } from "./PeopleCountConfig";
-import {
-  KpiTitle,
-  PeopleCountDetailedReportResponse,
-  PeopleCountFilterParams,
-  PeopleCountViolation,
-  PeopleCountKpiItem,
-  PeopleCountZoneViolation,
-  PeopleCountSocketPayload,
-  KpiColour,
-} from "./PeopleCount.types";
-import { formatLocalDateTime } from "@/utils/formatLocalDateTime";
+import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolation";
 import PeopleIcon from "@mui/icons-material/People";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
+import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
+import CollapsibleTimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/CollapsibleTimeFilter";
+import { getOneHourBefore } from "@/utils/getOneHrBefore";
+import ViolationBreakdown, {
+  BreakdownMetric,
+} from "@/app/components/molecules/ViolationBreakdown/ViolationBreakdown";
+import ViolationsTrend from "@/app/components/molecules/ViolationsTrend/ViolationsTrend";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
 const PeopleCount: React.FC = () => {
-  const { user } = useSelector((state: RootState) => state.auth);
-  const tenantId: string = user?.org_id ?? "";
+  interface PeopleCountViolation {
+    voilation: string;
+    enteredCount: number;
+    exitCount: number;
+    time: string;
+    zone: string;
+    cameraId: string;
+    alarmTriggered: boolean;
+    imageUrl: string;
 
-  /* ---------- STATE ---------- */
-  const [filters, setFilters] = useState<PeopleCountFilterParams>({});
-  const [page, setPage] = useState(0);
-  const [limit, setLimit] = useState(10);
-  const [isExporting, setIsExporting] = useState(false);
-  const [downloadingRows, setDownloadingRows] = useState<Set<number>>(new Set());
+    [key: string]: string | number | boolean;
+  }
   const [viewPopupOpen, setViewPopupOpen] = useState(false);
-  const [viewPopupData, setViewPopupData] = useState<PeopleCountViolation | null>(null);
-
-  // Live mode flag — false when time filter range is active
-  const [isLiveMode, setIsLiveMode] = useState(true);
-
-  // Overview display state — fed by initial fetch, time filter fetch, OR socket
-  const [displayKpi, setDisplayKpi] = useState<PeopleCountKpiItem[]>([]);
-  const [displayZoneViolations, setDisplayZoneViolations] = useState<PeopleCountZoneViolation[]>([]);
-  const [recentViolationsLive, setRecentViolationsLive] = useState<PeopleCountViolation[]>([]);
-
-  const [detailedReport, setDetailedReport] =
-    useState<PeopleCountDetailedReportResponse | null>(null);
-
-  /* ---------- API HOOKS ---------- */
-  const { data: orgShifts } = useGetOrgShiftTimeDataQuery(
-    { tenantId },
-    { skip: !tenantId },
-  );
-
-  // One call → gets kpi + zoneViolations + recentViolations together
-  const [fetchOverviewData, { isFetching: overviewLoading }] =
-    useLazyGetPeopleCountDataQuery();
-
-  const [fetchDetailedReportApi, { isFetching: detailedReportLoading }] =
-    useLazyGetPeopleCountDetailedReportQuery();
-
-  const [downloadSinglePdf] = useGetPeopleCountSingleReportPdfMutation();
-  const [downloadCsvReport] = useGetPeopleCountDetailedCsvReportMutation();
-  const [downloadPdfReport] = useGetPeopleCountDetailedPdfReportMutation();
-
-  /* ---------- INITIAL LOAD ---------- */
-  useEffect(() => {
-    if (!tenantId) return;
-    const loadInitial = async () => {
-      const data = await fetchOverviewData({ tenantId }).unwrap();
-      setDisplayKpi(data?.kpi ?? []);
-      setDisplayZoneViolations(data?.zoneViolations ?? []);
-      setRecentViolationsLive(data?.recentViolations ?? []);
-    };
-    loadInitial().catch(console.error);
-  }, [tenantId, fetchOverviewData]);
-
-  /* ---------- DETAILED REPORT — re-fetches on page / filter change ---------- */
-  useEffect(() => {
-    if (!tenantId) return;
-    const loadDetailedReport = async () => {
-      const alarmValue =
-        filters?.alarmTriggered === undefined
-          ? undefined
-          : filters.alarmTriggered === "True";
-
-      const body = {
-        tenantId,
-        page: page + 1,
-        limit,
-        zone: filters?.zone || undefined,
-        camera: filters?.camera || undefined,
-        alarmTriggered: alarmValue,
-        startDate: formatLocalDateTime(filters?.startDate),
-        endDate: formatLocalDateTime(filters?.endDate),
-      };
-      const response = await fetchDetailedReportApi(body).unwrap();
-      setDetailedReport(response);
-    };
-    loadDetailedReport().catch(console.error);
-  }, [tenantId, page, limit, filters, fetchDetailedReportApi]);
-
-  /* ---------- SOCKET — only active in live mode ---------- */
-  useSocketEvent<PeopleCountSocketPayload>({
-    tenantId,
-    enabled: isLiveMode,
-    event: SOCKET_EVENTS.PEOPLE_COUNT_UPDATE,
-    handler: (payload) => {
-      setDisplayKpi(payload.kpi ?? []);
-      setDisplayZoneViolations(payload.zoneViolations ?? []);
-      setRecentViolationsLive(payload.recentViolations ?? []);
+  const [viewPopupData, setViewPopupData] =
+    useState<PeopleCountViolation | null>(null);
+  const backendData = [
+    {
+      id: 201,
+      enteredCount: 4,
+      exitCount: 0,
+      zone: "Zone A",
+      snapshot: "/img/people-count-factory-premises/p1.jpg",
+      cameraid: "CAM-11",
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-30 09:45",
     },
+    {
+      id: 202,
+      enteredCount: 5,
+      exitCount: 0,
+      zone: "Zone B",
+      snapshot: "/img/people-count-factory-premises/p2.jpg",
+      cameraid: "CAM-12",
+      alarmTriggered: false,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-30 09:30",
+    },
+    {
+      id: 203,
+      enteredCount: 0,
+      exitCount: 16,
+      zone: "Zone C",
+      snapshot: "/img/people-count-factory-premises/p3.jpg",
+      cameraid: "CAM-13",
+      alarmTriggered: false,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-30 09:20",
+    },
+    {
+      id: 204,
+      enteredCount: 20,
+      exitCount: 18,
+      zone: "Assembly Line B",
+      snapshot: "https://picsum.photos/400/200?random=14",
+      cameraid: "CAM-14",
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-30 09:05",
+    },
+    {
+      id: 205,
+      enteredCount: 5,
+      exitCount: 2,
+      zone: "Maintenance Area",
+      snapshot: "https://picsum.photos/400/200?random=15",
+      cameraid: "CAM-15",
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-30 08:40",
+    },
+  ];
+
+  const zonePeopleCountData = [
+    {
+      zone: "Zone A",
+
+      subViolations: [
+        { label: "entered Count", value: 4, icon: PeopleIcon },
+        { label: "exit Count", value: 0, icon: ExitToAppIcon },
+      ],
+    },
+    {
+      zone: "Zone B",
+      subViolations: [
+        { label: "entered Count", value: 5, icon: PeopleIcon },
+        { label: "exit Count", value: 0, icon: ExitToAppIcon },
+      ],
+    },
+    {
+      zone: "Zone C",
+      subViolations: [
+        { label: "entered Count", value: 16, icon: PeopleIcon },
+        { label: "exit Count", value: 0, icon: ExitToAppIcon },
+      ],
+    },
+  ];
+
+  const recentViolations = backendData.map((item) => {
+    return {
+      voilation: `People Count (Entry/Exit)`,
+      enteredCount: item.enteredCount,
+      exitCount: item.exitCount,
+      time: item.createdAt,
+      zone: item.zone,
+      cameraId: item.cameraid,
+      alarmTriggered: item.alarmTriggered,
+      imageUrl: item.snapshot,
+    };
   });
 
-  /* ---------- TIME FILTER — updates overview only, not the report table ---------- */
-  const handleRangeChange = useCallback(
-    async (range: { start?: string; end?: string }) => {
-      if (!range.start && !range.end) {
-        // Range cleared → resume live mode
-        setIsLiveMode(true);
-        const data = await fetchOverviewData({ tenantId }).unwrap();
-        setDisplayKpi(data?.kpi ?? []);
-        setDisplayZoneViolations(data?.zoneViolations ?? []);
-        setRecentViolationsLive(data?.recentViolations ?? []);
-        return;
-      }
+  const peopleCountKpiData = [
+    {
+      title: "People Inside",
+      value: "25",
+      icon: People,
 
-      // Range selected → freeze socket, fetch historical data
-      setIsLiveMode(false);
-      const data = await fetchOverviewData({
-        tenantId,
-        startDate: range.start,
-        endDate: range.end,
-      }).unwrap();
-      setDisplayKpi(data?.kpi ?? []);
-      setDisplayZoneViolations(data?.zoneViolations ?? []);
-      setRecentViolationsLive(data?.recentViolations ?? []);
+      tooltipMessage: "Current number of people present inside the area.",
+      trendColor: "#2196f3",
+      color: "#2196f3",
+      bgColor: "#e3f2fd",
+      borderColor: "#2196f3",
+      iconBg: "rgba(33, 150, 243, 0.1)",
     },
-    [tenantId, fetchOverviewData],
-  );
+    {
+      title: "Entry Count",
+      value: "25",
+      icon: Login,
 
-  /* ---------- DERIVED DATA ---------- */
-  const kpiData = useMemo(() => {
-    return displayKpi.map((item) => {
-      const config = PeopleCountKpiConfig[item.title ];
-      return {
-        title: item.title,
-        value: item.value,
-        icon: config?.icon || People,
-        tooltipMessage: config?.tooltipMessage,
-      colour: config?.colour as KpiColour,  
-      };
-    });
-  }, [displayKpi]);
-const zoneViolationsForUi = useMemo(() => {
-  return displayZoneViolations.map((z) => ({
-    zone: z.zone,
-    subViolations: [
-      { label: "Entered Count", value: z.entryCount, icon: PeopleIcon },
-      { label: "Exit Count",  value: z.exitCount,  icon: ExitToAppIcon },
-    ],
-  }));
-}, [displayZoneViolations]);
-
-  /* ---------- TABLE CONFIG ---------- */
-  const tableColumns = [
-    { id: "violation", label: "Violation", minWidth: 200 },
-    { id: "enteredCount", label: "Entered Count", minWidth: 140 },
-    { id: "exitCount", label: "Exit Count", minWidth: 120 },
-    { id: "time", label: "Time", minWidth: 120 },
-    { id: "zone", label: "Zone", minWidth: 120 },
-    { id: "camera", label: "Cameras", minWidth: 120 },
-    { id: "alarmTriggered", label: "Alarm Triggered", minWidth: 140 },
+      tooltipMessage: "Total number of people who entered today.",
+      trendColor: "#2196f3",
+      color: "#2196f3",
+      bgColor: "#e3f2fd",
+      borderColor: "#2196f3",
+      iconBg: "rgba(33, 150, 243, 0.1)",
+    },
+    {
+      title: "Exit Count",
+      value: "0",
+      icon: Logout,
+      tooltipMessage: "Total number of people who exited today.",
+      trendColor: "#2196f3",
+      color: "#2196f3",
+      bgColor: "#e3f2fd",
+      borderColor: "#2196f3",
+      iconBg: "rgba(33, 150, 243, 0.1)",
+    },
   ];
-
-  const tableFilters = [
-    {
-      id: "zone",
-      label: "Zone",
-      type: "select" as const,
-      options: detailedReport?.zones || [],
-    },
-    {
-      id: "camera",
-      label: "Cameras",
-      type: "select" as const,
-      options: detailedReport?.cameras || [],
-    },
-    {
-      id: "alarmTriggered",
-      label: "Alarm Triggered",
-      type: "select" as const,
-      options: ["True", "False"],
-    },
-    { id: "startDate", label: "Start Date", type: "date" as const },
-    { id: "endDate", label: "End Date", type: "date" as const },
-  ];
-
-  /* ---------- HANDLERS ---------- */
-  const handleSubmitFilter = useCallback(
-    (newFilters: PeopleCountFilterParams) => {
-      setPage(0);
-      setFilters(newFilters);
-    },
-    [],
-  );
-
-  const handleReset = useCallback(() => {
-    setFilters({});
-    setPage(0);
-  }, []);
-
-  const handleExport = useCallback(
-    async (format: "csv" | "pdf", exportFilters: PeopleCountFilterParams) => {
-      try {
-        setIsExporting(true);
-        const payload = {
-          tenantId,
-          zone: exportFilters.zone || undefined,
-          camera: exportFilters.camera || undefined,
-          startDate: formatLocalDateTime(exportFilters.startDate),
-          endDate: formatLocalDateTime(exportFilters.endDate),
-        };
-
-        if (format === "csv") await downloadCsvReport(payload);
-        if (format === "pdf") await downloadPdfReport(payload).unwrap();
-      } catch (error) {
-        console.error("❌ Export failed:", error);
-      } finally {
-        setIsExporting(false);
-      }
-    },
-    [tenantId, downloadCsvReport, downloadPdfReport],
-  );
-
-  const handleDownloadSingle = useCallback(
-    async (row: PeopleCountViolation, index: number) => {
-      try {
-        setDownloadingRows((prev) => new Set(prev).add(index));
-        await downloadSinglePdf({
-          tenantId,
-          violation: String(row.violation),
-          enteredCount: row.enteredCount as number,
-          exitCount: row.exitCount as number,
-          zone: row.zone,
-          time: row.time,
-          camera: row.camera,
-          imageUrl: row.imageUrl,
-          alarmTriggered: row.alarmTriggered,
-        });
-      } catch (error) {
-        console.error("❌ Single PDF download failed", error);
-      } finally {
-        setDownloadingRows((prev) => {
-          const next = new Set(prev);
-          next.delete(index);
-          return next;
-        });
-      }
-    },
-    [tenantId, downloadSinglePdf],
-  );
-
-  const handleViewSingle = useCallback((row: PeopleCountViolation) => {
-    setViewPopupData(row);
+  const handleViewSingle = (row: Record<string, string | number | boolean>) => {
+    console.log("view single row", row);
+    setViewPopupData(row as PeopleCountViolation);
     setViewPopupOpen(true);
-  }, []);
-
-  const handleDownloadViolation = async (url: string, violation: Violation) => {
-    if (!violation) return;
-    const v = violation as PeopleCountViolation;
-    try {
-      await downloadSinglePdf({
-        tenantId,
-        violation: String(v.violation),
-        enteredCount: v.enteredCount as number,
-        exitCount: v.exitCount as number,
-
-        zone: v.zone,
-        time: v.time,
-        camera: v.camera,
-        imageUrl: url,
-        alarmTriggered: v.alarmTriggered,
-      });
-    } catch (err) {
-      console.error("PDF download failed", err);
-    }
   };
 
-  /* ---------- RENDER ---------- */
+  // Location/time metrics get the "info" tint; violation counts get red — matches PPE.
+  const breakdownMetrics: BreakdownMetric[] = peopleCountKpiData.map((kpi) => ({
+    icon: kpi.icon,
+    value: kpi.value,
+    label: kpi.title,
+    tone: /zone|time/i.test(kpi.title) ? "info" : "red",
+  }));
+
+  // TODO: replace with a real 7-day trend endpoint once one exists on this page's API.
+  // Placeholder mirrors the approved mockup (src/app/.html) until that's wired up.
+  const violationsTrendData = (() => {
+    const values = [3, 4, 2, 5, 4, 3, 5];
+    const now = new Date();
+    return values.map((value, idx) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (values.length - 1 - idx));
+      return {
+        date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        value,
+      };
+    });
+  })();
+
   return (
     <Box>
       <Paper
-        sx={{ p: 3, mb: 4, backgroundColor: "#ffffff", borderRadius: 2 }}
+        sx={{
+          p: 3,
+          mb: 4,
+          backgroundColor: "#ffffff",
+          borderRadius: 2,
+        }}
       >
         <Box
           sx={{
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 2,
+            alignItems: "flex-start",
+            gap: 2,
+            flexWrap: "wrap",
+            mb: "20px",
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: "bold", fontSize: 18 }}>
-            📊 Overview
-          </Typography>
-          <TimeFilter onRangeChange={handleRangeChange} shifts={orgShifts || []} />
+          <Box
+            sx={{
+              flex: "1 1 480px",
+              minWidth: 0,
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              minHeight: { xs: "auto", md: "220px" },
+              border: `1px solid ${DASHBOARD_COLORS.border}`,
+              borderRadius: "12px",
+              boxShadow: "0 1px 2px rgba(0,0,0,.08), 0 1px 3px 1px rgba(0,0,0,.06)",
+              overflow: "hidden",
+            }}
+          >
+            <Box sx={{ flex: "1 1 0", minWidth: 0, p: "24px" }}>
+              <ViolationBreakdown metrics={breakdownMetrics} />
+            </Box>
+            <Box
+              sx={{
+                flex: "1.3 1 0",
+                minWidth: 0,
+                p: "24px",
+                borderLeft: { xs: "none", md: `1px solid ${DASHBOARD_COLORS.border}` },
+                borderTop: { xs: `1px solid ${DASHBOARD_COLORS.border}`, md: "none" },
+              }}
+            >
+              <ViolationsTrend data={violationsTrendData} trendPercentage={18} />
+            </Box>
+          </Box>
+
+          <Box sx={{ flexShrink: 0 }}>
+            <CollapsibleTimeFilter
+              onRangeChange={function (range: {
+                start: string;
+                end: string;
+              }): void {
+                throw new Error("Function not implemented.");
+              }}
+            />
+          </Box>
         </Box>
 
-        {/* KPI Cards */}
-        <Grid container spacing={2.5} sx={{ mb: 4 }}>
-          {overviewLoading || !kpiData.length
-            ? Array.from({ length: 3 }).map((_, i) => (
-              <Grid  key={`skeleton-${i + 1}`} size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}>
-                <KpiCardSkeleton />
-              </Grid>
-            ))
-            : kpiData.map((kpi) => (
-              <Grid key={kpi.title} size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}>
-                <KpiCard {...kpi} />
-              </Grid>
-            ))}
-        </Grid>
-
-        {/* Recent Violations + Zone Violations */}
+        {/* Content Grid */}
         <Grid container spacing={3}>
+          {/* Recent  Violations */}
           <Grid size={{ xs: 12, lg: 8 }}>
             <RecentViolations
               label="Recent Violations"
+              violations={recentViolations}
+              loading={false}
               tooltipMessage="Latest 20 People Count in Factory Premises based on Entry Exit person Count with details."
-              violations={recentViolationsLive}
-              loading={overviewLoading}
-              onDownload={handleDownloadViolation}
             />
           </Grid>
+          {/*  Compliance by Zone */}
+
           <Grid size={{ xs: 12, lg: 4 }}>
             <ZoneViolations
-              violationsZone={zoneViolationsForUi}
-              loading={overviewLoading}
+              violationsZone={zonePeopleCountData}
+              loading={false}
               tooltipMessage="Shows person entry and exit count per zone"
             />
           </Grid>
         </Grid>
       </Paper>
-
-      {/* Detailed Report Table */}
+      {/* People Count Report */}
       <ReportTable
         title="Detailed Report"
-        tooltipMessage="Detailed person entry and exit report with filter, reset, and CSV/PDF download options."
-        data={detailedReport?.data || []}
-        columns={tableColumns}
-        filters={tableFilters}
-        onSubmit={handleSubmitFilter}
-        onReset={handleReset}
-        onExport={handleExport}
-        exportLoading={isExporting}
-        onDownload={(row, index) =>
-          handleDownloadSingle(row as PeopleCountViolation, index)
-        }
-        downloadingRows={downloadingRows}
-        onView={(row) => handleViewSingle(row as PeopleCountViolation)}
+        columns={[
+          { id: "voilation", label: "Violation", minWidth: 200 },
+          { id: "enteredCount", label: "Entered Count", minWidth: 140 },
+          { id: "exitCount", label: "Exit Count", minWidth: 120 },
+          { id: "time", label: "Time", minWidth: 120 },
+          { id: "zone", label: "Zone", minWidth: 120 },
+          { id: "cameraId", label: "Cameras", minWidth: 120 },
+          { id: "alarmTriggered", label: "Alarm Triggered", minWidth: 140 },
+        ]}
+        data={recentViolations}
+        filters={[
+          {
+            id: "zone",
+            label: "Zone",
+            type: "select",
+            options: Array.from(new Set(recentViolations.map((v) => v.zone))),
+          },
+          {
+            id: "cameraId",
+            label: "Cameras",
+            type: "select",
+            options: Array.from(
+              new Set(recentViolations.map((v) => v.cameraId)),
+            ),
+          },
+          {
+            id: "alarmTriggered",
+            label: "Alarm Triggered",
+            type: "select",
+            options: ["True", "False"],
+          },
+          {
+            id: "time",
+            label: "Start Date",
+            type: "date",
+          },
+          {
+            id: "time",
+            label: "End Date",
+            type: "date",
+          },
+        ]}
         downloadFileName="people-count-report"
-        loading={detailedReportLoading}
-        totalCount={detailedReport?.total || 0}
-        page={page}
-        rowsPerPage={limit}
-        onPageChange={(newPage) => setPage(newPage)}
-        onRowsPerPageChange={(rows) => {
-          setLimit(rows);
-          setPage(0);
-        }}
+        loading={false}
+        onView={handleViewSingle}
+        tooltipMessage="Detailed person entry and exit  report with filter, reset, and CSV/PDF download options."
+        totalCount={0}
+        page={0}
+        rowsPerPage={0}
       />
-
       {/* View Alert Popup */}
-      <ViewAlertPopup
-        open={viewPopupOpen}
-        handleClose={() => setViewPopupOpen(false)}
-        details={viewPopupData}
-        imageKey="imageUrl"
-        onDownload={(url) => {
-          if (!viewPopupData) return;
-          handleDownloadViolation(url, viewPopupData);
-        }}
-      />
+
+      {viewPopupData && (
+        <ViewAlertPopup
+          open={viewPopupOpen}
+          handleClose={() => setViewPopupOpen(false)}
+          details={viewPopupData}
+          imageKey="imageUrl"
+          onDownload={(imageUrl) => console.log("Download image:", imageUrl)}
+        />
+      )}
     </Box>
   );
 };

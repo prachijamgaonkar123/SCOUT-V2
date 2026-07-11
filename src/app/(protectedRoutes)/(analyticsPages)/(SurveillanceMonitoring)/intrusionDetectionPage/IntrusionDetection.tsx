@@ -1,479 +1,311 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useState } from "react";
 import ReportTable from "@/app/components/organisms/ReportTable/ReportTable";
-import { Box, Grid, Paper, Typography } from "@mui/material";
-import EngineeringIcon from "@mui/icons-material/Engineering";
-import KpiCard from "@/app/components/molecules/KpiCard/KpiCard";
+import { Box, Grid, Paper } from "@mui/material";
+import { AccessTime, Shield, Security, LocationOn } from "@mui/icons-material";
 import RecentViolations from "@/app/components/molecules/RecentViolations/RecentViolations";
-
-import KpiCardSkeleton from "@/app/components/molecules/KpiCardSkeleton/KpiCardSkeleton";
-import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolationsOld";
+import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolation";
 import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
-import TimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/TimeFilter";
-import { useTranslation } from "react-i18next";
-import { Violation } from "@/app/components/molecules/ViolationCard/ViolationCard";
-import {
-  useGetIntrusionDetectionDetailedCsvReportMutation,
-  useGetIntrusionDetectionDetailedPdfReportMutation,
-  useGetIntrusionDetectionSingleReportPdfMutation,
-  useGetOrgShiftTimeIntrusionDataQuery,
-  useLazyGetIntrusionDetailedReportQuery,
-  useLazyGetIntrusionKpiQuery,
-  useLazyGetIntrusionRecentViolationsQuery,
-  useLazyGetIntrusionZoneViolationsQuery,
-} from "./IntrusionDetectionApi";
-import { useSelector } from "react-redux";
-import { RootState } from "@/app/store/store";
-import {
-  IntrusionDetailedReportResponse,
-  IntrusionFilterParams,
-  IntrusionKpiItem,
-  IntrusionSocketPayload,
-  IntrusionViolation,
-  IntrusionZoneViolation,
-} from "./IntrusionDetection.types";
-import { intrusionKpiConfig } from "./IntrusionDetectionConfig";
-import { formatLocalDateTime } from "@/utils/formatLocalDateTime";
-import { useSocketEvent } from "@/customhooks/useSocketEvent";
-import { SOCKET_EVENTS } from "@/sockets/socket.events";
+import CollapsibleTimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/CollapsibleTimeFilter";
+import ViolationBreakdown, {
+  BreakdownMetric,
+} from "@/app/components/molecules/ViolationBreakdown/ViolationBreakdown";
+import ViolationsTrend from "@/app/components/molecules/ViolationsTrend/ViolationsTrend";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
+import { getOneHourBefore } from "@/utils/getOneHrBefore";
+
 const IntrusionDetection: React.FC = () => {
-  const { t } = useTranslation();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const tenantId: string = user?.org_id ?? "";
-
-  /* ---------- STATE ---------- */
-  const [intrusionFilters, setIntrusionFilters] =
-    useState<IntrusionFilterParams>({});
-  const [page, setPage] = useState(0);
-  const [limit, setLimit] = useState(10);
-
-  const [isIntrusionLiveMode, setIsIntrusionLiveMode] = useState(true);
-
-  const [displayIntrusionKpi, setDisplayIntrusionKpi] = useState<
-    IntrusionKpiItem[]
-  >([]);
-  const [displayIntrusionZoneViolations, setDisplayIntrusionZoneViolations] =
-    useState<IntrusionZoneViolation[]>([]);
-  const [recentIntrusionViolationsLive, setRecentIntrusionViolationsLive] =
-    useState<IntrusionViolation[]>([]);
-  const [detailedIntrusionReport, setDetailedIntrusionReport] =
-    useState<IntrusionDetailedReportResponse | null>(null);
+  interface IntrusionViolation {
+    incident: string;
+    zone: string;
+    time: string;
+    imageUrl: string;
+    cameraId: string;
+    alarmTriggered: boolean;
+    id: number;
+    [key: string]: string | number | boolean;
+  }
 
   const [viewPopupOpen, setViewPopupOpen] = useState(false);
-
   const [viewPopupData, setViewPopupData] = useState<IntrusionViolation | null>(
     null,
   );
-  const [isExporting, setIsExporting] = useState(false);//report loader
-    const [downloadingRows, setDownloadingRows] = useState<Set<number>>(new Set());//single report loader of report table
-  
-
-  /*-------intrusion api ----------*/
-
-  const { data: orgShifts } = useGetOrgShiftTimeIntrusionDataQuery(
-    { tenantId },
-    { skip: !tenantId },
-  );
-  const [fetchIntrusionKpi, { isFetching: intrusionkpiLoading }] =
-    useLazyGetIntrusionKpiQuery();
-
-  const [fetchIntrusionRecent, { isLoading: intrusionrecentLoading }] =
-    useLazyGetIntrusionRecentViolationsQuery();
-  const [fetchIntrusionZoneViolations, { isLoading: intrusionzoneLoading }] =
-    useLazyGetIntrusionZoneViolationsQuery();
-
-  const [
-    fetchDetailedIntrusionReportApi,
-    { isFetching: intrusionreportLoading },
-  ] = useLazyGetIntrusionDetailedReportQuery();
-  const [downloadIntrusionSinglePdf] =
-    useGetIntrusionDetectionSingleReportPdfMutation();
-
-  const [downloadIntrusionCsvReport] =
-    useGetIntrusionDetectionDetailedCsvReportMutation();
-  const [downloadIntrusionPdfReport] =
-    useGetIntrusionDetectionDetailedPdfReportMutation();
-
-  /* ---------- INITIAL LOAD ---------- */
-  useEffect(() => {
-    if (!tenantId) return;
-
-    const loadInitial = async () => {
-      const [kpi, zones, recent] = await Promise.all([
-        fetchIntrusionKpi({ tenantId }).unwrap(),
-        fetchIntrusionZoneViolations({ tenantId }).unwrap(),
-        fetchIntrusionRecent({ tenantId }).unwrap(),
-      ]);
-
-      setDisplayIntrusionKpi(kpi ?? []);
-      setDisplayIntrusionZoneViolations(zones ?? []);
-      setRecentIntrusionViolationsLive(recent ?? []);
-    };
-
-    loadInitial().catch(console.error);
-  }, [
-    tenantId,
-    fetchIntrusionKpi,
-    fetchIntrusionZoneViolations,
-    fetchIntrusionRecent,
-  ]);
-
-  useEffect(() => {
-    if (!tenantId) return;
-
-    const loadDetailedReport = async () => {
-      const alarmValue =
-        intrusionFilters?.alarmTriggered === undefined
-          ? undefined
-          : intrusionFilters.alarmTriggered === "True";
-
-      const body = {
-        tenantId,
-        page: page + 1,
-        limit,
-        zone: intrusionFilters?.zone || undefined,
-        cameraId: intrusionFilters?.cameraId || undefined,
-        alarmTriggered: alarmValue,
-        startDate: formatLocalDateTime(intrusionFilters?.startDate),
-        endDate: formatLocalDateTime(intrusionFilters?.endDate),
-      };
-
-      const detailed = await fetchDetailedIntrusionReportApi(body).unwrap();
-      setDetailedIntrusionReport(detailed);
-    };
-
-    loadDetailedReport().catch(console.error);
-  }, [
-    tenantId,
-    page,
-    limit,
-    intrusionFilters,
-    fetchDetailedIntrusionReportApi,
-  ]);
-  /* ---------- SOCKET (LIVE ONLY) ---------- */
-  useSocketEvent<IntrusionSocketPayload>({
-    tenantId,
-    enabled: isIntrusionLiveMode,
-    event: SOCKET_EVENTS.INTRUSION_UPDATE,
-    handler: (payload) => {
-      console.log("payload form the socket", payload);
-      setDisplayIntrusionKpi(payload.kpi ?? []);
-      setDisplayIntrusionZoneViolations(payload.zoneViolations ?? []);
-      setRecentIntrusionViolationsLive(payload.recentViolations ?? []);
+  const intrusionKpiData = [
+    {
+      title: "Intrusion Detected",
+      value: "4",
+      icon: Security,
+      tooltipMessage: "Shows the total number of intrusions detected so far.",
     },
+    {
+      title: "Security Level (Safe/Unsafe)",
+      value: "Unsafe",
+      tooltipMessage:
+        "Displays whether the security status is safe or unsafe at the moment.",
+
+      icon: Shield,
+    },
+    {
+      title: "Recent Intrusion Time",
+      value: getOneHourBefore().time,
+      icon: AccessTime,
+
+      tooltipMessage:
+        "Shows the time when the most recent intrusion was detected.",
+    },
+    {
+      title: "Zone Breaches",
+      value: "4 (Zone A, Zone B,Zone C, Zone D)",
+      icon: LocationOn,
+      tooltipMessage:
+        "Displays the number of zones breached and lists those zones.",
+    },
+  ];
+  const backendIntrusionData = [
+    {
+      id: 201,
+      snapshot: "/img/intrusion-detection-perimeter/i2.jpg",
+      zone: "Zone A",
+      camera: "CAM-11",
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 18:06",
+    },
+    {
+      id: 202,
+      snapshot: "/img/intrusion-detection-perimeter/i3.jpg",
+      zone: "Zone B",
+      camera: "CAM-12",
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 18:16",
+    },
+    {
+      id: 203,
+      snapshot: "/img/intrusion-detection-perimeter/i4.jpg",
+      zone: "Zone C",
+      camera: "CAM-11",
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 18:06",
+    },
+    {
+      id: 204,
+      snapshot: "/img/intrusion-detection-perimeter/i5.jpg",
+      zone: "Zone D",
+      camera: "CAM-12",
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 18:16",
+    },
+  ];
+
+  const recentIntrusionViolations = backendIntrusionData.map((item) => {
+    let incidentMsg = "";
+
+    if (item.alarmTriggered) {
+      incidentMsg = "Intrusion detected";
+    } else {
+      incidentMsg = "No violation";
+    }
+
+    return {
+      incident: incidentMsg,
+      zone: item.zone,
+      time: item.createdAt,
+      imageUrl: item.snapshot,
+      cameraId: item.camera,
+      alarmTriggered: item.alarmTriggered,
+      id: item.id,
+    };
   });
 
-  const handleTimeRangeChange = useCallback(
-    async (range: { start?: string; end?: string }) => {
-      if (!range.start && !range.end) {
-        setIsIntrusionLiveMode(true);
-
-        // ✅ CALL ALL APIs + SET STATE
-        const [kpi, zones, recent] = await Promise.all([
-          fetchIntrusionKpi({ tenantId }).unwrap(),
-          fetchIntrusionZoneViolations({ tenantId }).unwrap(),
-          fetchIntrusionRecent({ tenantId }).unwrap(),
-        ]);
-
-        setDisplayIntrusionKpi(kpi ?? []);
-        setDisplayIntrusionZoneViolations(zones ?? []);
-        setRecentIntrusionViolationsLive(recent ?? []);
-
-        return;
-      }
-
-      // NON-LIVE
-      setIsIntrusionLiveMode(false);
-
-      const payload = {
-        tenantId,
-        startDate: range.start,
-        endDate: range.end,
-      };
-
-      const [kpi, zones, recent] = await Promise.all([
-        fetchIntrusionKpi(payload).unwrap(),
-        fetchIntrusionZoneViolations(payload).unwrap(),
-        fetchIntrusionRecent(payload).unwrap(),
-      ]);
-
-      setDisplayIntrusionKpi(kpi ?? []);
-      setDisplayIntrusionZoneViolations(zones ?? []);
-      setRecentIntrusionViolationsLive(recent ?? []);
+  const zoneViolationsData = [
+    {
+      zone: "Zone A",
+      incident: 1,
     },
-    [
-      tenantId,
-      fetchIntrusionKpi,
-      fetchIntrusionZoneViolations,
-      fetchIntrusionRecent,
-    ],
-  );
-  const IntrusionKpiData = useMemo(
-    () =>
-      displayIntrusionKpi.map((item) => {
-        const config = intrusionKpiConfig[item.title];
-
-        return {
-          ...item,
-          title: t(item.title),
-          icon: config?.icon || EngineeringIcon,
-          tooltipMessage: config?.tooltipMessage || "",
-        };
-      }),
-    [displayIntrusionKpi, t],
-  );
-  const intrusionZoneViolationsForUi = useMemo(() => {
-    return displayIntrusionZoneViolations.map((z) => ({
-      zone: z.zone,
-      incident: z.incident,
-    }));
-  }, [displayIntrusionZoneViolations]);
-
-  // download report
-  const handleDownloadIntrusionViolation = async (
-    url: string,
-    violation: Violation,
-  ) => {
-    if (!violation) return;
-    const IntrusionViolation = violation as IntrusionViolation;
-    try {
-      const payload = {
-        tenantId: tenantId,
-        violation: String(
-          IntrusionViolation.incident ?? IntrusionViolation.violation,
-        ),
-        zone: IntrusionViolation.zone,
-        time: IntrusionViolation.time,
-        cameraId: IntrusionViolation.camera ?? IntrusionViolation.cameraId,
-        alarmTriggered: IntrusionViolation.alarmTriggered,
-        imageUrl: url,
-      };
-
-      await downloadIntrusionSinglePdf(payload);
-    } catch (err) {
-      console.error("PDF download failed", err);
-    }
+    {
+      zone: "Zone B",
+      incident: 1,
+    },
+    {
+      zone: "Zone C",
+      incident: 1,
+    },
+    {
+      zone: "Zone D",
+      incident: 1,
+    },
+  ];
+  const handleViewSingle = (row: Record<string, string | number | boolean>) => {
+    console.log("view single row", row);
+    setViewPopupData(row as IntrusionViolation);
+    setViewPopupOpen(true);
   };
 
-  //detailed report handlers
+  // Location/time metrics get the "info" tint; violation counts get red — matches PPE.
+  const breakdownMetrics: BreakdownMetric[] = intrusionKpiData.map((kpi) => ({
+    icon: kpi.icon,
+    value: kpi.value,
+    label: kpi.title,
+    tone: /zone|time|incidence/i.test(kpi.title) ? "info" : "red",
+  }));
 
-  const tableColumns = [
-    { id: "violation", label: t("Incident") },
-    { id: "time", label: t("Time") },
-    { id: "zone", label: t("Zone") },
-    { id: "cameraId", label: t("Cameras") },
-
-    { id: "alarmTriggered", label: t("Alarm Triggered") },
-  ];
-
-  const tableFilters = [
-    {
-      id: "zone",
-      label: t("Zone"),
-      type: "select" as const,
-
-      options: detailedIntrusionReport?.zones || [],
-    },
-    {
-      id: "cameraId",
-      label: t("Cameras"),
-      type: "select" as const,
-
-      options: detailedIntrusionReport?.cameras || [],
-    },
-    {
-      id: "alarmTriggered",
-      label: t("Alarm Triggered"),
-      type: "select" as const,
-      options: ["True", "False"],
-    },
-    { id: "startDate", label: t("Start Date"), type: "date" as const },
-    { id: "endDate", label: t("End Date"), type: "date" as const },
-  ];
-
-  // ✅ Just update state — let the useEffect do the fetching
-  const handleSubmitFilter = useCallback((filters: IntrusionFilterParams) => {
-    setIntrusionFilters(filters);
-    setPage(0); // this + intrusionFilters change will trigger the useEffect once
-  }, []);
-
-  const handleReset = useCallback(() => {
-    setIntrusionFilters({});
-    setPage(0);
-  }, []);
-
-  const handleExport = useCallback(
-    async (format: "csv" | "pdf", filters: IntrusionFilterParams) => {
-      try {
-        setIsExporting(true)
-        const payload = {
-          tenantId,
-          zone: filters.zone || undefined,
-          cameraId: filters.cameraId || undefined,
-
-          alarmTriggered:
-            filters.alarmTriggered === undefined
-              ? undefined
-              : filters.alarmTriggered === "True",
-
-          startDate: formatLocalDateTime(filters.startDate),
-          endDate: formatLocalDateTime(filters.endDate),
-        };
-
-        // ================= CSV =================
-        if (format === "csv") {
-          await downloadIntrusionCsvReport(payload);
-        }
-
-        // ================= PDF =================
-        if (format === "pdf") {
-          await downloadIntrusionPdfReport(payload).unwrap();
-        }
-      } catch (error) {
-        console.error("❌ Export failed:", error);
-      }finally{
-          setIsExporting(false)
-      }
-    },
-    [
-      tenantId,
-      downloadIntrusionCsvReport,
-      downloadIntrusionPdfReport,
-      formatLocalDateTime,
-    ],
-  );
-
-  const handleDownloadSingle = useCallback(
-    async (row: IntrusionViolation,index:number) => {
-      try {
-        setDownloadingRows((prev) => {
-      const newSet = new Set(prev);
-      newSet.add(index);
-      return newSet;
+  // TODO: replace with a real 7-day trend endpoint once one exists on this page's API.
+  // Placeholder mirrors the approved mockup (src/app/.html) until that's wired up.
+  const violationsTrendData = (() => {
+    const values = [3, 4, 2, 5, 4, 3, 5];
+    const now = new Date();
+    return values.map((value, idx) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (values.length - 1 - idx));
+      return {
+        date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        value,
+      };
     });
-        const payload = {
-          tenantId,
-          violation: String(row.incident ?? row.violation),
-          zone: row.zone,
-          time: row.time,
-          cameraId: row.camera ?? row.cameraId,
-          alarmTriggered: row.alarmTriggered,
-          imageUrl: row.imageUrl,
-        };
-
-        await downloadIntrusionSinglePdf(payload);
-      } catch (error) {
-        console.error("❌ Single PDF download failed", error);
-      }finally {
-       setDownloadingRows((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(index);
-      return newSet;
-    });
-      }
-    },
-    [tenantId, downloadIntrusionSinglePdf],
-  );
-
-  const handleViewSingle = useCallback(
-    (row: IntrusionViolation) => {
-      console.log("view single row", row);
-      setViewPopupData(row);
-      setViewPopupOpen(true);
-    },
-    [], // setState functions are stable
-  );
+  })();
 
   return (
     <Box>
-      <Paper sx={{ p: 3, backgroundColor: "#fff", borderRadius: 2 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-          <Typography variant="h6">📊 {t("Overview")}</Typography>
-          <TimeFilter
-            onRangeChange={handleTimeRangeChange}
-            shifts={orgShifts || []}
-          />
+      <Paper
+        sx={{
+          p: 3,
+          mb: 4,
+          backgroundColor: "#ffffff",
+          borderRadius: 2,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 2,
+            flexWrap: "wrap",
+            mb: "20px",
+          }}
+        >
+          <Box
+            sx={{
+              flex: "1 1 480px",
+              minWidth: 0,
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              minHeight: { xs: "auto", md: "220px" },
+              border: `1px solid ${DASHBOARD_COLORS.border}`,
+              borderRadius: "12px",
+              boxShadow: "0 1px 2px rgba(0,0,0,.08), 0 1px 3px 1px rgba(0,0,0,.06)",
+              overflow: "hidden",
+            }}
+          >
+            <Box sx={{ flex: "1 1 0", minWidth: 0, p: "24px" }}>
+              <ViolationBreakdown metrics={breakdownMetrics} />
+            </Box>
+            <Box
+              sx={{
+                flex: "1.3 1 0",
+                minWidth: 0,
+                p: "24px",
+                borderLeft: { xs: "none", md: `1px solid ${DASHBOARD_COLORS.border}` },
+                borderTop: { xs: `1px solid ${DASHBOARD_COLORS.border}`, md: "none" },
+              }}
+            >
+              <ViolationsTrend data={violationsTrendData} trendPercentage={18} />
+            </Box>
+          </Box>
+
+          <Box sx={{ flexShrink: 0 }}>
+            <CollapsibleTimeFilter
+              onRangeChange={function (range: {
+                start: string;
+                end: string;
+              }): void {
+                throw new Error("Function not implemented.");
+              }}
+            />
+          </Box>
         </Box>
 
-        <Grid container spacing={2.5} sx={{ mb: 4 }}>
-          {intrusionkpiLoading || !IntrusionKpiData.length
-            ? Array.from({ length: 6 }).map((_, index) => (
-                <Grid
-                  key={index + 1}
-                  size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-                >
-                  <KpiCardSkeleton />
-                </Grid>
-              ))
-            : IntrusionKpiData.map((kpi) => (
-                <Grid
-                  key={kpi.title}
-                  size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-                >
-                  <KpiCard {...kpi} />
-                </Grid>
-              ))}
-        </Grid>
-
+        {/* Content Grid */}
         <Grid container spacing={3}>
+          {/* Active Intrusion Alerts */}
           <Grid size={{ xs: 12, lg: 8 }}>
             <RecentViolations
-              label={t("Recent Incident")}
-              violations={recentIntrusionViolationsLive}
-              loading={intrusionrecentLoading}
-              onDownload={handleDownloadIntrusionViolation}
+              label="Recent Incident"
+              violations={recentIntrusionViolations}
+              loading={false}
               tooltipMessage="Latest 20 intrusion detected with details."
             />
           </Grid>
+          {/* Security Zones Status */}
 
           <Grid size={{ xs: 12, lg: 4 }}>
             <ZoneViolations
-              label={t("Zone Incident")}
-              violationsZone={intrusionZoneViolationsForUi}
-              loading={intrusionzoneLoading}
+              label="Zone Incident"
+              violationsZone={zoneViolationsData}
+              loading={false}
               tooltipMessage="Shows intrusion detected per zone"
             />
           </Grid>
         </Grid>
       </Paper>
 
+      {/* Security Intrusion Report */}
       <ReportTable
-        title={t("Detailed Report")}
+        title="Detailed Report"
+        columns={[
+          { id: "incident", label: "Incident", minWidth: 200 },
+          { id: "time", label: "Time", minWidth: 150 },
+          { id: "zone", label: "Zone", minWidth: 150 },
+          { id: "cameraId", label: "Cameras", minWidth: 120 },
+          { id: "alarmTriggered", label: "Alarm Triggered", minWidth: 140 },
+        ]}
+        data={recentIntrusionViolations}
+        filters={[
+          {
+            id: "zone",
+            label: "Zone",
+            type: "select",
+            options: Array.from(
+              new Set(recentIntrusionViolations.map((item) => item.zone)),
+            ),
+          },
+          {
+            id: "cameraId",
+            label: "Cameras",
+            type: "select",
+            options: Array.from(
+              new Set(recentIntrusionViolations.map((v) => v.cameraId)),
+            ),
+          },
+          {
+            id: "alarmTriggered",
+            label: "Alarm Triggered",
+            type: "select",
+            options: ["True", "False"],
+          },
+          { id: "time", label: "Start Date", type: "date" },
+          { id: "time", label: "End Date", type: "date" },
+        ]}
+        downloadFileName="intrusion-detection-report"
+        loading={false}
+        onView={handleViewSingle}
         tooltipMessage="Detailed violations report with filter, reset, and CSV/PDF download options."
-        data={detailedIntrusionReport?.data || []}
-        columns={tableColumns}
-        filters={tableFilters}
-        onSubmit={handleSubmitFilter}
-        onReset={handleReset}
-        onExport={handleExport}
-                exportLoading={isExporting}
-
-        onDownload={(row,index) => handleDownloadSingle(row as IntrusionViolation,index)}
-        downloadingRows={downloadingRows}
-        onView={(row) => handleViewSingle(row as IntrusionViolation)}
-        downloadFileName="intrusion-violations-report"
-        loading={intrusionreportLoading}
-        totalCount={detailedIntrusionReport?.total || 0}
-        page={page}
-        rowsPerPage={limit}
-        onPageChange={(newPage) => setPage(newPage)}
-        onRowsPerPageChange={(rows) => {
-          setLimit(rows);
-          setPage(0);
-        }}
+        totalCount={0}
+        page={0}
+        rowsPerPage={0}
       />
-
-      <ViewAlertPopup
-        open={viewPopupOpen}
-        handleClose={() => setViewPopupOpen(false)}
-        details={viewPopupData}
-        imageKey="imageUrl"
-        onDownload={(url) => {
-          if (!viewPopupData) return;
-          handleDownloadIntrusionViolation(url, viewPopupData);
-        }}
-      />
+      {viewPopupData && (
+        <ViewAlertPopup
+          open={viewPopupOpen}
+          handleClose={() => setViewPopupOpen(false)}
+          details={viewPopupData}
+          imageKey="imageUrl"
+          onDownload={(url) => console.log("Download:", url)}
+        />
+      )}
     </Box>
   );
 };

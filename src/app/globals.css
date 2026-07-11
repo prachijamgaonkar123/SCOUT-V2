@@ -1,4 +1,63 @@
 
+/* Dashboard color tokens — consumed via var() by DASHBOARD_COLORS
+   (src/app/config/dashboardTheme.ts) so every dashboard-family component
+   picks up dark mode automatically without per-component edits. */
+:root {
+  --sd-primary: #1E3A8A;
+  --sd-primary-dark: #152C6B;
+  --sd-primary-tint: #EEF2FB;
+  --sd-secondary: #2563EB;
+  --sd-secondary-dark: #1D4ED8;
+  --sd-accent: #0EA5E9;
+  --sd-accent-tint: #E6F6FD;
+  --sd-success: #16A34A;
+  --sd-success-tint: #EAF9EF;
+  --sd-warning: #F59E0B;
+  --sd-warning-tint: #FEF6E7;
+  --sd-warning-text: #B45309;
+  --sd-error: #DC2626;
+  --sd-error-tint: #FDECEC;
+  --sd-workforce: #8B5CF6;
+  --sd-workforce-tint: #F3EFFE;
+  --sd-bg: #F5F7FA;
+  --sd-card: #FFFFFF;
+  --sd-border: #E5E7EB;
+  --sd-text-primary: #111827;
+  --sd-text-secondary: #6B7280;
+  --sd-hover: #F3F4F6;
+  --sd-gray: #F1F2F4;
+  --sd-gray-text: #6B7280;
+}
+
+[data-theme='dark'] {
+  --sd-primary: #3B82F6;
+  --sd-primary-dark: #2563EB;
+  --sd-primary-tint: #1E293B;
+  --sd-secondary: #60A5FA;
+  --sd-secondary-dark: #3B82F6;
+  --sd-accent: #38BDF8;
+  --sd-accent-tint: #16324A;
+  --sd-success: #4ADE80;
+  --sd-success-tint: #163A24;
+  --sd-warning: #FBBF24;
+  --sd-warning-tint: #3D2E0E;
+  --sd-warning-text: #FBBF24;
+  --sd-error: #F87171;
+  --sd-error-tint: #3D1A1A;
+  --sd-workforce: #A78BFA;
+  --sd-workforce-tint: #2C2350;
+  /* navy family matched to the sidebar's own dark background (#1A2333)
+     so the sidebar and the rest of the app read as one continuous theme */
+  --sd-bg: #1A2333;
+  --sd-card: #212B40;
+  --sd-border: rgba(255, 255, 255, 0.08);
+  --sd-text-primary: #E5E9F0;
+  --sd-text-secondary: #9AA4B8;
+  --sd-hover: rgba(255, 255, 255, 0.06);
+  --sd-gray: #262F45;
+  --sd-gray-text: #9AA4B8;
+}
+
 /* Global styles */
 html,
 body {

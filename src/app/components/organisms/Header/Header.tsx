@@ -22,6 +22,8 @@ import {
   ExitToApp,
   InfoOutlined,
   Menu as MenuIcon,
+  DarkMode,
+  LightMode,
 } from "@mui/icons-material";
 import { useAuth } from "../../../../customhooks/useAuth";
 import Sidebar from "../Sidebar/Sidebar";
@@ -30,15 +32,16 @@ import {
   analyticsMenu,
   dashboardMenu,
   LinkMenuItem,
- 
+
   MenuItemConfig,
   settingsMenu,
 } from "@/app/config/menuConfig";
 import { PageType } from "@/app/types";
 import { usePathname } from "next/navigation";
 import { useGetOrgAndUserLogoQuery } from "@/app/(protectedRoutes)/(settings)/(userManagement)/addUser/AddUserApi";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/app/store/store";
+import { toggleThemeMode } from "@/app/store/slices/themeSlice";
 import {
   HEADER_HEIGHT,
   SIDEBAR_WIDTH,
@@ -54,6 +57,8 @@ const SystemHealthTooltipContent: React.FC<{
   systemHealth: SystemHealthData;
 }> = ({ systemHealth }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
 
   return (
     <Paper
@@ -61,8 +66,8 @@ const SystemHealthTooltipContent: React.FC<{
       sx={{
         minWidth: 260,
         maxWidth: 300,
-        backgroundColor: "#ffffff",
-        border: "1px solid #e0e0e0",
+        backgroundColor: theme.palette.background.paper,
+        border: `1px solid ${isDark ? "rgba(255,255,255,.08)" : "#e0e0e0"}`,
         borderRadius: "8px",
         overflow: "hidden",
       }}
@@ -78,10 +83,10 @@ const SystemHealthTooltipContent: React.FC<{
             width: "4px",
           },
           "&::-webkit-scrollbar-track": {
-            background: "#f5f5f5",
+            background: isDark ? "#212B40" : "#f5f5f5",
           },
           "&::-webkit-scrollbar-thumb": {
-            background: "#c0c0c0",
+            background: isDark ? "rgba(255,255,255,.15)" : "#c0c0c0",
             borderRadius: "2px",
           },
         }}
@@ -91,7 +96,7 @@ const SystemHealthTooltipContent: React.FC<{
             key={uuidv4() + idx}
             variant="body2"
             sx={{
-              color: "#374151",
+              color: theme.palette.text.primary,
               fontSize: "13px",
               lineHeight: 1.5,
               mb: 1,
@@ -106,14 +111,14 @@ const SystemHealthTooltipContent: React.FC<{
         sx={{
           px: 2.5,
           py: 1.5,
-          backgroundColor: "#f8f9fa",
-          borderTop: "1px solid #e9ecef",
+          backgroundColor: isDark ? "#1A2333" : "#f8f9fa",
+          borderTop: `1px solid ${isDark ? "rgba(255,255,255,.08)" : "#e9ecef"}`,
         }}
       >
         <Typography
           variant="caption"
           sx={{
-            color: "#6b7280",
+            color: theme.palette.text.secondary,
             fontSize: "11px",
             display: "flex",
             alignItems: "center",
@@ -136,6 +141,8 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ collapsed = false }) => {
   const theme = useTheme();
+  const dispatch = useDispatch();
+  const themeMode = useSelector((state: RootState) => state.theme.mode);
   const sidebarWidth = collapsed ? SIDEBAR_WIDTH_RAIL : SIDEBAR_WIDTH;
   const { isLoading, logout } = useAuth();
   const { user } = useSelector((state: RootState) => state.auth);
@@ -318,12 +325,15 @@ const getPageTitle = () => {
         sx={{
           zIndex: theme.zIndex.drawer + 1,
           height: HEADER_HEIGHT,
-          backgroundColor: "white",
-          color: "#1c2025",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          backgroundColor: theme.palette.background.paper,
+          color: theme.palette.text.primary,
+          boxShadow:
+            theme.palette.mode === "dark"
+              ? "0 1px 3px rgba(0,0,0,0.4)"
+              : "0 1px 3px rgba(0,0,0,0.1)",
           left: { xs: 0, lg: `${sidebarWidth}px` },
           width: { xs: "100%", lg: `calc(100% - ${sidebarWidth}px)` },
-          transition: "left .2s ease, width .2s ease",
+          transition: "left .2s ease, width .2s ease, background-color .2s ease, color .2s ease",
           "@media (prefers-reduced-motion: reduce)": { transition: "none" },
         }}
       >
@@ -342,7 +352,7 @@ const getPageTitle = () => {
             <Typography
               variant="h6"
               sx={{
-                color: "#1c2025",
+                color: theme.palette.text.primary,
                 fontSize: "16px",
                 pl: 1.2,
               }}
@@ -356,11 +366,25 @@ const getPageTitle = () => {
             {currentDateTime && (
               <Typography
                 variant="body2"
-                sx={{ color: "#5c6b7d", fontSize: "12px" }}
+                sx={{ color: theme.palette.text.secondary, fontSize: "12px" }}
               >
                 {currentDateTime}
               </Typography>
             )}
+
+            {/* Theme toggle */}
+            <IconButton
+              onClick={() => dispatch(toggleThemeMode())}
+              size="small"
+              aria-label={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              sx={{ color: theme.palette.text.secondary }}
+            >
+              {themeMode === "dark" ? (
+                <LightMode sx={{ fontSize: 20 }} />
+              ) : (
+                <DarkMode sx={{ fontSize: 20 }} />
+              )}
+            </IconButton>
 
             {/* System Health Section with hover */}
             <Box
@@ -385,7 +409,7 @@ const getPageTitle = () => {
               />
               <Typography
                 variant="body2"
-                sx={{ color: "#5c6b7d", fontSize: "12px", fontWeight: 500 }}
+                sx={{ color: theme.palette.text.secondary, fontSize: "12px", fontWeight: 500 }}
               >
                 System Health
               </Typography>
@@ -453,12 +477,16 @@ const getPageTitle = () => {
                 >
                   {/* User Info at top */}
                   <Box
-                    sx={{ px: 2, py: 1.5, borderBottom: "1px solid #e0e0e0" }}
+                    sx={{
+                      px: 2,
+                      py: 1.5,
+                      borderBottom: `1px solid ${theme.palette.mode === "dark" ? "rgba(255,255,255,.08)" : "#e0e0e0"}`,
+                    }}
                   >
                     {user.userName && (
                       <Typography
                         variant="body1"
-                        sx={{ fontWeight: 600, color: "#1c2025" }}
+                        sx={{ fontWeight: 600, color: theme.palette.text.primary }}
                       >
                         {user.userName}
                       </Typography>
@@ -466,7 +494,7 @@ const getPageTitle = () => {
                     {user.role && (
                       <Typography
                         variant="body2"
-                        sx={{ color: "#6b7280", fontWeight: 400 }}
+                        sx={{ color: theme.palette.text.secondary, fontWeight: 400 }}
                       >
                         Role: {user.role.toLowerCase().replaceAll(/[-_]/g, " ")}
 

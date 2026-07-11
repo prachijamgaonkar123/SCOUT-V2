@@ -2,188 +2,251 @@
 import React, { useState } from "react";
 import ReportTable from "@/app/components/organisms/ReportTable/ReportTable";
 import { Box, Grid, Paper } from "@mui/material";
+import { Groups, LocationOn, AccessTime } from "@mui/icons-material";
 import RecentViolations from "@/app/components/molecules/RecentViolations/RecentViolations";
-import {
-  CheckCircle,
-  Schedule,
-  ReportProblem,
-  Whatshot,
-} from "@mui/icons-material";
 import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
 import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolation";
 import CollapsibleTimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/CollapsibleTimeFilter";
+import PeopleIcon from "@mui/icons-material/People";
 import ViolationBreakdown, {
   BreakdownMetric,
 } from "@/app/components/molecules/ViolationBreakdown/ViolationBreakdown";
 import ViolationsTrend from "@/app/components/molecules/ViolationsTrend/ViolationsTrend";
 import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 import { getOneHourBefore } from "@/utils/getOneHrBefore";
-
-const FallDetection: React.FC = () => {
-  interface RecentViolationData {
-    voilation: string;
+const PeoplePresence: React.FC = () => {
+  interface PeoplePresenceViolation {
+    incident: string;
     zone: string;
     time: string;
     imageUrl: string;
     cameraId: string;
+    peopleCount: number;
     alarmTriggered: boolean;
     [key: string]: string | number | boolean;
   }
 
   const [viewPopupOpen, setViewPopupOpen] = useState(false);
   const [viewPopupData, setViewPopupData] =
-    useState<RecentViolationData | null>(null);
+    useState<PeoplePresenceViolation | null>(null);
 
-  const fallKpiData = [
+  const PeoplePresenceKpiData = [
     {
-      title: "Total Fall Incidents",
-      value: "9",
-      icon: ReportProblem,
+      title: "Total Movement Events",
+      value: "8",
+      icon: Groups,
       tooltipMessage:
-        "Total number of fall, laydown, or sleeping incidents detected across all monitored zones.",
-    },
-
-    {
-      title: "Incident-Free Zones",
-      value: "2 / 5",
-      icon: CheckCircle,
-      tooltipMessage:
-        "Number of zones without any fall or laydown incidents out of the total monitored zones.",
+        "Shows the total number of movement events detected in monitored zones.",
     },
     {
-      title: "Last Detection Time",
+      title: "Detected Zones",
+      value: "Zone A, Zone B,Zone C",
+      icon: LocationOn,
+      tooltipMessage: "Lists the zones where movement is currently detected.",
+    },
+    {
+      title: "Last Incidence",
       value: getOneHourBefore().time,
-      icon: Schedule,
+      icon: AccessTime,
       tooltipMessage:
-        "The time when the most recent fall, laydown, or sleeping incident was detected.",
+        "Shows the time when the most recent movement event was detected.",
+    },
+  ];
+  const backendPeoplePresenceData = [
+    {
+      id: 801,
+      snapshot: "/img/movement-shutdown-hours/m1.jpg",
+      zone: "Zone A",
+      camera: "CAM-31",
+      count: 1,
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 21:06",
     },
     {
-      title: "Most Incident-Prone Zone",
-      value: "Zone B",
-      icon: Whatshot,
-      tooltipMessage:
-        "The zone with the highest number of fall, laydown, or sleeping incidents recorded.",
-      trendColor: "#f44336",
-      color: "#f44336",
-      bgColor: "#ffebee",
-      borderColor: "#f44336",
-      iconBg: "rgba(244, 67, 54, 0.1)",
+      id: 802,
+      snapshot: "/img/movement-shutdown-hours/m2.jpg",
+      zone: "Zone B",
+      camera: "CAM-32",
+      count: 1,
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 21:16",
+    },
+    {
+      id: 801,
+      snapshot: "/img/movement-shutdown-hours/u2.jpg",
+      zone: "Zone C",
+      camera: "CAM-31",
+      count: 1,
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 21:06",
+    },
+    {
+      id: 802,
+      snapshot: "/img/movement-shutdown-hours/u1.jpg",
+      zone: "Zone D",
+      camera: "CAM-32",
+      count: 1,
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 21:16",
+    },
+    {
+      id: 801,
+      snapshot: "/img/movement-shutdown-hours/m2.jpg",
+      zone: "Zone B",
+      camera: "CAM-31",
+      count: 1,
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 21:06",
+    },
+    {
+      id: 802,
+      snapshot: "/img/movement-shutdown-hours/u3.jpg",
+      zone: "Zone E",
+      camera: "CAM-32",
+      count: 1,
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 21:16",
+    },
+    {
+      id: 801,
+      snapshot: "/img/movement-shutdown-hours/m1.jpg",
+      zone: "Zone A",
+      camera: "CAM-31",
+      count: 1,
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 21:06",
+    },
+    {
+      id: 802,
+      snapshot: "https://picsum.photos/400/200?random=32",
+      zone: "Loading Dock",
+      camera: "CAM-32",
+      count: 7,
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 21:16",
+    },
+    {
+      id: 801,
+      snapshot: "https://picsum.photos/400/200?random=31",
+      zone: "Production Floor",
+      camera: "CAM-31",
+      count: 15,
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 21:06",
+    },
+    {
+      id: 802,
+      snapshot: "https://picsum.photos/400/200?random=32",
+      zone: "Loading Dock",
+      camera: "CAM-32",
+      count: 7,
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 21:16",
+    },
+    {
+      id: 801,
+      snapshot: "https://picsum.photos/400/200?random=31",
+      zone: "Production Floor",
+      camera: "CAM-31",
+      count: 15,
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 21:06",
+    },
+    {
+      id: 802,
+      snapshot: "https://picsum.photos/400/200?random=32",
+      zone: "Loading Dock",
+      camera: "CAM-32",
+      count: 7,
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 21:16",
+    },
+    {
+      id: 801,
+      snapshot: "https://picsum.photos/400/200?random=31",
+      zone: "Production Floor",
+      camera: "CAM-31",
+      count: 15,
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 21:06",
+    },
+    {
+      id: 802,
+      snapshot: "/img/movement-shutdown-hours/u1.jpg",
+      zone: "Zone D",
+      camera: "CAM-32",
+      count: 1,
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 21:16",
     },
   ];
 
-  const backendLaydownData = [
-    {
-      id: 401,
-      snapshot: "/img/fall.avif",
-      zone: "Production Floor A",
-      camera: "CAM-11",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:06",
-      alarmTriggered: true,
-    },
-    {
-      id: 402,
-      snapshot: "/img/fall2.webp",
-      zone: "Warehouse",
-      camera: "CAM-12",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:13",
-      alarmTriggered: false,
-    },
-    {
-      id: 403,
-      snapshot: "/img/fall3.webp",
-      zone: "Maintenance Area",
-      camera: "CAM-13",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:19",
-      alarmTriggered: true,
-    },
-    {
-      id: 404,
-      snapshot: "/img/fall.avif",
-      zone: "Production Floor A",
-      camera: "CAM-11",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:06",
-      alarmTriggered: true,
-    },
-    {
-      id: 405,
-      snapshot: "/img/fall.avif",
-      zone: "Warehouse",
-      camera: "CAM-12",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:13",
-      alarmTriggered: false,
-    },
-    {
-      id: 406,
-      snapshot: "/img/fall.avif",
-      zone: "Maintenance Area",
-      camera: "CAM-13",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:19",
-      alarmTriggered: true,
-    },
-    {
-      id: 403,
-      snapshot: "/img/fall3.webp",
-      zone: "Maintenance Area",
-      camera: "CAM-13",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:19",
-      alarmTriggered: true,
-    },
-    {
-      id: 404,
-      snapshot: "/img/fall.avif",
-      zone: "Production Floor A",
-      camera: "CAM-11",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:06",
-      alarmTriggered: true,
-    },
-    {
-      id: 405,
-      snapshot: "/img/fall2.webp",
-      zone: "Warehouse",
-      camera: "CAM-12",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:13",
-      alarmTriggered: false,
-    },
-  ];
+  const recentPeoplePresence = backendPeoplePresenceData.map((item) => {
+    const incidentMsg = `People detected: ${item.count}`;
 
-  // Map backend data to recentViolations format
-  const recentLaydownViolations = backendLaydownData.map((item) => {
     return {
-      voilation: "Fall / Laydown detected",
+      incident: incidentMsg,
       zone: item.zone,
       time: item.createdAt,
       imageUrl: item.snapshot,
       cameraId: item.camera,
+      peopleCount: item.count,
       alarmTriggered: item.alarmTriggered,
     };
   });
 
-  console.log("laydown recent voilation", recentLaydownViolations);
-
   const zoneViolationsData = [
     {
-      zone: "Production Floor A",
-      violations: 3,
+      zone: "Zone A",
+      peopleCount: 2,
+      icons: {
+        peopleCount: PeopleIcon,
+      },
     },
     {
-      zone: "Warehouse",
-      violations: 3,
+      zone: "Zone B",
+      peopleCount: 2,
+      icons: {
+        peopleCount: PeopleIcon,
+      },
     },
-
     {
-      zone: "Maintenance Area",
-      violations: 3,
+      zone: "Zone D",
+      peopleCount: 2,
+      icons: {
+        peopleCount: PeopleIcon,
+      },
+    },
+    {
+      zone: "Zone C",
+      peopleCount: 1,
+      icons: {
+        peopleCount: PeopleIcon,
+      },
+    },
+    {
+      zone: "Zone E",
+      peopleCount: 1,
+      icons: {
+        peopleCount: PeopleIcon,
+      },
     },
   ];
+
   interface FilterParams {
     status?: string;
     employeeName?: string;
@@ -201,15 +264,14 @@ const FallDetection: React.FC = () => {
   const handleExport = (format: "csv" | "pdf") => {
     console.log("Export requested clikcedd:", format);
   };
-
   const handleViewSingle = (row: Record<string, string | number | boolean>) => {
     console.log("view single row", row);
-    setViewPopupData(row as RecentViolationData);
+    setViewPopupData(row as PeoplePresenceViolation);
     setViewPopupOpen(true);
   };
 
   // Location/time metrics get the "info" tint; violation counts get red — matches PPE.
-  const breakdownMetrics: BreakdownMetric[] = fallKpiData.map((kpi) => ({
+  const breakdownMetrics: BreakdownMetric[] = PeoplePresenceKpiData.map((kpi) => ({
     icon: kpi.icon,
     value: kpi.value,
     label: kpi.title,
@@ -296,68 +358,70 @@ const FallDetection: React.FC = () => {
           {/* Recent  Violations */}
           <Grid size={{ xs: 12, lg: 8 }}>
             <RecentViolations
-              label="Recent Violations"
-              violations={recentLaydownViolations}
+              label="Recent Incident"
+              violations={recentPeoplePresence}
               loading={false}
-              tooltipMessage="Latest 20 detected laydown/sleeping/falldown violations with details."
+              tooltipMessage="Latest 20 people detection during shutdown hours with details."
             />
           </Grid>
-          {/* Compliance by Zone */}
+          {/*  Compliance by Zone */}
 
           <Grid size={{ xs: 12, lg: 4 }}>
             <ZoneViolations
+              label="Zone Incident"
               violationsZone={zoneViolationsData}
               loading={false}
-              tooltipMessage="Shows laydown/sleeping/falldown violations per zone"
+              tooltipMessage="Shows people presence during shutdown hours incidents per zone"
             />
           </Grid>
         </Grid>
       </Paper>
 
-      {/* Report */}
+      {/*  Violations Report */}
       <ReportTable
         title="Detailed Report"
-        tooltipMessage="Detailed violations report with filter, reset, and CSV/PDF download options."
         columns={[
-          { id: "voilation", label: "Violation", minWidth: 200 },
-          { id: "time", label: "Time", minWidth: 120 },
-          { id: "zone", label: "Zone", minWidth: 120 },
+          { id: "incident", label: "Incident", minWidth: 200 },
+          { id: "peopleCount", label: "People Count", minWidth: 120 },
+          { id: "time", label: "Time", minWidth: 150 },
+          { id: "zone", label: "Zone", minWidth: 150 },
           { id: "cameraId", label: "Cameras", minWidth: 120 },
-          { id: "alarmTriggered", label: "Alarm Triggered", minWidth: 120 },
+          { id: "alarmTriggered", label: "Alarm Triggered", minWidth: 140 },
         ]}
-        data={recentLaydownViolations}
+        data={recentPeoplePresence}
         filters={[
           {
             id: "zone",
             label: "Zone",
             type: "select",
             options: Array.from(
-              new Set(recentLaydownViolations.map((item) => item.zone)),
+              new Set(recentPeoplePresence.map((item) => item.zone)),
             ),
           },
           {
             id: "cameraId",
-            label: "Cameras",
+            label: "Camera",
             type: "select",
             options: Array.from(
-              new Set(recentLaydownViolations.map((item) => item.cameraId)),
+              new Set(recentPeoplePresence.map((item) => item.cameraId)),
             ),
           },
           {
             id: "alarmTriggered",
             label: "Alarm Triggered",
             type: "select",
-            options: ["true", "false"],
+            options: ["True", "False"],
           },
           { id: "time", label: "Start Date", type: "date" },
           { id: "time", label: "End Date", type: "date" },
         ]}
-        onView={handleViewSingle}
+        downloadFileName="people-presence-shutdown-report"
         onSubmit={handleSubmitFilter}
         onReset={handleReset}
         onExport={handleExport}
-        downloadFileName="ppe-violations-report"
         loading={false}
+        onView={handleViewSingle}
+        tooltipMessage="Detailed incidents report with filter, reset, and CSV/PDF download options."
         totalCount={0}
         page={0}
         rowsPerPage={0}
@@ -376,4 +440,4 @@ const FallDetection: React.FC = () => {
   );
 };
 
-export default FallDetection;
+export default PeoplePresence;

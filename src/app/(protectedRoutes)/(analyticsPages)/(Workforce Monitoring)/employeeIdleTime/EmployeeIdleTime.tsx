@@ -1,477 +1,350 @@
 "use client";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useState } from "react";
 import ReportTable from "@/app/components/organisms/ReportTable/ReportTable";
-import KpiCard from "@/app/components/molecules/KpiCard/KpiCard";
-import { Box, Grid, Paper, Typography } from "@mui/material";
+import { Box, Grid, Paper } from "@mui/material";
 import RecentViolations from "@/app/components/molecules/RecentViolations/RecentViolations";
-import KpiCardSkeleton from "@/app/components/molecules/KpiCardSkeleton/KpiCardSkeleton";
-
+import { AccessTime, Room } from "@mui/icons-material";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
-
-import TimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/TimeFilter";
-import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolationsOld";
+import PersonOffIcon from "@mui/icons-material/PersonOff";
+import CollapsibleTimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/CollapsibleTimeFilter";
+import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolation";
 import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
-import EngineeringIcon from "@mui/icons-material/Engineering";
-import { useTranslation } from "react-i18next";
-import { useSelector } from "react-redux";
-import { RootState } from "@/app/store/store";
-import WorkOffIcon from "@mui/icons-material/WorkOff";
-import {
-  EmployeeIdleTimeDetailedReportResponse,
-  EmployeeIdelTimeFilterParams,
-  EmployeeIdleKpiItem,
-  EmployeeIdleTimeSocketPayload,
-  EmployeeIdleTimeViolation,
-  EmployeeIdleZoneViolation,
-} from "./EmployeeIdelTime.types";
-import {
-  useGetEmployeeIdleTimeDetectionDetailedCsvReportMutation,
-  useGetEmployeeIdleTimeDetectionDetailedPdfReportMutation,
-  useGetEmployeeIdleTimeDetectionSingleReportPdfMutation,
-  useGetOrgShiftTimeEmpIdelDataQuery,
-  useLazyGetEmployeeIdleTimeDetectionDetailedReportQuery,
-  useLazyGetEmployeeIdleTimeDetectionKpiDataQuery,
-  useLazyGetEmployeeIdleTimeDetectionRecentViolationsQuery,
-  useLazyGetEmployeeIdleTimeDetectionZoneViolationsQuery,
-} from "./EmployeeIdelTimeApi";
-import { useSocketEvent } from "@/customhooks/useSocketEvent";
-import { SOCKET_EVENTS } from "@/sockets/socket.events";
-import { EmployeeIdelTimeKpiConfig } from "./EmployeeIdelTimeConfig";
-import { SvgIconComponent } from "@mui/icons-material";
-import { formatLocalDateTime } from "@/utils/formatLocalDateTime";
-import { Violation } from "@/app/components/molecules/ViolationCard/ViolationCard";
+import { getOneHourBefore } from "@/utils/getOneHrBefore";
+import ViolationBreakdown, {
+  BreakdownMetric,
+} from "@/app/components/molecules/ViolationBreakdown/ViolationBreakdown";
+import ViolationsTrend from "@/app/components/molecules/ViolationsTrend/ViolationsTrend";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
 const EmployeeIdleTime: React.FC = () => {
-  const { t } = useTranslation();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const tenantId: string = user?.org_id ?? "";
+  interface EmployeeIdleEvent {
+    incident: string;
+    zone: string;
+    time: string;
+    imageUrl: string;
+    cameraId: string;
 
-  /* ---------- STATE ---------- */
-  const [empIdelFilters, setEmpIdelFilters] =
-    useState<EmployeeIdelTimeFilterParams>({});
-
-  const [empIdelPage, setEmpIdelPage] = useState(0);
-  const [empIdelLimit, setEmpIdelLimit] = useState(10);
+    [key: string]: string | number | boolean;
+  }
 
   const [viewPopupOpen, setViewPopupOpen] = useState(false);
-  const [viewPopupData, setViewPopupData] =
-    useState<EmployeeIdleTimeViolation | null>(null);
-  const [isLiveMode, setIsLiveMode] = useState(true);
-
-  const [displayEmployeeIdelTimeKpi, setDisplayEmployeeIdelTimeKpi] = useState<
-    EmployeeIdleKpiItem[]
-  >([]);
-  const [
-    displayEmployeeIdelTimeZoneViolations,
-    setDisplayEmployeeIdelTimeZoneViolations,
-  ] = useState<EmployeeIdleZoneViolation[]>([]);
-  const [recentViolationsLive, setRecentViolationsLive] = useState<
-    EmployeeIdleTimeViolation[]
-  >([]);
-
-  const [employeeIdleTimeDetailedReport, setEmployeeIdleTimeDetailedReport] =
-    useState<EmployeeIdleTimeDetailedReportResponse | null>(null);
-  const [isExporting, setIsExporting] = useState(false);//report loader
-  const [downloadingRows, setDownloadingRows] = useState<Set<number>>(new Set());//single report loader of report table
-
-  /* ---------- API HOOKS ---------- */
-
-  const { data: orgShifts } = useGetOrgShiftTimeEmpIdelDataQuery(
-    { tenantId },
-    { skip: !tenantId },
+  const [viewPopupData, setViewPopupData] = useState<EmployeeIdleEvent | null>(
+    null,
   );
-  const [fetchEmployeeIdelTimeKpi, { isFetching: EmployeeIdelTimeKpiLoading }] =
-    useLazyGetEmployeeIdleTimeDetectionKpiDataQuery();
-  const [
-    fetchEmployeeIdelTimeZoneViolations,
-    { isLoading: EmployeeIdelTimeZoneLoading },
-  ] = useLazyGetEmployeeIdleTimeDetectionZoneViolationsQuery();
-  const [
-    fetchEmployeeIdelTimeRecent,
-    { isLoading: EmployeeIdelTimeRecentLoading },
-  ] = useLazyGetEmployeeIdleTimeDetectionRecentViolationsQuery();
-  const [
-    fetchEmployeeIdelTimeDetailedReportApi,
-    { isFetching: EmployeeIdelTimeDetailedReportLoading },
-  ] = useLazyGetEmployeeIdleTimeDetectionDetailedReportQuery();
-
-  const [downloadEmpIdelTimeSinglePdf] =
-    useGetEmployeeIdleTimeDetectionSingleReportPdfMutation();
-  const [downloadEmpIdelTimeCsvReport] =
-    useGetEmployeeIdleTimeDetectionDetailedCsvReportMutation();
-  const [downloadEmpIdelTimePdfReport] =
-    useGetEmployeeIdleTimeDetectionDetailedPdfReportMutation();
-
-  /* ---------- INITIAL LOAD ---------- */
-
-  useEffect(() => {
-    if (!tenantId) return;
-
-    const loadInitial = async () => {
-      const [kpi, zones, recent] = await Promise.all([
-        fetchEmployeeIdelTimeKpi({ tenantId }).unwrap(),
-        fetchEmployeeIdelTimeZoneViolations({ tenantId }).unwrap(),
-        fetchEmployeeIdelTimeRecent({ tenantId }).unwrap(),
-      ]);
-
-      setDisplayEmployeeIdelTimeKpi(kpi ?? []);
-      setDisplayEmployeeIdelTimeZoneViolations(zones ?? []);
-      setRecentViolationsLive(recent ?? []);
-    };
-
-    loadInitial().catch(console.error);
-  }, [
-    tenantId,
-    fetchEmployeeIdelTimeKpi,
-    fetchEmployeeIdelTimeZoneViolations,
-    fetchEmployeeIdelTimeRecent,
-  ]);
-  useEffect(() => {
-    if (!tenantId) return;
-
-    const loadDetailedReport = async () => {
-      const body = {
-        tenantId,
-        page: empIdelPage + 1,
-        limit: empIdelLimit,
-        violation: empIdelFilters?.violation || undefined,
-        zone: empIdelFilters?.zone || undefined,
-        cameraId: empIdelFilters?.cameraId || undefined,
-        startDate: formatLocalDateTime(empIdelFilters?.startDate),
-        endDate: formatLocalDateTime(empIdelFilters?.endDate),
-      };
-
-      const response =
-        await fetchEmployeeIdelTimeDetailedReportApi(body).unwrap();
-
-      setEmployeeIdleTimeDetailedReport(response);
-    };
-
-    loadDetailedReport().catch(console.error);
-  }, [
-    tenantId,
-    empIdelPage,
-    empIdelLimit,
-    empIdelFilters,
-    fetchEmployeeIdelTimeDetailedReportApi,
-  ]);
-  /* ---------- SOCKET (LIVE ONLY) ---------- */
-  useSocketEvent<EmployeeIdleTimeSocketPayload>({
-    tenantId,
-    enabled: isLiveMode,
-    event: SOCKET_EVENTS.EMPLOYEE_IDLE_UPDATE,
-    handler: (payload) => {
-      console.log("payload form the socket", payload);
-      setDisplayEmployeeIdelTimeKpi(payload.kpi ?? []);
-      setDisplayEmployeeIdelTimeZoneViolations(payload.zoneViolations ?? []);
-      setRecentViolationsLive(payload.recentViolations ?? []);
+  const EmployeeIdleTimeKpiData = [
+    {
+      title: "Total Idle Events",
+      value: "1",
+      icon: AccessTime,
+      tooltipMessage:
+        "Total number of idle time events detected by the system.",
     },
+    {
+      title: "Last Idle Detection Time",
+      value: getOneHourBefore().time,
+      icon: AccessTime,
+      tooltipMessage: "The most recent idle detection timestamp.",
+    },
+    {
+      title: "Last Idle Detection Zone",
+      value: "Zone A",
+      icon: Room,
+      tooltipMessage: "The zone where the most recent idle event was detected.",
+    },
+  ];
+  const backendIdleData = [
+    {
+      id: 301,
+      isIdle: true,
+      isWorking: false,
+      notPresent: false,
+      trackingId: "TRK-01",
+      zone: "Zone A",
+      snapshot: "/img/employee-idle-time-monitoring/i1.png",
+      cameraid: "CAM-I01",
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-10-08 14:55",
+    },
+    {
+      id: 302,
+      isIdle: false,
+      isWorking: true,
+      notPresent: false,
+      trackingId: "TRK-02",
+      zone: "Zone B",
+      snapshot: "/img/employee-idle-time-monitoring/i2.jpg",
+      cameraid: "CAM-I02",
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-10-08 14:45",
+    },
+    {
+      id: 303,
+      isIdle: true,
+      isWorking: false,
+      notPresent: false,
+      trackingId: "TRK-03",
+      zone: "Chemical Storage",
+      snapshot: "https://picsum.photos/400/200?random=23",
+      cameraid: "CAM-I03",
+      createdAt: "2025-10-08 14:30",
+      updatedAt: "2025-10-08 14:35",
+    },
+    {
+      id: 304,
+      isIdle: false,
+      isWorking: false,
+      notPresent: true,
+      trackingId: "TRK-04",
+      zone: "Assembly Line B",
+      snapshot: "https://picsum.photos/400/200?random=24",
+      cameraid: "CAM-I04",
+      createdAt: "2025-10-08 14:20",
+      updatedAt: "2025-10-08 14:25",
+    },
+    {
+      id: 305,
+      isIdle: true,
+      isWorking: false,
+      notPresent: false,
+      trackingId: "TRK-05",
+      zone: "Maintenance Area",
+      snapshot: "https://picsum.photos/400/200?random=25",
+      cameraid: "CAM-I05",
+      createdAt: "2025-10-08 14:10",
+      updatedAt: "2025-10-08 14:15",
+    },
+  ];
+
+  const recentIdleEvents = backendIdleData.map((item) => {
+    const titleParts = [];
+
+    if (item.isIdle) titleParts.push("Employee Idle");
+    if (item.isWorking) titleParts.push("Employee Working");
+    if (item.notPresent) titleParts.push("Employee Not Present");
+
+    return {
+      incident: titleParts.join(", ") ?? "No event",
+      zone: item.zone,
+      time: item.createdAt,
+      imageUrl: item.snapshot,
+      cameraId: item.cameraid,
+    };
   });
-  /* ---------- TIME FILTER ---------- */
-  const handleEmpIdelTimeRangeChange = useCallback(
-    async (range: { start?: string; end?: string }) => {
-      if (!range.start && !range.end) {
-        setIsLiveMode(true);
 
-        // ✅ CALL ALL APIs + SET STATE
-        const [kpi, zones, recent] = await Promise.all([
-          fetchEmployeeIdelTimeKpi({ tenantId }).unwrap(),
-          fetchEmployeeIdelTimeZoneViolations({ tenantId }).unwrap(),
-          fetchEmployeeIdelTimeRecent({ tenantId }).unwrap(),
-        ]);
+  console.log("RECENT IDLE EVENTS", recentIdleEvents);
 
-        setDisplayEmployeeIdelTimeKpi(kpi ?? []);
-        setDisplayEmployeeIdelTimeZoneViolations(zones ?? []);
-        setRecentViolationsLive(recent ?? []);
-        return;
-      }
-
-      setIsLiveMode(false);
-      const payload = {
-        tenantId: tenantId,
-        startDate: range.start,
-        endDate: range.end,
-      };
-      const [kpi, zones, recent] = await Promise.all([
-        fetchEmployeeIdelTimeKpi(payload).unwrap(),
-        fetchEmployeeIdelTimeZoneViolations(payload).unwrap(),
-        fetchEmployeeIdelTimeRecent(payload).unwrap(),
-      ]);
-
-      setDisplayEmployeeIdelTimeKpi(kpi ?? []);
-      setDisplayEmployeeIdelTimeZoneViolations(zones ?? []);
-      setRecentViolationsLive(recent ?? []);
+  const zoneIdleData = [
+    {
+      zone: "Zone A",
+      incidents: 1,
+      subViolations: [
+        { label: "Idle", value: 1, icon: AccessTimeIcon },
+        { label: "Working", value: 0, icon: WorkOutlineIcon },
+        { label: "Not Present", value: 0, icon: PersonOffIcon },
+      ],
     },
-    [
-      tenantId,
-      fetchEmployeeIdelTimeKpi,
-      fetchEmployeeIdelTimeZoneViolations,
-      fetchEmployeeIdelTimeRecent,
-    ],
-  );
-  const employeeIdleTimeKpiData = useMemo(
-    () =>
-      displayEmployeeIdelTimeKpi.map((item) => {
-        const config = EmployeeIdelTimeKpiConfig[item.title];
-
-        return {
-          ...item,
-          title: t(item.title),
-          icon: config?.icon || EngineeringIcon,
-          tooltipMessage: config?.tooltipMessage || "",
-        };
-      }),
-    [displayEmployeeIdelTimeKpi, t],
-  );
-  const zoneViolationsForUi = useMemo(() => {
-    const iconMap: Record<string, SvgIconComponent> = {
-      Idle: AccessTimeIcon,
-      Working: WorkOutlineIcon,
-      "Not Working": WorkOffIcon,
-    };
-
-    return displayEmployeeIdelTimeZoneViolations.map((z) => ({
-      ...z,
-      subViolations: z.subViolations?.map((s) => ({
-        ...s,
-        icon: iconMap[s.label],
-      })),
-    }));
-  }, [displayEmployeeIdelTimeZoneViolations]);
-
-  /* ---------- REPORT HANDLERS ---------- */
-
-  const tableColumns = [
-    { id: "violation", label: t("Violation") },
-    { id: "time", label: t("Time") },
-    { id: "zone", label: t("Zone") },
-    { id: "cameraId", label: t("Cameras") },
+    {
+      zone: "Zone B",
+      incidents: 1,
+      subViolations: [
+        { label: "Working", value: 1, icon: WorkOutlineIcon },
+        { label: "Idle", value: 0, icon: AccessTimeIcon },
+        { label: "Not Present", value: 0, icon: PersonOffIcon },
+      ],
+    },
   ];
 
-  const tableFilters = [
-    {
-      id: "violation",
-      label: t("Violation"),
-      type: "select" as const,
-      options: ["Employee Idle", "Employee Working", "Employee Not Present"],
-    },
-    {
-      id: "zone",
-      label: t("Zone"),
-      type: "select" as const,
-
-      options: employeeIdleTimeDetailedReport?.zones || [],
-    },
-    {
-      id: "cameraId",
-      label: t("Cameras"),
-      type: "select" as const,
-
-      options: employeeIdleTimeDetailedReport?.cameras || [],
-    },
-
-    { id: "startDate", label: t("Start Date"), type: "date" as const },
-    { id: "endDate", label: t("End Date"), type: "date" as const },
-  ];
-
-  const handleSubmitFilter = useCallback(
-    (filters: EmployeeIdelTimeFilterParams) => {
-      console.log("filter params", filters);
-      setEmpIdelPage(0); // ← set page FIRST
-      setEmpIdelFilters(filters); // ← then filters
-      // React batches both → useEffect fires exactly ONCE
-    },
-    [], // no deps needed
-  );
-  const handleReset = useCallback(() => {
-    setEmpIdelFilters({});
-    setEmpIdelPage(0);
-  }, []);
-
-  const handleExport = useCallback(
-    async (format: "csv" | "pdf", filters: EmployeeIdelTimeFilterParams) => {
-      try {
-        setIsExporting(true)
-        const payload = {
-
-          tenantId,
-          violation: filters.violation || undefined,
-          zone: filters.zone || undefined,
-          cameraId: filters.cameraId || undefined,
-          startDate: formatLocalDateTime(filters.startDate),
-          endDate: formatLocalDateTime(filters.endDate),
-        };
-
-        // ================= CSV =================
-        if (format === "csv") {
-          await downloadEmpIdelTimeCsvReport(payload);
-        }
-
-        // ================= PDF =================
-        if (format === "pdf") {
-          await downloadEmpIdelTimePdfReport(payload).unwrap();
-        }
-      } catch (error) {
-        console.error("❌ Export failed:", error);
-      } finally {
-        setIsExporting(false)
-      }
-    },
-    [
-      tenantId,
-      downloadEmpIdelTimeCsvReport,
-      downloadEmpIdelTimePdfReport,
-      formatLocalDateTime,
-    ],
-  );
-
-  const handleDownloadSingle = useCallback(
-    async (row: EmployeeIdleTimeViolation, index: number) => {
-      try {
-        setDownloadingRows((prev) => {
-          const newSet = new Set(prev);
-          newSet.add(index);
-          return newSet;
-        }); const payload = {
-          tenantId,
-          violation: String(row.violation),
-          zone: row.zone,
-          time: row.time,
-          cameraId: row.cameraId,
-          imageUrl: row.imageUrl,
-        };
-
-        await downloadEmpIdelTimeSinglePdf(payload);
-      } catch (error) {
-        console.error("❌ Single PDF download failed", error);
-      } finally {
-        setDownloadingRows((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(index);
-          return newSet;
-        });
-      }
-    },
-    [tenantId, downloadEmpIdelTimeSinglePdf],
-  );
-
-  const handleViewSingle = useCallback((row: EmployeeIdleTimeViolation) => {
-    console.log("view single row", row);
-    setViewPopupData(row);
-    setViewPopupOpen(true);
-  }, []);
-
-  const handleDownloadViolation = async (url: string, violation: Violation) => {
-    if (!violation) return;
-    const empViolation = violation as EmployeeIdleTimeViolation;
-    console.log("employee idel time single data=============", empViolation);
-    try {
-      const payload = {
-        tenantId: tenantId,
-        violation: String(empViolation.violation),
-        zone: empViolation.zone,
-        time: empViolation.time,
-        cameraId: empViolation.cameraId,
-        imageUrl: url,
-      };
-
-      await downloadEmpIdelTimeSinglePdf(payload);
-    } catch (err) {
-      console.error("PDF download failed", err);
-    }
+  interface FilterParams {
+    status?: string;
+    employeeName?: string;
+    startDate?: string;
+    endDate?: string;
+  }
+  const handleSubmitFilter = async (filters: FilterParams) => {
+    console.log("Selected Filters:", filters);
+    // Example: { status: "Active", employeeName: "John", startDate: "2025-09-01", endDate: "2025-09-05" }
   };
+
+  const handleReset = () => {
+    console.log("reset button clickedd");
+  };
+
+  const handleExport = (format: "csv" | "pdf") => {
+    console.log("Export requested clikcedd:", format);
+  };
+  const handleDownloadSingle = () => {
+    console.log("download single row");
+  };
+  const handleViewSingle = (row: Record<string, string | number | boolean>) => {
+    console.log("view single row", row);
+    setViewPopupData(row as EmployeeIdleEvent);
+    setViewPopupOpen(true);
+  };
+
+  // Location/time metrics get the "info" tint; violation counts get red — matches PPE.
+  const breakdownMetrics: BreakdownMetric[] = EmployeeIdleTimeKpiData.map((kpi) => ({
+    icon: kpi.icon,
+    value: kpi.value,
+    label: kpi.title,
+    tone: /zone|time|incidence/i.test(kpi.title) ? "info" : "red",
+  }));
+
+  // TODO: replace with a real 7-day trend endpoint once one exists on this page's API.
+  // Placeholder mirrors the approved mockup (src/app/.html) until that's wired up.
+  const violationsTrendData = (() => {
+    const values = [3, 4, 2, 5, 4, 3, 5];
+    const now = new Date();
+    return values.map((value, idx) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (values.length - 1 - idx));
+      return {
+        date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        value,
+      };
+    });
+  })();
+
   return (
     <Box>
-      <Paper sx={{ p: 3, backgroundColor: "#fff", borderRadius: 2 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-          <Typography variant="h6">📊 {t("Overview")}</Typography>
-          <TimeFilter
-            onRangeChange={handleEmpIdelTimeRangeChange}
-            shifts={orgShifts || []}
-          />
+      <Paper
+        sx={{
+          p: 3,
+          mb: 4,
+          backgroundColor: "#ffffff",
+          borderRadius: 2,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 2,
+            flexWrap: "wrap",
+            mb: "20px",
+          }}
+        >
+          <Box
+            sx={{
+              flex: "1 1 480px",
+              minWidth: 0,
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              minHeight: { xs: "auto", md: "220px" },
+              border: `1px solid ${DASHBOARD_COLORS.border}`,
+              borderRadius: "12px",
+              boxShadow: "0 1px 2px rgba(0,0,0,.08), 0 1px 3px 1px rgba(0,0,0,.06)",
+              overflow: "hidden",
+            }}
+          >
+            <Box sx={{ flex: "1 1 0", minWidth: 0, p: "24px" }}>
+              <ViolationBreakdown metrics={breakdownMetrics} />
+            </Box>
+            <Box
+              sx={{
+                flex: "1.3 1 0",
+                minWidth: 0,
+                p: "24px",
+                borderLeft: { xs: "none", md: `1px solid ${DASHBOARD_COLORS.border}` },
+                borderTop: { xs: `1px solid ${DASHBOARD_COLORS.border}`, md: "none" },
+              }}
+            >
+              <ViolationsTrend data={violationsTrendData} trendPercentage={18} />
+            </Box>
+          </Box>
+
+          <Box sx={{ flexShrink: 0 }}>
+            <CollapsibleTimeFilter
+              onRangeChange={function (range: {
+                start: string;
+                end: string;
+              }): void {
+                throw new Error("Function not implemented.");
+              }}
+            />
+          </Box>
         </Box>
 
-        <Grid container spacing={2.5} sx={{ mb: 4 }}>
-          {EmployeeIdelTimeKpiLoading || !employeeIdleTimeKpiData.length
-            ? Array.from({ length: 6 }).map((_, index) => (
-              <Grid
-                key={index + 1}
-                size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-              >
-                <KpiCardSkeleton />
-              </Grid>
-            ))
-            : employeeIdleTimeKpiData.map((kpi) => (
-              <Grid
-                key={kpi.title}
-                size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}
-              >
-                <KpiCard {...kpi} />
-              </Grid>
-            ))}
-        </Grid>
-
+        {/* Content Grid */}
         <Grid container spacing={3}>
+          {/* Recent Violations */}
           <Grid size={{ xs: 12, lg: 8 }}>
             <RecentViolations
-              label={t("Recent Violations")}
-              violations={recentViolationsLive}
-              loading={EmployeeIdelTimeRecentLoading}
               tooltipMessage="Latest 20 detected idel, working,not present employee with details."
-              onDownload={handleDownloadViolation}
+              label="Recent Incident"
+              violations={recentIdleEvents}
+              loading={false}
             />
           </Grid>
+          {/* PPE Compliance by Zone */}
 
           <Grid size={{ xs: 12, lg: 4 }}>
             <ZoneViolations
-              label={t("Zone Violations")}
-              violationsZone={zoneViolationsForUi}
-              loading={EmployeeIdelTimeZoneLoading}
+              violationsZone={zoneIdleData}
+              loading={false}
               tooltipMessage="Shows idel, working,not present employee per zone"
+              label="Zone Incident"
             />
           </Grid>
         </Grid>
       </Paper>
-
+      {/*  Violations Report */}
       <ReportTable
-        title={t("Detailed Report")}
+        title="Detailed Report"
         tooltipMessage="Detailed idle time events report with filter, reset, and CSV/PDF download options."
-        data={employeeIdleTimeDetailedReport?.data || []}
-        columns={tableColumns}
-        filters={tableFilters}
+        columns={[
+          { id: "incident", label: "Incident" },
+          { id: "time", label: "Time" },
+          { id: "zone", label: "Zone" },
+          { id: "cameraId", label: "Cameras" },
+        ]}
+        data={recentIdleEvents}
+        filters={[
+          {
+            id: "incident",
+            label: "Incident",
+            type: "select",
+            options: Array.from(
+              new Set(recentIdleEvents.map((v) => v.incident)),
+            ),
+          },
+          {
+            id: "zone",
+            label: "Zone",
+            type: "select",
+            options: Array.from(new Set(recentIdleEvents.map((v) => v.zone))),
+          },
+          {
+            id: "cameraId",
+            label: "Cameras",
+            type: "select",
+            options: Array.from(
+              new Set(recentIdleEvents.map((v) => v.cameraId)),
+            ),
+          },
+
+          { id: "time", label: "Start Date", type: "date" },
+          { id: "time", label: "End Date", type: "date" },
+        ]}
         onSubmit={handleSubmitFilter}
         onReset={handleReset}
         onExport={handleExport}
-        exportLoading={isExporting}
-
-        onDownload={(row, index) =>
-          handleDownloadSingle(row as EmployeeIdleTimeViolation, index)
-        }
-        downloadingRows={downloadingRows}
-        onView={(row) => handleViewSingle(row as EmployeeIdleTimeViolation)}
+        onDownload={handleDownloadSingle}
+        onView={handleViewSingle}
         downloadFileName="employee-idle-time-report"
-        loading={EmployeeIdelTimeDetailedReportLoading}
-        totalCount={employeeIdleTimeDetailedReport?.total || 0}
-        page={empIdelPage}
-        rowsPerPage={empIdelLimit}
-        onPageChange={(newPage) => setEmpIdelPage(newPage)}
-        onRowsPerPageChange={(rows) => {
-          setEmpIdelLimit(rows);
-          setEmpIdelPage(0);
-        }}
+        loading={false}
+        totalCount={0}
+        page={0}
+        rowsPerPage={0}
       />
+      {/* View Alert Popup */}
 
       <ViewAlertPopup
         open={viewPopupOpen}
         handleClose={() => setViewPopupOpen(false)}
         details={viewPopupData}
         imageKey="imageUrl"
-        onDownload={(url) => {
-          if (!viewPopupData) return;
-
-          handleDownloadViolation(url, viewPopupData);
-        }}
+        onDownload={(url) => console.log("Download:", url)}
       />
     </Box>
   );

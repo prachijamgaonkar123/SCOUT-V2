@@ -1,6 +1,6 @@
+import PPEDetection from "./ppeKitDetectionPage";
 
-import PPEDetection from "./PPEKitDetection";
 
-export default function PPEDetectionPage() {
+export default function page() {
   return <PPEDetection />;
 }

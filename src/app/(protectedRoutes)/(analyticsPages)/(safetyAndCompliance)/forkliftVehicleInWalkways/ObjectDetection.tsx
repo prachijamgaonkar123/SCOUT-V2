@@ -1,164 +1,163 @@
 "use client";
+
 import React, { useState } from "react";
 import ReportTable from "@/app/components/organisms/ReportTable/ReportTable";
 import { Box, Grid, Paper } from "@mui/material";
-import RecentViolations from "@/app/components/molecules/RecentViolations/RecentViolations";
 import {
+  DirectionsCar,
+  Block,
   CheckCircle,
-  Schedule,
-  ReportProblem,
-  Whatshot,
+  LocationOn,
 } from "@mui/icons-material";
-import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
-import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolation";
+import RecentViolations from "@/app/components/molecules/RecentViolations/RecentViolations";
 import CollapsibleTimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/CollapsibleTimeFilter";
+import ZoneViolations from "@/app/components/organisms/ZoneViolations/ZoneViolation";
+import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
+import ForkliftIcon from "@mui/icons-material/Forklift";
+import { getOneHourBefore } from "@/utils/getOneHrBefore";
 import ViolationBreakdown, {
   BreakdownMetric,
 } from "@/app/components/molecules/ViolationBreakdown/ViolationBreakdown";
 import ViolationsTrend from "@/app/components/molecules/ViolationsTrend/ViolationsTrend";
 import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
-import { getOneHourBefore } from "@/utils/getOneHrBefore";
-
-const FallDetection: React.FC = () => {
-  interface RecentViolationData {
+const ObjectDetection: React.FC = () => {
+  interface ForkliftDetectionEvent {
     voilation: string;
-    zone: string;
-    time: string;
+    objectName?: string;
     imageUrl: string;
+    zone: string;
     cameraId: string;
-    alarmTriggered: boolean;
-    [key: string]: string | number | boolean;
-  }
+    time: string;
 
+    alarmTriggered: boolean;
+    [key: string]: string | number | boolean | undefined;
+  }
   const [viewPopupOpen, setViewPopupOpen] = useState(false);
   const [viewPopupData, setViewPopupData] =
-    useState<RecentViolationData | null>(null);
-
-  const fallKpiData = [
+    useState<ForkliftDetectionEvent | null>(null);
+  const ObjectDetectionKpiData = [
     {
-      title: "Total Fall Incidents",
-      value: "9",
-      icon: ReportProblem,
+      title: "Blocked Walkways",
+      value: "8",
       tooltipMessage:
-        "Total number of fall, laydown, or sleeping incidents detected across all monitored zones.",
+        "Shows the total number of walkways that are currently blocked.",
+      icon: Block,
     },
-
     {
-      title: "Incident-Free Zones",
-      value: "2 / 5",
+      title: "Clear Walkways",
+      value: "12",
+      tooltipMessage:
+        "Shows the total number of walkways that are currently clear and safe for use.",
       icon: CheckCircle,
-      tooltipMessage:
-        "Number of zones without any fall or laydown incidents out of the total monitored zones.",
+      trendColor: "#4caf50",
+      color: "#4caf50",
+      bgColor: "#e8f5e9",
+      borderColor: "#4caf50",
+      iconBg: "rgba(76, 175, 80, 0.1)",
     },
     {
-      title: "Last Detection Time",
-      value: getOneHourBefore().time,
-      icon: Schedule,
+      title: "Affected Zones (Last 3)",
+      value: "Zone A, Zone B, Zone C",
       tooltipMessage:
-        "The time when the most recent fall, laydown, or sleeping incident was detected.",
-    },
-    {
-      title: "Most Incident-Prone Zone",
-      value: "Zone B",
-      icon: Whatshot,
-      tooltipMessage:
-        "The zone with the highest number of fall, laydown, or sleeping incidents recorded.",
-      trendColor: "#f44336",
-      color: "#f44336",
-      bgColor: "#ffebee",
-      borderColor: "#f44336",
-      iconBg: "rgba(244, 67, 54, 0.1)",
+        "Displays the last three zones where blocked Walkways were detected.",
+      icon: LocationOn,
     },
   ];
 
-  const backendLaydownData = [
+  const backendData = [
     {
-      id: 401,
-      snapshot: "/img/fall.avif",
-      zone: "Production Floor A",
-      camera: "CAM-11",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:06",
+      id: 201,
+      detected: true,
+      objectName: "Forklift",
+      snapshot: "/img/v3.jpg",
+      zone: "Walkway Zone A",
+      camera: "CAM-101",
       alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-10-08 09:20",
     },
     {
-      id: 402,
-      snapshot: "/img/fall2.webp",
-      zone: "Warehouse",
-      camera: "CAM-12",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:13",
+      id: 202,
+      detected: true,
+      objectName: "Vehicle",
+      snapshot: "/img/v5.jpg",
+      zone: "Walkway Zone B",
+      camera: "CAM-102",
       alarmTriggered: false,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-10-08 09:32",
     },
     {
-      id: 403,
-      snapshot: "/img/fall3.webp",
-      zone: "Maintenance Area",
-      camera: "CAM-13",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:19",
+      id: 203,
+      detected: true,
+      objectName: "Forklift",
+      snapshot: "/img/v3.jpg",
+      zone: "Walkway Zone C",
+      camera: "CAM-103",
       alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-10-08 10:10",
     },
     {
-      id: 404,
-      snapshot: "/img/fall.avif",
-      zone: "Production Floor A",
-      camera: "CAM-11",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:06",
+      id: 204,
+      detected: true,
+      objectName: "Vehicle",
+      snapshot: "/img/v5.jpg",
+      zone: "Walkway Zone A",
+      camera: "CAM-104",
       alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-10-08 10:30",
     },
     {
-      id: 405,
-      snapshot: "/img/fall.avif",
-      zone: "Warehouse",
-      camera: "CAM-12",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:13",
+      id: 205,
+      detected: true,
+      objectName: "Forklift",
+      snapshot: "/img/v5.jpg",
+      zone: "Walkway Zone B",
+      camera: "CAM-105",
       alarmTriggered: false,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-10-08 11:05",
     },
     {
-      id: 406,
-      snapshot: "/img/fall.avif",
-      zone: "Maintenance Area",
-      camera: "CAM-13",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:19",
+      id: 203,
+      detected: true,
+      objectName: "Forklift",
+      snapshot: "/img/v3.jpg",
+      zone: "Walkway Zone C",
+      camera: "CAM-103",
       alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-10-08 10:10",
     },
     {
-      id: 403,
-      snapshot: "/img/fall3.webp",
-      zone: "Maintenance Area",
-      camera: "CAM-13",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:19",
+      id: 204,
+      detected: true,
+      objectName: "Vehicle",
+      snapshot: "/img/v5.jpg",
+      zone: "Walkway Zone A",
+      camera: "CAM-104",
       alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-10-08 10:30",
     },
     {
-      id: 404,
-      snapshot: "/img/fall.avif",
-      zone: "Production Floor A",
-      camera: "CAM-11",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:06",
-      alarmTriggered: true,
-    },
-    {
-      id: 405,
-      snapshot: "/img/fall2.webp",
-      zone: "Warehouse",
-      camera: "CAM-12",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:13",
+      id: 205,
+      detected: true,
+      objectName: "Forklift",
+      snapshot: "/img/v1.jpg",
+      zone: "Walkway Zone B",
+      camera: "CAM-105",
       alarmTriggered: false,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-10-08 11:05",
     },
   ];
-
-  // Map backend data to recentViolations format
-  const recentLaydownViolations = backendLaydownData.map((item) => {
+  const recentDetections = backendData.map((item) => {
     return {
-      voilation: "Fall / Laydown detected",
+      voilation: "Walkway Blocked ",
+      objectName: item.objectName,
       zone: item.zone,
       time: item.createdAt,
       imageUrl: item.snapshot,
@@ -167,29 +166,43 @@ const FallDetection: React.FC = () => {
     };
   });
 
-  console.log("laydown recent voilation", recentLaydownViolations);
-
   const zoneViolationsData = [
     {
-      zone: "Production Floor A",
+      zone: "Walkway Zone A",
       violations: 3,
+      subViolations: [
+        { label: "Forklift", value: 1, icon: ForkliftIcon },
+        { label: "Vehicle", value: 2, icon: DirectionsCar },
+      ],
     },
     {
-      zone: "Warehouse",
-      violations: 3,
+      zone: "Walkway Zone B",
+      violations: 2,
+      subViolations: [
+        { label: "Forklift", value: 2, icon: ForkliftIcon },
+        { label: "Vehicle", value: 1, icon: DirectionsCar },
+      ],
     },
-
     {
-      zone: "Maintenance Area",
-      violations: 3,
+      zone: "Walkway Zone C",
+      violations: 2,
+      subViolations: [
+        { label: "Forklift", value: 1, icon: ForkliftIcon },
+        { label: "Vehicle", value: 1, icon: DirectionsCar },
+      ],
     },
   ];
+
   interface FilterParams {
+    zone?: string;
     status?: string;
-    employeeName?: string;
+    priority?: string;
+    minOccupancy?: string;
+    maxOccupancy?: string;
     startDate?: string;
     endDate?: string;
   }
+
   const handleSubmitFilter = async (filters: FilterParams) => {
     console.log("Selected Filters:", filters);
   };
@@ -201,15 +214,17 @@ const FallDetection: React.FC = () => {
   const handleExport = (format: "csv" | "pdf") => {
     console.log("Export requested clikcedd:", format);
   };
-
+  const handleDownloadSingle = () => {
+    console.log("download single row");
+  };
   const handleViewSingle = (row: Record<string, string | number | boolean>) => {
     console.log("view single row", row);
-    setViewPopupData(row as RecentViolationData);
+    setViewPopupData(row as ForkliftDetectionEvent);
     setViewPopupOpen(true);
   };
 
   // Location/time metrics get the "info" tint; violation counts get red — matches PPE.
-  const breakdownMetrics: BreakdownMetric[] = fallKpiData.map((kpi) => ({
+  const breakdownMetrics: BreakdownMetric[] = ObjectDetectionKpiData.map((kpi) => ({
     icon: kpi.icon,
     value: kpi.value,
     label: kpi.title,
@@ -233,9 +248,10 @@ const FallDetection: React.FC = () => {
 
   return (
     <Box>
+      {/* KPI Cards */}
       <Paper
         sx={{
-          p: 3,
+          p: 2.2,
           mb: 4,
           backgroundColor: "#ffffff",
           borderRadius: 2,
@@ -296,84 +312,88 @@ const FallDetection: React.FC = () => {
           {/* Recent  Violations */}
           <Grid size={{ xs: 12, lg: 8 }}>
             <RecentViolations
+              tooltipMessage="Latest 20 Forklift / Vehicle detected in Walkways with details."
               label="Recent Violations"
-              violations={recentLaydownViolations}
+              violations={recentDetections}
               loading={false}
-              tooltipMessage="Latest 20 detected laydown/sleeping/falldown violations with details."
             />
           </Grid>
-          {/* Compliance by Zone */}
+          {/*  Compliance by Zone */}
 
           <Grid size={{ xs: 12, lg: 4 }}>
             <ZoneViolations
               violationsZone={zoneViolationsData}
               loading={false}
-              tooltipMessage="Shows laydown/sleeping/falldown violations per zone"
+              tooltipMessage="Shows violations per zone"
             />
           </Grid>
         </Grid>
       </Paper>
-
-      {/* Report */}
+      {/* Object detection Report */}
       <ReportTable
         title="Detailed Report"
-        tooltipMessage="Detailed violations report with filter, reset, and CSV/PDF download options."
+        tooltipMessage="Detailed detection events for forklifts/vehicles in walkways with filter, reset, and export options."
         columns={[
-          { id: "voilation", label: "Violation", minWidth: 200 },
-          { id: "time", label: "Time", minWidth: 120 },
+          { id: "voilation", label: "Voilation", minWidth: 150 },
+          { id: "objectName", label: "Object Name", minWidth: 120 },
+          { id: "time", label: " Time", minWidth: 150 },
           { id: "zone", label: "Zone", minWidth: 120 },
-          { id: "cameraId", label: "Cameras", minWidth: 120 },
+          { id: "cameraId", label: "Camera", minWidth: 120 },
+
           { id: "alarmTriggered", label: "Alarm Triggered", minWidth: 120 },
         ]}
-        data={recentLaydownViolations}
+        data={recentDetections} // The mapped backend data for this case
         filters={[
+          {
+            id: "objectName",
+            label: "Object Name",
+            type: "select",
+            options: Array.from(
+              new Set(recentDetections.map((v) => v.objectName))
+            ),
+          },
           {
             id: "zone",
             label: "Zone",
             type: "select",
-            options: Array.from(
-              new Set(recentLaydownViolations.map((item) => item.zone)),
-            ),
+            options: Array.from(new Set(recentDetections.map((v) => v.zone))),
           },
           {
             id: "cameraId",
-            label: "Cameras",
+            label: "Camera",
             type: "select",
             options: Array.from(
-              new Set(recentLaydownViolations.map((item) => item.cameraId)),
+              new Set(recentDetections.map((v) => v.cameraId))
             ),
           },
           {
             id: "alarmTriggered",
             label: "Alarm Triggered",
             type: "select",
-            options: ["true", "false"],
+            options: ["True", "False"],
           },
           { id: "time", label: "Start Date", type: "date" },
           { id: "time", label: "End Date", type: "date" },
         ]}
-        onView={handleViewSingle}
         onSubmit={handleSubmitFilter}
         onReset={handleReset}
         onExport={handleExport}
-        downloadFileName="ppe-violations-report"
-        loading={false}
-        totalCount={0}
-        page={0}
-        rowsPerPage={0}
-      />
+        onDownload={handleDownloadSingle}
+        onView={handleViewSingle}
+        downloadFileName="forklift-vehicle-detection-report"
+        loading={false} totalCount={0} page={0} rowsPerPage={0}      />
+
       {/* View Alert Popup */}
-      {viewPopupData && (
-        <ViewAlertPopup
-          open={viewPopupOpen}
-          handleClose={() => setViewPopupOpen(false)}
-          details={viewPopupData}
-          imageKey="imageUrl"
-          onDownload={(url) => console.log("Download:", url)}
-        />
-      )}
+
+      <ViewAlertPopup
+        open={viewPopupOpen}
+        handleClose={() => setViewPopupOpen(false)}
+        details={viewPopupData}
+        imageKey="imageUrl"
+        onDownload={(url) => console.log("Download:", url)}
+      />
     </Box>
   );
 };
 
-export default FallDetection;
+export default ObjectDetection;

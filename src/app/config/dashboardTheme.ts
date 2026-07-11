@@ -9,31 +9,34 @@ import { SvgIconTypeMap } from "@mui/material/SvgIcon";
 
 export type MuiIcon = OverridableComponent<SvgIconTypeMap<object, "svg">>;
 
+// Values resolve through CSS custom properties defined in globals.css
+// (:root for light, [data-theme='dark'] for dark) so every component that
+// consumes DASHBOARD_COLORS picks up dark mode automatically.
 export const DASHBOARD_COLORS = {
-  primary: "#1E3A8A",
-  primaryDark: "#152C6B",
-  primaryTint: "#EEF2FB",
-  secondary: "#2563EB",
-  secondaryDark: "#1D4ED8",
-  accent: "#0EA5E9",
-  accentTint: "#E6F6FD",
-  success: "#16A34A",
-  successTint: "#EAF9EF",
-  warning: "#F59E0B",
-  warningTint: "#FEF6E7",
-  warningText: "#B45309",
-  error: "#DC2626",
-  errorTint: "#FDECEC",
-  workforce: "#8B5CF6",
-  workforceTint: "#F3EFFE",
-  bg: "#F5F7FA",
-  card: "#FFFFFF",
-  border: "#E5E7EB",
-  textPrimary: "#111827",
-  textSecondary: "#6B7280",
-  hover: "#F3F4F6",
-  gray: "#F1F2F4",
-  grayText: "#6B7280",
+  primary: "var(--sd-primary)",
+  primaryDark: "var(--sd-primary-dark)",
+  primaryTint: "var(--sd-primary-tint)",
+  secondary: "var(--sd-secondary)",
+  secondaryDark: "var(--sd-secondary-dark)",
+  accent: "var(--sd-accent)",
+  accentTint: "var(--sd-accent-tint)",
+  success: "var(--sd-success)",
+  successTint: "var(--sd-success-tint)",
+  warning: "var(--sd-warning)",
+  warningTint: "var(--sd-warning-tint)",
+  warningText: "var(--sd-warning-text)",
+  error: "var(--sd-error)",
+  errorTint: "var(--sd-error-tint)",
+  workforce: "var(--sd-workforce)",
+  workforceTint: "var(--sd-workforce-tint)",
+  bg: "var(--sd-bg)",
+  card: "var(--sd-card)",
+  border: "var(--sd-border)",
+  textPrimary: "var(--sd-text-primary)",
+  textSecondary: "var(--sd-text-secondary)",
+  hover: "var(--sd-hover)",
+  gray: "var(--sd-gray)",
+  grayText: "var(--sd-gray-text)",
 } as const;
 
 /** AI Use Case categories used across the top donut, trend chart, and status grid. */
