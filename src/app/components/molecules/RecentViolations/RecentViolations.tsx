@@ -11,6 +11,7 @@ import { Warning, ChevronRight } from "@mui/icons-material";
 import { SvgIconComponent } from "@mui/icons-material";
 import { Violation } from "../ViolationCard/ViolationCard";
 import ViewAlertPopup from "../ViewAlertPopup/ViewAlertPopup";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
 // 3 tiles fill the container edge-to-edge (no partial 4th tile peeking in at rest).
 const VISIBLE_TILES = 3;
@@ -90,7 +91,7 @@ export default function RecentViolations(
         height: "100%",
         p: 4,
         textAlign: "center",
-        color: "#808080",
+        color: DASHBOARD_COLORS.textSecondary,
       }}
     >
       <Typography variant="h6" fontWeight={500}>
@@ -140,10 +141,10 @@ export default function RecentViolations(
               onClick={() => handleOpen(violation)}
               sx={{
                 flex: `0 0 ${TILE_BASIS}`,
-                border: "1px solid #E5E7EB",
+                border: `1px solid ${DASHBOARD_COLORS.border}`,
                 borderRadius: "11px",
                 overflow: "hidden",
-                bgcolor: "#fff",
+                bgcolor: DASHBOARD_COLORS.card,
                 cursor: "pointer",
                 transition: "box-shadow .12s ease, transform .12s ease",
                 "&:hover": {
@@ -186,7 +187,7 @@ export default function RecentViolations(
                   sx={{
                     fontSize: "12.5px",
                     fontWeight: 700,
-                    color: "#111827",
+                    color: DASHBOARD_COLORS.textPrimary,
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -198,7 +199,7 @@ export default function RecentViolations(
                   <Typography
                     sx={{
                       fontSize: "11px",
-                      color: "#6B7280",
+                      color: DASHBOARD_COLORS.textSecondary,
                       fontWeight: 500,
                       mt: "4px",
                       whiteSpace: "nowrap",
@@ -210,7 +211,7 @@ export default function RecentViolations(
                   </Typography>
                 )}
                 {violation.time && (
-                  <Typography sx={{ fontSize: "10.5px", color: "#9CA3AF", mt: "2px" }}>
+                  <Typography sx={{ fontSize: "10.5px", color: DASHBOARD_COLORS.textSecondary, mt: "2px" }}>
                     {violation.time}
                   </Typography>
                 )}
@@ -232,10 +233,10 @@ export default function RecentViolations(
             zIndex: 1,
             width: 32,
             height: 32,
-            border: "1px solid #E5E7EB",
-            bgcolor: "#fff",
+            border: `1px solid ${DASHBOARD_COLORS.border}`,
+            bgcolor: DASHBOARD_COLORS.card,
             boxShadow: "0 2px 6px rgba(0,0,0,.10)",
-            color: "#6B7280",
+            color: DASHBOARD_COLORS.textSecondary,
             opacity: 0,
             pointerEvents: "none",
             transition: "opacity .15s ease",
@@ -277,7 +278,7 @@ export default function RecentViolations(
           }}
         >
           <Warning sx={{ fontSize: 20, color: "#f44336" }} />
-          <Typography variant="h6" fontWeight={600} color="#1c2025">
+          <Typography variant="h6" fontWeight={600} color={DASHBOARD_COLORS.textPrimary}>
             {label}
           </Typography>
         </Box>

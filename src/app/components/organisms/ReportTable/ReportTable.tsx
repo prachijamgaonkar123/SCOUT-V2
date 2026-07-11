@@ -29,29 +29,14 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
 import { useTranslation } from "react-i18next";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
 // ----------------------------------------------
-// Design tokens
+// Design tokens - resolved through the shared dashboard CSS variables so
+// this table (and its filters/buttons) follow dark mode like every other
+// dashboard-family component instead of staying hardcoded to light colors.
 // ----------------------------------------------
-const COLORS = {
-  primary: "#1E3A8A",
-  primaryDark: "#152C6B",
-  primaryTint: "#EEF2FB",
-  secondary: "#2563EB",
-  secondaryDark: "#1D4ED8",
-  success: "#16A34A",
-  successTint: "#EAF9EF",
-  error: "#DC2626",
-  errorTint: "#FDECEC",
-  warning: "#F59E0B",
-  warningTint: "#FEF6E7",
-  bg: "#F5F7FA",
-  card: "#FFFFFF",
-  border: "#E5E7EB",
-  textPrimary: "#111827",
-  textSecondary: "#6B7280",
-  hover: "#F3F4F6",
-};
+const COLORS = DASHBOARD_COLORS;
 
 // ----------------------------------------------
 // Shared filter input styling (used by EVERY filter type
@@ -152,6 +137,7 @@ const StyledCard = styled(Card)({
   overflow: "hidden",
   border: `1px solid ${COLORS.border}`,
   boxShadow: "0 1px 2px rgba(0,0,0,.08), 0 1px 3px 1px rgba(0,0,0,.06)",
+  backgroundColor: COLORS.card,
 });
 
 const FilterBar = styled(Box)({
@@ -208,9 +194,10 @@ const ActionButton = styled(Button)({
     backgroundColor: COLORS.primaryTint,
   },
   "&.Mui-disabled": {
-    color: "#B0B7C3",
+    color: COLORS.textSecondary,
     backgroundColor: "transparent",
-    borderColor: "#E9EBEF",
+    borderColor: COLORS.border,
+    opacity: 0.6,
   },
 });
 
@@ -390,7 +377,7 @@ function ReportTable<T extends Record<string, string | number | boolean>>({
       case "pending":
         return { color: COLORS.secondary, bgColor: COLORS.primaryTint };
       default:
-        return { color: "#666", bgColor: "#f5f5f5" };
+        return { color: COLORS.textSecondary, bgColor: COLORS.hover };
     }
   };
 
@@ -535,7 +522,7 @@ function ReportTable<T extends Record<string, string | number | boolean>>({
       <TableRow
         key={index + 1}
         sx={{
-          "&:nth-of-type(odd)": { backgroundColor: "#FAFBFC" },
+          "&:nth-of-type(odd)": { backgroundColor: COLORS.bg },
           "&:hover": { backgroundColor: COLORS.hover },
           "& td": {
             padding: "14px 16px",
@@ -691,7 +678,7 @@ function ReportTable<T extends Record<string, string | number | boolean>>({
         <TableContainer>
           <Table size="small">
             <TableHead>
-              <TableRow sx={{ backgroundColor: "#F9FAFB" }}>
+              <TableRow sx={{ backgroundColor: COLORS.bg }}>
                 {columns.map((column, indx) => (
                   <TableCell
                     key={indx + 1}

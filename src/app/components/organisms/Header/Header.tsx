@@ -373,7 +373,7 @@ const getPageTitle = () => {
             )}
 
             {/* Theme toggle */}
-            <IconButton
+            {/* <IconButton
               onClick={() => dispatch(toggleThemeMode())}
               size="small"
               aria-label={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
@@ -384,7 +384,7 @@ const getPageTitle = () => {
               ) : (
                 <DarkMode sx={{ fontSize: 20 }} />
               )}
-            </IconButton>
+            </IconButton> */}
 
             {/* System Health Section with hover */}
             <Box

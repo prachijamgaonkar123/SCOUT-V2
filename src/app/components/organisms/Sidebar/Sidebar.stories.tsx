@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import Sidebar from "./SidebarOld";
-import type { PageType } from "../../../types";
+import Sidebar from "./Sidebar";
 
 const meta: Meta<typeof Sidebar> = {
   title: "Components/Organisms/Sidebar",
@@ -16,22 +15,13 @@ const meta: Meta<typeof Sidebar> = {
   },
   tags: ["autodocs"],
   argTypes: {
-    currentPage: {
-      control: "select",
-      options: [
-        "dashboard",
-        "ppe-detection",
-        "intrusion-detection",
-        "employee-presence",
-        "people-count",
-        "live-streaming",
-        "alerts",
-      ] as PageType[],
-      description: "Currently active page",
+    alertCount: {
+      control: "number",
+      description: "Live alert count from the alerts API / socket.",
     },
-    onPageChange: {
-      action: "page-changed",
-      description: "Page change handler",
+    onCollapsedChange: {
+      action: "collapsed-changed",
+      description: "Fired whenever the collapsed/rail state changes.",
     },
   },
 };
@@ -39,72 +29,15 @@ const meta: Meta<typeof Sidebar> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Dashboard: Story = {
+export const Default: Story = {
   args: {
-    currentPage: "safety-compliance-dashboard",
-    onPageChange: () => {},
+    alertCount: 3,
+    onCollapsedChange: () => {},
   },
   parameters: {
     docs: {
       description: {
-        story: "Sidebar with Dashboard page selected.",
-      },
-    },
-  },
-};
-
-export const PPEDetection: Story = {
-  args: {
-    currentPage: "ppe-detection",
-    onPageChange: () => {},
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: "Sidebar with PPE Detection analytics page selected.",
-      },
-    },
-  },
-};
-
-export const IntrusionDetection: Story = {
-  args: {
-    currentPage: "intrusion-detection",
-    onPageChange: () => {},
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: "Sidebar with Intrusion Detection analytics page selected.",
-      },
-    },
-  },
-};
-
-export const LiveStreaming: Story = {
-  args: {
-    currentPage: "live-streaming",
-    onPageChange: () => {},
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: "Sidebar with Live Streaming page selected.",
-      },
-    },
-  },
-};
-
-export const Alerts: Story = {
-  args: {
-    currentPage: "alerts",
-    onPageChange: () => {},
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Sidebar with System Alerts page selected, showing notification badge.",
+        story: "Default sidebar with an active alert badge.",
       },
     },
   },

@@ -8,7 +8,7 @@ import {
   Domain,
   WifiTethering,
 } from "@mui/icons-material";
-import DashboardKpiCard from "@/app/components/molecules/DashboardKpiCard/DashboardKpiCard";
+import DashboardKpiCard from "@/app/components/molecules/MonitoringDashboardKpiCard/MonitoringDashboardKpiCard";
 import DashboardTabs, {
   TabConfig,
 } from "@/app/components/organisms/DashboardTabs/DashboardTabs";
@@ -340,7 +340,7 @@ export default function CameraTamperingDashboard() {
           mb: 2,
         }}
       >
-        <TimeFilter />
+        <TimeFilter onRangeChange={() => {}} />
       </Box>
 
       {/* KPI Cards */}
@@ -364,7 +364,7 @@ export default function CameraTamperingDashboard() {
           minHeight: 0,
         }}
       >
-        <DashboardTabs tabs={tabs} />
+        <DashboardTabs tabs={tabs} features={[]} />
       </Box>
     </Paper>
   );

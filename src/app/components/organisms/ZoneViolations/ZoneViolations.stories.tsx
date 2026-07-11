@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"; 
-import ZoneViolations, { ZoneViolationsdata } from "./ZoneViolations";
+import ZoneViolations, { ZoneViolationsdata } from "./ZoneViolation";
 
 import AlarmIcon from "@mui/icons-material/Alarm";
 import ReportProblemIcon from "@mui/icons-material/ReportProblem";

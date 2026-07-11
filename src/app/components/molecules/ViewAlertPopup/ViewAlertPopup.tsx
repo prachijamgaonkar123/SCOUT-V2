@@ -13,7 +13,6 @@ import {
   Button,
 } from "@mui/material";
 import { Close, CameraAlt } from "@mui/icons-material";
-import DownloadForOfflineIcon from "@mui/icons-material/DownloadForOffline";
 
 interface ViewAlertPopupProps<
   T extends Record<string, string | number | boolean | undefined>,
@@ -60,6 +59,18 @@ function ViewAlertPopup<
   const detailRows = details
     ? Object.entries(details).filter(([key]) => key !== String(imageKey))
     : [];
+
+  // Raw object keys are camelCase field names, not display labels -
+  // "cameraId" should read as "Camera", not "cameraId" or "Camera Id".
+  const LABEL_OVERRIDES: Record<string, string> = {
+    cameraId: "Camera",
+  };
+  const formatLabel = (key: string) =>
+    LABEL_OVERRIDES[key] ??
+    key
+      .replace(/([A-Z])/g, " $1")
+      .replace(/^./, (c) => c.toUpperCase())
+      .trim();
 
   return (
     <Dialog
@@ -142,7 +153,7 @@ function ViewAlertPopup<
               }}
             >
               <Typography sx={{ fontSize: "13.5px", color: "#6B7280", fontWeight: 500 }}>
-                {key}
+                {formatLabel(key)}
               </Typography>
               <Typography sx={{ fontSize: "13.5px", color: "#111827", fontWeight: 600 }}>
                 {String(value)}
@@ -164,7 +175,6 @@ function ViewAlertPopup<
         {onDownload && (
           <Button
             variant="outlined"
-            startIcon={<DownloadForOfflineIcon />}
             onClick={() => onDownload(imageUrl)}
             sx={{ borderColor: "#E5E7EB", color: "#111827", textTransform: "none", fontWeight: 600 }}
           >

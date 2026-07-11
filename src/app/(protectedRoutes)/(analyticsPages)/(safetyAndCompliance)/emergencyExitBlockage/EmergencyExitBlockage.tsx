@@ -183,6 +183,14 @@ const EmergencyExitBlockage: React.FC = () => {
       zone: "Assembly Line Exit",
       BlockedExit: 6,
     },
+     {
+      zone: "Emergency Exit b",
+      BlockedExit: 13,
+    },
+      {
+      zone: "Emergency Exit c",
+      BlockedExit: 6,
+    },
   ];
   interface FilterParams {
     status?: string;

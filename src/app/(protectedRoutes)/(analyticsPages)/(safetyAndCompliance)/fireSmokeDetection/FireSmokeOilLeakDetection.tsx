@@ -194,23 +194,7 @@ const FireSmokeOilLeakDetection: React.FC = () => {
         },
       ],
     },
-    {
-      zone: "Welding Station",
-      incident: 8,
 
-      subViolations: [
-        {
-          label: "Fire",
-          value: 4,
-          icon: LocalFireDepartment,
-        },
-        {
-          label: "Smoke",
-          value: 4,
-          icon: SmokeFree,
-        },
-      ],
-    },
     {
       zone: "Chemical Storage",
       incident: 3,

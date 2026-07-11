@@ -175,14 +175,7 @@ const ObjectDetection: React.FC = () => {
         { label: "Vehicle", value: 2, icon: DirectionsCar },
       ],
     },
-    {
-      zone: "Walkway Zone B",
-      violations: 2,
-      subViolations: [
-        { label: "Forklift", value: 2, icon: ForkliftIcon },
-        { label: "Vehicle", value: 1, icon: DirectionsCar },
-      ],
-    },
+   
     {
       zone: "Walkway Zone C",
       violations: 2,

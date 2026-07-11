@@ -86,7 +86,7 @@ const ZoneViolations: React.FC<ZoneViolationsProps> = ({
         {/* Header */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2.5 }}>
           <FlagOutlinedIcon sx={{ fontSize: 20, color: DASHBOARD_COLORS.secondary }} />
-          <Typography variant="h6" sx={{ fontWeight: 600, color: "#1c2025" }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: DASHBOARD_COLORS.textPrimary }}>
             {label ?? "Zone Violations"}
           </Typography>
         </Box>
@@ -107,7 +107,7 @@ const ZoneViolations: React.FC<ZoneViolationsProps> = ({
               height: "100%",
               p: 4,
               textAlign: "center",
-              color: "#808080",
+              color: DASHBOARD_COLORS.textSecondary,
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: 500 }}>
@@ -228,7 +228,7 @@ const ZoneViolations: React.FC<ZoneViolationsProps> = ({
                           gap: "4px",
                           minWidth: 0,
                           flex: "1 1 0",
-                          backgroundColor: "#fff",
+                          backgroundColor: DASHBOARD_COLORS.card,
                           border: `1px solid ${DASHBOARD_COLORS.border}`,
                           borderRadius: "8px",
                           px: "8px",

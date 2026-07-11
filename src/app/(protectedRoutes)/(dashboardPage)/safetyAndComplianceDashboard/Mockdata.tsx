@@ -1,5 +1,12 @@
 
-import { ShiftType, SurveillanceDashboardResponse } from "./SafetyAndComplianceDashboard.types";
+import {
+  ShiftType,
+  SurveillanceDashboardResponse,
+  FireSmokeBucket,
+  PPEKitBucket,
+  FallSeriesItem,
+  CrowdSeriesItem,
+} from "./SafetyAndComplianceDashboard.types";
 
 // ---------- Helpers ----------
 const kpi = (
@@ -31,12 +38,14 @@ const waveValue = (base: number, hour: number, day: number, seed: number) => {
   return Math.max(0, Math.round(base * wave + jitter));
 };
 
-// Generate hourly series for 7 days (4‑hour intervals)
-const generateSeries = (
+// Generate hourly series for 7 days (4‑hour intervals). Generic over the
+// target bucket shape so callers get the real type back instead of `any` -
+// `fields` supplies whichever numeric keys that bucket type expects.
+const generateSeries = <T extends { date?: string; time?: string }>(
   fields: string[],
   dailyValues: number[][]
-) => {
-  const series = [];
+): T[] => {
+  const series: T[] = [];
   const now = new Date();
   for (let day = 6; day >= 0; day--) {
     const d = new Date(now);
@@ -44,11 +53,11 @@ const generateSeries = (
     const dateStr = d.toISOString().slice(0, 10);
     for (let h = 0; h < 24; h += 4) {
       const timeStr = `${String(h).padStart(2, "0")}:00`;
-      const item: any = { date: dateStr, time: timeStr };
+      const item: Record<string, string | number> = { date: dateStr, time: timeStr };
       fields.forEach((field, idx) => {
         item[field] = waveValue(dailyValues[idx][day], h, day, idx);
       });
-      series.push(item);
+      series.push(item as unknown as T);
     }
   }
   return series;
@@ -94,7 +103,7 @@ export const mockDashboardData: SurveillanceDashboardResponse[] = [
     graphs: {
       data: {
         granularity: "hour",
-        series: generateSeries(["fireCount", "smokeCount"], [fire, smoke]),
+        series: generateSeries<FireSmokeBucket>(["fireCount", "smokeCount"], [fire, smoke]),
         hazardTypePieData: pieData(["Fire", "Smoke"], [45, 30]),
         zoneWisePieData: pieData(["Zone A", "Zone B", "Zone C"], [20, 35, 20]),
       },
@@ -106,7 +115,7 @@ export const mockDashboardData: SurveillanceDashboardResponse[] = [
     graphs: {
       data: {
         granularity: "hour",
-        series: generateSeries(["helmet", "vest", "glasses"], [helmet, vest, glasses]),
+        series: generateSeries<PPEKitBucket>(["helmet", "vest", "glasses"], [helmet, vest, glasses]),
         violationTypePieData: pieData(["No Helmet", "No Vest", "No Glasses"], [25, 15, 8]),
         zoneWisePieData: pieData(["Zone A", "Zone B", "Zone C"], [18, 22, 12]),
       },
@@ -118,7 +127,7 @@ export const mockDashboardData: SurveillanceDashboardResponse[] = [
     graphs: {
       data: {
         granularity: "hour",
-        series: generateSeries(["count"], [fall]),
+        series: generateSeries<FallSeriesItem>(["count"], [fall]),
         zoneWisePieData: pieData(["Zone A", "Zone B", "Zone C"], [8, 12, 5]),
       },
     },
@@ -149,7 +158,7 @@ export const mockDashboardData: SurveillanceDashboardResponse[] = [
     graphs: {
       data: {
         granularity: "hour",
-        series: generateSeries(["count", "mobCount"], [crowd, mob]),
+        series: generateSeries<CrowdSeriesItem>(["count", "mobCount"], [crowd, mob]),
         zoneWisePieData: pieData(["Zone A", "Zone B", "Zone C"], [6, 9, 4]),
       },
     },
