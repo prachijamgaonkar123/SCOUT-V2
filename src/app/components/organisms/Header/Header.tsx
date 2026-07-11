@@ -22,11 +22,10 @@ import {
   ExitToApp,
   InfoOutlined,
   Menu as MenuIcon,
-  DarkMode,
-  LightMode,
+  // DarkMode,
+  // LightMode,
 } from "@mui/icons-material";
 import { useAuth } from "../../../../customhooks/useAuth";
-import Sidebar from "../Sidebar/Sidebar";
 import {
   alertMenu,
   analyticsMenu,
@@ -39,9 +38,9 @@ import {
 import { PageType } from "@/app/types";
 import { usePathname } from "next/navigation";
 import { useGetOrgAndUserLogoQuery } from "@/app/(protectedRoutes)/(settings)/(userManagement)/addUser/AddUserApi";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { RootState } from "@/app/store/store";
-import { toggleThemeMode } from "@/app/store/slices/themeSlice";
+// import { toggleThemeMode } from "@/app/store/slices/themeSlice";
 import {
   HEADER_HEIGHT,
   SIDEBAR_WIDTH,
@@ -141,8 +140,8 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ collapsed = false }) => {
   const theme = useTheme();
-  const dispatch = useDispatch();
-  const themeMode = useSelector((state: RootState) => state.theme.mode);
+  // const dispatch = useDispatch();
+  // const themeMode = useSelector((state: RootState) => state.theme.mode);
   const sidebarWidth = collapsed ? SIDEBAR_WIDTH_RAIL : SIDEBAR_WIDTH;
   const { isLoading, logout } = useAuth();
   const { user } = useSelector((state: RootState) => state.auth);
