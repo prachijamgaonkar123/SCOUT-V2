@@ -15,8 +15,8 @@ export default function AlertsPage() {
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <AlertStatsCards />
         </Box>
-        {/* Vertically centered against the stat-card row */}
-        <Box sx={{ flexShrink: 0, mt: '14px' }}>
+        {/* Top-aligned with the stat-card row */}
+        <Box sx={{ flexShrink: 0 }}>
           <CollapsibleTimeFilter
             // onRangeChange={handleTimeRangeChange}
             // shifts={orgShifts || []}

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import {
   Card,
   Box,
-  InputBase,
   Select,
   Menu,
   MenuItem,
@@ -17,22 +16,46 @@ import {
   TableRow,
   Typography,
   IconButton,
+  styled,
 } from '@mui/material';
 import {
-  Search,
-  Refresh,
-  Check,
   ChevronRight,
   LocationOnOutlined,
   NotificationsNoneOutlined,
-  FileDownloadOutlined,
-  ExpandMore,
 } from '@mui/icons-material';
 import dayjs, { Dayjs } from 'dayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import AlertDrawer from '../AlertDrawer/AlertDrawer';
+import { DASHBOARD_COLORS } from '@/app/config/dashboardTheme';
+
+// Same action-button treatment as ReportTable (used on every use-case page)
+// so "Total Alerts" stays visually standardized with the rest of the app.
+const ActionButton = styled(Button)({
+  fontWeight: 600,
+  textTransform: 'none',
+  borderRadius: '6px',
+  minHeight: '30px',
+  height: '30px',
+  fontSize: '12px',
+  padding: '0 12px',
+  borderColor: DASHBOARD_COLORS.border,
+  color: DASHBOARD_COLORS.textPrimary,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  '&:hover': {
+    borderColor: DASHBOARD_COLORS.secondary,
+    backgroundColor: DASHBOARD_COLORS.primaryTint,
+  },
+  '&.Mui-disabled': {
+    color: DASHBOARD_COLORS.textSecondary,
+    backgroundColor: 'transparent',
+    borderColor: DASHBOARD_COLORS.border,
+    opacity: 0.6,
+  },
+});
 
 // ---------- Type definitions (exported) ----------
 export type AlertSeverity = 'critical' | 'non-critical';
@@ -140,9 +163,16 @@ const datePickerPaperSx = {
   '& .MuiDialogActions-root .MuiButton-root': { fontSize: '12px' },
 };
 
+// ---------- Filter option lists (derived from the mock data) ----------
+const uniqueZones = Array.from(new Set(mockAlerts.map((a) => a.zone))).sort();
+const uniqueCameras = Array.from(new Set(mockAlerts.map((a) => a.camera))).sort();
+const uniqueAlertTitles = Array.from(new Set(mockAlerts.map((a) => a.title))).sort();
+
 // ---------- Component ----------
 export default function AlertsTable() {
-  const [search, setSearch] = useState('');
+  const [zoneFilter, setZoneFilter] = useState('');
+  const [cameraFilter, setCameraFilter] = useState('');
+  const [alertFilter, setAlertFilter] = useState('');
   const [severityFilter, setSeverityFilter] = useState<AlertSeverity[]>([]);
   const [statusFilter, setStatusFilter] = useState<AlertStatus | ''>('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -161,19 +191,34 @@ export default function AlertsTable() {
     );
   };
 
+  const hasActiveFilters =
+    Boolean(zoneFilter) ||
+    Boolean(cameraFilter) ||
+    Boolean(alertFilter) ||
+    severityFilter.length > 0 ||
+    Boolean(statusFilter) ||
+    Boolean(categoryFilter) ||
+    Boolean(startDate) ||
+    Boolean(endDate);
+
   const filtered = mockAlerts.filter((alert) => {
-    const q = search.toLowerCase();
-    const matchesSearch =
-      alert.title.toLowerCase().includes(q) ||
-      alert.camera.toLowerCase().includes(q) ||
-      alert.zone.toLowerCase().includes(q) ||
-      alert.id.toLowerCase().includes(q);
+    const matchesZone = !zoneFilter || alert.zone === zoneFilter;
+    const matchesCamera = !cameraFilter || alert.camera === cameraFilter;
+    const matchesAlert = !alertFilter || alert.title === alertFilter;
     const matchesSeverity = severityFilter.length === 0 || severityFilter.includes(alert.severity);
     const matchesStatus = !statusFilter || alert.status === statusFilter;
     const ts = dayjs(alert.timestamp);
     const matchesStart = !appliedStart || !ts.isBefore(appliedStart);
     const matchesEnd = !appliedEnd || !ts.isAfter(appliedEnd);
-    return matchesSearch && matchesSeverity && matchesStatus && matchesStart && matchesEnd;
+    return (
+      matchesZone &&
+      matchesCamera &&
+      matchesAlert &&
+      matchesSeverity &&
+      matchesStatus &&
+      matchesStart &&
+      matchesEnd
+    );
   });
 
   const handleRowClick = (alert: Alert) => {
@@ -187,7 +232,9 @@ export default function AlertsTable() {
   };
 
   const handleReset = () => {
-    setSearch('');
+    setZoneFilter('');
+    setCameraFilter('');
+    setAlertFilter('');
     setSeverityFilter([]);
     setStatusFilter('');
     setCategoryFilter('');
@@ -290,30 +337,6 @@ export default function AlertsTable() {
             borderBottom: '1px solid #E5E7EB',
           }}
         >
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '7px',
-              bgcolor: '#FFFFFF',
-              border: '1px solid #E5E7EB',
-              borderRadius: '8px',
-              p: '0 12px',
-              height: 36,
-              minWidth: 220,
-              flex: 1,
-              maxWidth: 320,
-            }}
-          >
-            <Search sx={{ fontSize: 18, color: '#9CA3AF' }} />
-            <InputBase
-              placeholder="Search camera, zone, alert ID…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              sx={{ fontSize: '12.5px', width: '100%', color: '#111827', '& input': { p: 0 } }}
-            />
-          </Box>
-
           {(['critical', 'non-critical'] as AlertSeverity[]).map((sev) => {
             const active = severityFilter.includes(sev);
             return (
@@ -349,6 +372,49 @@ export default function AlertsTable() {
               </Box>
             );
           })}
+
+          <Select
+            value={alertFilter}
+            onChange={(e) => setAlertFilter(e.target.value)}
+            displayEmpty
+            size="small"
+            sx={{ ...selectSx, maxWidth: 220 }}
+          >
+            <MenuItem value="">All alerts</MenuItem>
+            {uniqueAlertTitles.map((title) => (
+              <MenuItem key={title} value={title}>
+                {title}
+              </MenuItem>
+            ))}
+          </Select>
+          <Select
+            value={cameraFilter}
+            onChange={(e) => setCameraFilter(e.target.value)}
+            displayEmpty
+            size="small"
+            sx={selectSx}
+          >
+            <MenuItem value="">All cameras</MenuItem>
+            {uniqueCameras.map((camera) => (
+              <MenuItem key={camera} value={camera}>
+                {camera}
+              </MenuItem>
+            ))}
+          </Select>
+          <Select
+            value={zoneFilter}
+            onChange={(e) => setZoneFilter(e.target.value)}
+            displayEmpty
+            size="small"
+            sx={selectSx}
+          >
+            <MenuItem value="">All zones</MenuItem>
+            {uniqueZones.map((zone) => (
+              <MenuItem key={zone} value={zone}>
+                {zone}
+              </MenuItem>
+            ))}
+          </Select>
 
           <Select
             value={statusFilter}
@@ -405,73 +471,23 @@ export default function AlertsTable() {
               }}
             />
           </LocalizationProvider>
-          <Button
-            startIcon={<Check sx={{ fontSize: 15 }} />}
-            onClick={handleApply}
-            sx={{
-              bgcolor: '#2563EB',
-              border: '1px solid #2563EB',
-              borderRadius: '8px',
-              color: '#FFFFFF',
-              fontSize: '13px',
-              fontWeight: 600,
-              textTransform: 'none',
-              px: '14px',
-              height: 36,
-              '&:hover': { bgcolor: '#1D4ED8', borderColor: '#1D4ED8' },
-            }}
-          >
-            Apply
-          </Button>
-          <Button
-            startIcon={<FileDownloadOutlined sx={{ fontSize: 15 }} />}
-            endIcon={<ExpandMore sx={{ fontSize: 15 }} />}
-            onClick={(e) => setDownloadAnchor(e.currentTarget)}
-            sx={{
-              bgcolor: '#FFFFFF',
-              border: '1px solid #E5E7EB',
-              borderRadius: '8px',
-              color: '#111827',
-              fontSize: '13px',
-              fontWeight: 600,
-              textTransform: 'none',
-              px: '14px',
-              height: 36,
-              '&:hover': { bgcolor: '#F3F4F6', borderColor: '#2563EB' },
-            }}
-          >
+          <ActionButton variant="outlined" onClick={handleApply} disabled={!hasActiveFilters}>
+            Submit
+          </ActionButton>
+          <ActionButton variant="outlined" onClick={(e) => setDownloadAnchor(e.currentTarget)}>
             Download
-          </Button>
+          </ActionButton>
           <Menu
             anchorEl={downloadAnchor}
             open={Boolean(downloadAnchor)}
             onClose={() => setDownloadAnchor(null)}
           >
-            <MenuItem sx={{ fontSize: '12.5px', fontWeight: 600 }} onClick={handleDownloadCsv}>
-              Download as CSV
-            </MenuItem>
-            <MenuItem sx={{ fontSize: '12.5px', fontWeight: 600 }} onClick={handleDownloadPdf}>
-              Download as PDF
-            </MenuItem>
+            <MenuItem onClick={handleDownloadCsv}>📊 CSV</MenuItem>
+            <MenuItem onClick={handleDownloadPdf}>📄 PDF</MenuItem>
           </Menu>
-          <Button
-            startIcon={<Refresh sx={{ fontSize: 15 }} />}
-            onClick={handleReset}
-            sx={{
-              bgcolor: '#FFFFFF',
-              border: '1px solid #E5E7EB',
-              borderRadius: '8px',
-              color: '#111827',
-              fontSize: '13px',
-              fontWeight: 600,
-              textTransform: 'none',
-              px: '14px',
-              height: 36,
-              '&:hover': { bgcolor: '#F3F4F6', borderColor: '#2563EB' },
-            }}
-          >
+          <ActionButton variant="outlined" color="primary" onClick={handleReset} disabled={!hasActiveFilters}>
             Reset
-          </Button>
+          </ActionButton>
         </Box>
 
         {/* Table */}
@@ -552,7 +568,17 @@ export default function AlertsTable() {
                       {severityMap[alert.severity].label}
                     </Box>
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: '#111827' }}>{alert.title}</TableCell>
+                  <TableCell
+                    sx={{
+                      fontWeight: 700,
+                      color: '#111827',
+                      whiteSpace: 'normal !important',
+                      overflow: 'visible !important',
+                      textOverflow: 'clip !important',
+                    }}
+                  >
+                    {alert.title}
+                  </TableCell>
                   <TableCell>
                     <Box
                       component="span"

@@ -9,21 +9,17 @@ import {
   VideocamOffOutlined,
   ReportProblemOutlined,
   QueryStatsOutlined,
-  VerifiedOutlined,
+
   AppsOutlined,
   BoltOutlined,
-  LocalFireDepartmentOutlined,
+
   LocalShippingOutlined,
-  GppMaybeOutlined,
-  LockOpenOutlined,
-  EngineeringOutlined,
-  NoCrashOutlined,
-  SmokingRoomsOutlined,
+
   HourglassBottomOutlined,
   RestaurantOutlined,
   DoorFrontOutlined,
   SensorsOutlined,
-  NoAccountsOutlined,
+
   BlockOutlined,
 } from "@mui/icons-material";
 
@@ -34,6 +30,9 @@ import EventCard, { EventSeverity } from "@/app/components/molecules/DashboardRe
 import UseCaseTabs from "@/app/components/molecules/DashboardAIUseCasesSection/UseCaseTabs";
 import UseCaseGrid, { UseCaseGridItem } from "@/app/components/molecules/DashboardAIUseCasesSection/UseCaseGrid";
 import UpgradeBanner from "@/app/components/molecules/UpgradeBanner/UpgradeBanner";
+import CameraOnlineOfflinePopUp, {
+  CameraListItem,
+} from "@/app/components/molecules/cameraOnlineOfflinePopUp/cameraOnlineOfflinePopUp";
 import { CATEGORY_LABEL, DASHBOARD_COLORS, MuiIcon, UseCaseCategory } from "@/app/config/dashboardTheme";
 import { analyticsMenu, LinkMenuItem } from "@/app/config/menuConfig";
 import { FEATURE_ICON } from "@/app/config/featureIcons";
@@ -79,7 +78,7 @@ const CATEGORY_TITLE_TO_KEY: Record<string, UseCaseCategory> = {
  *  sourced from the real analyticsMenu config, not invented. */
 const STATUS_META: Record<string, { name: string; value: number }> = {
   SUC001: { name: "PPE Detection (Helmet, Vest, Gloves, Mask)", value: 5 },
-  SUC0029: { name: "Fire and Smoke Detection", value: 8 },
+  SUC002: { name: "Fire and Smoke Detection", value: 8 },
   SUC003: { name: "Fall Detection", value: 9 },
   SUC004: { name: "Forklift / Vehicle in Walkways", value: 8 },
   SUC005: { name: "Emergency Exit Blockage Detection", value: 9 },
@@ -158,12 +157,32 @@ const RECENT_EVENTS: { severity: EventSeverity; icon: MuiIcon; title: string; me
   { severity: "warning", icon: HourglassBottomOutlined, title: "Employee Idle Time Monitoring", meta: "Zone B · CAM-11", time: "18 min ago" },
 ];
 
+/** Demo camera lists for the online/offline stat card popups — real data
+ *  will come from the camera status API once it's wired up. */
+const ONLINE_CAMERAS: CameraListItem[] = Array.from({ length: 118 }, (_, i) => ({
+  id: `CAM-${String(i + 1).padStart(3, "0")}`,
+  zone: `Zone ${String.fromCharCode(65 + (i % 4))}`,
+  status: "online",
+}));
+
+const OFFLINE_CAMERAS: CameraListItem[] = [
+  { id: "CAM-045", zone: "Zone B", status: "offline" },
+  { id: "CAM-092", zone: "Zone C", status: "offline" },
+];
+
+const TAMPERED_CAMERAS: CameraListItem[] = [
+  { id: "CAM-013", zone: "Zone A", status: "tampered" },
+  { id: "CAM-077", zone: "Zone D", status: "tampered" },
+  { id: "CAM-101", zone: "Zone B", status: "tampered" },
+];
+
 const CATEGORY_TABS: { key: UseCaseCategory; label: string }[] = (
   ["safety", "surveillance", "operational", "workforce"] as UseCaseCategory[]
 ).map((key) => ({ key, label: CATEGORY_LABEL[key] }));
 
 const Dashboard: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<UseCaseCategory>("safety");
+  const [cameraPopup, setCameraPopup] = useState<"online" | "offline" | null>(null);
   const statusItems = useStatusItems();
   const router = useRouter();   // <-- added
 
@@ -201,8 +220,8 @@ const Dashboard: React.FC = () => {
           gap: "14px",
         }}
       >
-        <StatCard icon={CheckCircleOutline} tone="green" value={118} total=" /120" label="Cameras Online" onClick={() => {}} />
-        <StatCard icon={VideocamOffOutlined} tone="red" value={2} label="Cameras Offline" onClick={() => {}} />
+        <StatCard icon={CheckCircleOutline} tone="green" value={115} total=" /120" label="Cameras Online" onClick={() => setCameraPopup("online")} />
+        <StatCard icon={VideocamOffOutlined} tone="red" value={5} label="Cameras Offline" onClick={() => setCameraPopup("offline")} />
         <StatCard icon={ReportProblemOutlined} tone="amber" value={12} label="Open Incidents"  onClick={() => router.push('/alertsPage')} hideArrow />
         <StatCard icon={QueryStatsOutlined} tone="blue" value={143} label="Total Detections Today" />
         {/* <StatCard icon={VerifiedOutlined} tone="gray" value={null} total="" label="" /> */}
@@ -339,6 +358,24 @@ const Dashboard: React.FC = () => {
         </Box>
         </Box>
       </Box>
+
+      <CameraOnlineOfflinePopUp
+        open={cameraPopup !== null}
+        onClose={() => setCameraPopup(null)}
+        title={
+          cameraPopup === "online"
+            ? `Cameras Online (${ONLINE_CAMERAS.length})`
+            : `Cameras Offline (${OFFLINE_CAMERAS.length + TAMPERED_CAMERAS.length})`
+        }
+        sections={
+          cameraPopup === "online"
+            ? [{ label: "Online", status: "online", cameras: ONLINE_CAMERAS }]
+            : [
+                { label: "Offline", status: "offline", cameras: OFFLINE_CAMERAS },
+                { label: "Tampered", status: "tampered", cameras: TAMPERED_CAMERAS },
+              ]
+        }
+      />
     </Box>
   );
 };

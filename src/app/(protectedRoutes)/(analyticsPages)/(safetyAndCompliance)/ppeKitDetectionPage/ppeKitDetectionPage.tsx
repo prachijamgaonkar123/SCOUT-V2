@@ -206,6 +206,24 @@ const zoneViolationsData: ZoneViolation[] = [
       { label: "Vest", value: 1, icon: CheckroomIcon },
     ],
   },
+ {
+    zone: "Zone c",
+    violations: 7,
+    subViolations: [
+      { label: "Helmet", value: 4, icon: EngineeringIcon },
+      { label: "Glasses", value: 3, icon: VisibilityOffIcon },
+    ],
+  },
+  {
+    zone: "Zone d",
+    violations: 3,
+    subViolations: [
+      { label: "Helmet", value: 1, icon: EngineeringIcon },
+      { label: "Glasses", value: 1, icon: VisibilityOffIcon },
+      { label: "Vest", value: 1, icon: CheckroomIcon },
+    ],
+  },
+ 
 ];
 
 // ---------- COMPONENT ----------

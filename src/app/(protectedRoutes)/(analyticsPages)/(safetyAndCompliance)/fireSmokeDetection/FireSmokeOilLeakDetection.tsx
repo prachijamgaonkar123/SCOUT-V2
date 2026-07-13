@@ -3,7 +3,7 @@ import ReportTable from "@/app/components/organisms/ReportTable/ReportTable";
 import { Box, Grid, Paper } from "@mui/material";
 import {
   LocalFireDepartment,
-  SmokeFree,
+  Air,
   LocationOn,
   AccessTime,
 } from "@mui/icons-material";
@@ -61,7 +61,7 @@ const FireSmokeOilLeakDetection: React.FC = () => {
     {
       id: 203,
       detection: true,
-      objectname: "fire",
+      objectname: "smoke",
       snapshot: "/img/f3.jpg",
       zone: "Chemical Storage",
       camera: "CAM-08",
@@ -73,7 +73,7 @@ const FireSmokeOilLeakDetection: React.FC = () => {
     {
       id: 202,
       detection: true,
-      objectname: "smoke",
+      objectname: "fire",
       snapshot: "/img/f1.jpg",
       zone: "Welding Station",
       camera: "CAM-07",
@@ -99,7 +99,7 @@ const FireSmokeOilLeakDetection: React.FC = () => {
     {
       id: 203,
       detection: true,
-      objectname: "fire",
+      objectname: "smoke",
       snapshot: "/img/f3.jpg",
       zone: "Chemical Storage",
       camera: "CAM-08",
@@ -111,7 +111,7 @@ const FireSmokeOilLeakDetection: React.FC = () => {
     {
       id: 202,
       detection: true,
-      objectname: "smoke",
+      objectname: "fire",
       snapshot: "/img/f1.jpg",
       zone: "Welding Station",
       camera: "CAM-07",
@@ -123,7 +123,7 @@ const FireSmokeOilLeakDetection: React.FC = () => {
     {
       id: 203,
       detection: true,
-      objectname: "fire",
+      objectname: "smoke",
       snapshot: "/img/f3.jpg",
       zone: "Chemical Storage",
       camera: "CAM-08",
@@ -156,7 +156,7 @@ const FireSmokeOilLeakDetection: React.FC = () => {
     {
       title: "Smoke Incidence",
       value: "4",
-      icon: SmokeFree,
+      icon: Air,
       tooltipMessage:
         "Total number of smoke detections recorded across all monitored zones.",
     },
@@ -190,7 +190,7 @@ const FireSmokeOilLeakDetection: React.FC = () => {
         {
           label: "Smoke",
           value: 3,
-          icon: SmokeFree,
+          icon: Air,
         },
       ],
     },
@@ -201,14 +201,14 @@ const FireSmokeOilLeakDetection: React.FC = () => {
 
       subViolations: [
         {
-          label: "Gas Leak",
+          label: "Fire",
           value: 1,
           icon: LocalFireDepartment,
         },
         {
           label: "Smoke",
           value: 2,
-          icon: SmokeFree,
+          icon: Air,
         },
       ],
     },

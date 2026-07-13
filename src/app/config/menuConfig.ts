@@ -417,12 +417,12 @@ export const analyticsMenu: CategoryConfig[] = [
         path: "/movementDuringShutdownHours",
         featureId: FEATURE.MOVEMENT_DURING_SHUTDOWN_HOUR,
       },
-      {
-        type: "link",
-        name: "Unauthorized Access in Restricted Areas",
-        path: "/unauthorizedAccessInRestrictedAreas",
-        featureId: FEATURE.UNAUTHORIZED_ACCESS,
-      },
+      // {
+      //   type: "link",
+      //   name: "Unauthorized Access in Restricted Areas",
+      //   path: "/unauthorizedAccessInRestrictedAreas",
+      //   featureId: FEATURE.UNAUTHORIZED_ACCESS,
+      // },
       {
         type: "link",
         name: "Camera Tampering Detection",

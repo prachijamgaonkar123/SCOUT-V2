@@ -62,6 +62,11 @@ const ZoneViolations: React.FC<ZoneViolationsProps> = ({
   const totalFor = (zone: ZoneViolationsdata) =>
     zone.violations ?? zone.subViolations?.reduce((sum, s) => sum + s.value, 0) ?? 0;
 
+  // Flat list (no sub-violation breakdown) caps at 4 rows, no scroller needed.
+  // Bifurcated cards (e.g. PPE, Fire & Smoke) are taller, so instead of a cap
+  // they show 2 at a time and scroll through however many zones there are.
+  const displayZones = violationsZone.slice(0, 4);
+
   return (
     <Card
       sx={{
@@ -119,7 +124,7 @@ const ZoneViolations: React.FC<ZoneViolationsProps> = ({
           // a multi-column table would render mostly empty, so use a clean
           // icon + zone + total list instead. No bar, per feedback on the table view.
           <Box>
-            {violationsZone.map((zone, index) => (
+            {displayZones.map((zone, index) => (
               <Box
                 key={index + 1}
                 sx={{
@@ -127,7 +132,7 @@ const ZoneViolations: React.FC<ZoneViolationsProps> = ({
                   alignItems: "center",
                   gap: "12px",
                   py: "12px",
-                  borderBottom: index < violationsZone.length - 1 ? `1px solid ${DASHBOARD_COLORS.border}` : "none",
+                  borderBottom: index < displayZones.length - 1 ? `1px solid ${DASHBOARD_COLORS.border}` : "none",
                 }}
               >
                 <Box
@@ -158,11 +163,23 @@ const ZoneViolations: React.FC<ZoneViolationsProps> = ({
           // Has a sub-violation breakdown (e.g. PPE: Helmet/Vest/Glasses) —
           // one card per zone with a colored total badge and a row of tinted
           // pill chips per violation type, instead of a flat table.
-          <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+              // 2 cards worth of height (~96px each incl. gap) shown at once; any
+              // further zones scroll into view instead of growing the card.
+              maxHeight: 204,
+              overflowY: violationsZone.length > 2 ? "auto" : "visible",
+              pr: violationsZone.length > 2 ? "4px" : 0,
+            }}
+          >
             {violationsZone.map((zone, index) => (
               <Box
                 key={index + 1}
                 sx={{
+                  flexShrink: 0,
                   border: `1px solid ${DASHBOARD_COLORS.border}`,
                   borderRadius: "10px",
                   overflow: "hidden",
