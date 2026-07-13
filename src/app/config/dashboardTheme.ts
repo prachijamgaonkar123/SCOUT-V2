@@ -66,3 +66,29 @@ export const CATEGORY_TINT: Record<UseCaseCategory, string> = {
   operational: DASHBOARD_COLORS.warningTint,
   workforce: DASHBOARD_COLORS.workforceTint,
 };
+
+// Typography scale sourced from Sidebar.tsx's existing nav styles (the only
+// place these three roles were already defined), so standardizing on them
+// elsewhere doesn't change what the sidebar itself looks like.
+// - PRIMARY:   category/group micro-labels, e.g. "Safety & Compliance" under Analytics
+// - SECONDARY: nav item titles, e.g. titles under "Monitoring"
+// - TERTIARY:  section-header labels, e.g. the word "Analytics" itself
+export const PRIMARY_FONT = {
+  fontFamily: "'Inter', sans-serif",
+  fontSize: "10px",
+  fontWeight: 700,
+  letterSpacing: ".06em",
+  textTransform: "uppercase",
+} as const;
+
+export const SECONDARY_FONT = {
+  fontFamily: "'Inter', sans-serif",
+  fontSize: "12px",
+  fontWeight: 500,
+} as const;
+
+export const TERTIARY_FONT = {
+  fontFamily: "'Inter', sans-serif",
+  fontSize: "12px",
+  fontWeight: 500,
+} as const;

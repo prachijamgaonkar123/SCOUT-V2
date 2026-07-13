@@ -119,8 +119,8 @@ const rawRecentViolations = [
   {
     id: 101,
     helmet: false,
-    vest: true,
-    glasses: false,
+    vest: false,
+    glasses: true,
     zone: "Zone A",
     snapshot: "/img/p1.jpg",
     cameraid: "CAM-01",

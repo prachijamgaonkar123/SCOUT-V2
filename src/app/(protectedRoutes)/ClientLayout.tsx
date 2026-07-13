@@ -63,7 +63,7 @@ export default function ClientLayout({
   }
 
   return (
-    // <AuthGuard>
+    <AuthGuard>
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box sx={{ display: "flex", height: "100vh" }}>
         <Header collapsed={sidebarCollapsed} />
@@ -91,6 +91,6 @@ export default function ClientLayout({
         </Box>
       </Box>
     </LocalizationProvider>
-    // </AuthGuard>
+    </AuthGuard>
   );
 }
