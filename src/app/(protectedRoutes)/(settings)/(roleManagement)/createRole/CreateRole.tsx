@@ -17,6 +17,7 @@ import { RootState } from "@/app/store/store";
 import { useCreateRoleMutation } from "./CreateRoleApi";
 import { showToast } from "@/app/store/slices/toasterSlice";
 import { getErrorMessage } from "@/utils/getErrorMessage";
+import { USE_MOCK, addMockRole } from "../roleManagementMockData";
 
 const CreateRole: React.FC = () => {
   const router = useRouter();
@@ -34,7 +35,7 @@ const CreateRole: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!roleName || !tenantId || !userId) {
+    if (!roleName || (!USE_MOCK && (!tenantId || !userId))) {
       dispatch(
         showToast({
           message: "Missing role name or user info",
@@ -44,6 +45,21 @@ const CreateRole: React.FC = () => {
       );
       return;
     }
+
+    if (USE_MOCK) {
+      const newRole = addMockRole(roleName);
+      dispatch(
+        showToast({
+          message: "Mock role created.",
+          severity: "success",
+          id: crypto.randomUUID(),
+        })
+      );
+      router.push(`/addFeatures/${newRole.org_app_role_id}`);
+      return;
+    }
+
+    if (!tenantId || !userId) return;
 
     try {
       const response = await createRole({

@@ -27,6 +27,7 @@ export const apiRoutes = {
     cameraManager: "/camera-manager",
     zoneMapping: "/zone-mapping",
     useCaseManager: "/use-case-manager",
+    alertConfig: "/alert-config",
   },
 
   roleInformation: {

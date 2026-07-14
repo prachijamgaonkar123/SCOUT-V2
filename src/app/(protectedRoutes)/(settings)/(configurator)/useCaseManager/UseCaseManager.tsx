@@ -24,15 +24,25 @@ import {
   UseCaseList,
   CameraSelectionDrawer,
 } from "@/app/components/organisms/configurator/use-case-manager";
+import { useDispatch } from "react-redux";
+import { showToast } from "@/app/store/slices/toasterSlice";
+import {
+  mockUsecasesResponse,
+  mockCamerasResponse,
+  mockAssignmentMap,
+} from "./useCaseManagerMockData";
 
-
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 const UseCaseManager: React.FC = () => {
+  const dispatch = useDispatch();
   const [selectedUseCase, setSelectedUseCase] = useState<UseCase | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fetchAssignments] = useLazyGetAssignmentsQuery();
-  const [assignmentMap, setAssignmentMap] = useState<Record<string, string[]>>({});
+  const [assignmentMap, setAssignmentMap] = useState<Record<string, string[]>>(
+    USE_MOCK ? mockAssignmentMap : {}
+  );
 
 
   const loadAssignmentsForUseCases = useCallback(
@@ -62,12 +72,15 @@ const UseCaseManager: React.FC = () => {
 
   // RTK Query hooks
   const {
-    data: useCasesResponse,
-    isLoading: isLoadingUseCases,
+    data: useCasesResponseApi,
+    isLoading: isLoadingUseCasesApi,
     error: useCasesError,
-  } = useGetUsecasesQuery();
-  useEffect(() => {
+  } = useGetUsecasesQuery(undefined, { skip: USE_MOCK });
+  const useCasesResponse = USE_MOCK ? mockUsecasesResponse : useCasesResponseApi;
+  const isLoadingUseCases = USE_MOCK ? false : isLoadingUseCasesApi;
 
+  useEffect(() => {
+    if (USE_MOCK) return;
     if (!Array.isArray(useCasesResponse)) return;
     void loadAssignmentsForUseCases(useCasesResponse);
   }, [useCasesResponse, loadAssignmentsForUseCases]);
@@ -75,11 +88,13 @@ const UseCaseManager: React.FC = () => {
 
 
   const {
-    data: camerasResponse,
-    isLoading: isLoadingCameras,
+    data: camerasResponseApi,
+    isLoading: isLoadingCamerasApi,
   } = useGetCamerasQuery(undefined, {
-    skip: !drawerOpen, // Only fetch when drawer opens
+    skip: USE_MOCK || !drawerOpen, // Only fetch when drawer opens
   });
+  const camerasResponse = USE_MOCK ? mockCamerasResponse : camerasResponseApi;
+  const isLoadingCameras = USE_MOCK ? false : isLoadingCamerasApi;
 
   const [assignCameras, { isLoading: isAssigning }] = useAssignCamerasMutation();
 
@@ -117,6 +132,13 @@ const UseCaseManager: React.FC = () => {
 
   // Handle save camera assignments
   const handleSaveCameraAssignments = async (useCaseId: string, selectedCameraIds: string[]) => {
+    if (USE_MOCK) {
+      setAssignmentMap((prev) => ({ ...prev, [useCaseId]: selectedCameraIds }));
+      dispatch(showToast({ id: crypto.randomUUID(), message: "Mock camera assignments saved.", severity: "success" }));
+      handleCloseDrawer();
+      return;
+    }
+
     try {
       await assignCameras({
         usecaseId: useCaseId,
@@ -256,9 +278,7 @@ const UseCaseManager: React.FC = () => {
 
       {/* Page Header */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom fontWeight={700}>
-          Use-Case Manager
-        </Typography>
+        
         <Typography variant="body1" color="text.secondary">
           Configure and assign cameras to AI use cases based on your organization&apos;s
           license. Select cameras from Camera Management to enable specific detection

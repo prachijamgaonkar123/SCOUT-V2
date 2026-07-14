@@ -15,6 +15,7 @@ import { skipToken } from "@reduxjs/toolkit/query/react";
 import { formatDate } from "@/utils/dateUtils";
 import { OrgAppRole, RoleFeature } from "./ViewRole.types";
 import Loader from "@/app/components/atoms/Loader/Loader";
+import { USE_MOCK, mockOrgAppRoles, getMockAssignedFeatures } from "../../../roleManagementMockData";
 
 export default function ViewRolePage() {
   const router = useRouter();
@@ -30,24 +31,39 @@ export default function ViewRolePage() {
     typeof params?.orgAppRoleId === "string" ? params.orgAppRoleId : undefined;
 
   /* ---------------- ROLE OVERVIEW API ---------------- */
-  const { data, isLoading: isLoadingForRole } = useGetRoleQuery(
-    tenantId && userId ? { tenantId, userId } : skipToken,
+  const { data, isLoading: isLoadingForRoleApi } = useGetRoleQuery(
+    USE_MOCK ? skipToken : tenantId && userId ? { tenantId, userId } : skipToken,
   );
+  const isLoadingForRole = USE_MOCK ? false : isLoadingForRoleApi;
 
   const selectedRole = useMemo<OrgAppRole | undefined>(() => {
+    if (USE_MOCK) {
+      return mockOrgAppRoles.find((item) => item.org_app_role_id === orgAppRoleId);
+    }
     const roleList = data?.data?.data ?? [];
     return roleList.find((item) => item.org_app_role_id === orgAppRoleId);
   }, [data, orgAppRoleId]);
 
   /* ---------------- FEATURE API ---------------- */
-  const [fetchFeatures, { isLoading, isError }] =
+  const [fetchFeatures, { isLoading: isLoadingFeaturesApi, isError }] =
     useGetFeatureOfRoleByRoleIdMutation();
+  const isLoading = USE_MOCK ? false : isLoadingFeaturesApi;
 
   const [features, setFeatures] = useState<RoleFeature[]>([]);
 
   /* ---------------- FETCH FEATURES ---------------- */
 
   useEffect(() => {
+    if (USE_MOCK) {
+      setFeatures(
+        getMockAssignedFeatures(orgAppRoleId).map((f) => ({
+          role_feature_id: `mock-rf-${f.feature_id}`,
+          feature: f,
+        }))
+      );
+      return;
+    }
+
     if (!tenantId || !roleId || !orgAppRoleId) return;
 
     fetchFeatures({ tenantId, roleId, orgAppRoleId })

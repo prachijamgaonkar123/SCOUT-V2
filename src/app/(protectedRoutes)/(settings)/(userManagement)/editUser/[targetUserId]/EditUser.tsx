@@ -33,6 +33,17 @@ import {
 import { useRoleListQuery } from "../../../(roleManagement)/roleOverview/RoleOverviewApi";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import Loader from "@/app/components/atoms/Loader/Loader";
+import {
+  USE_MOCK,
+  mockOrgAppRoles,
+  mockEnvelope,
+} from "../../../(roleManagement)/roleManagementMockData";
+import {
+  mockBackendUsers,
+  mockUserDetailsById,
+  mockOrgAppRoleIdByUserId,
+  updateMockBackendUser,
+} from "../../userManagementMockData";
 
 interface UserFormValues {
   orgAppRoleId: string;
@@ -58,21 +69,59 @@ const EditUser: React.FC = () => {
 
   const [editUser, { isLoading: isSubmitting }] = useEditUserMutation();
 
-  const { data: userData, isLoading: isUserLoading } = useGetUserByIdQuery(
+  const { data: userDataApi, isLoading: isUserLoadingApi } = useGetUserByIdQuery(
     { tenantId: tenantId!, userId: targetUserId },
-    { skip: !tenantId || !loggedInUserId || !targetUserId },
+    { skip: USE_MOCK || !tenantId || !loggedInUserId || !targetUserId },
   );
 
-  const { data: userRoleData, isLoading: isUserRoleLoading } =
+  const { data: userRoleDataApi, isLoading: isUserRoleLoadingApi } =
     useGetUserRoleByUserIdQuery(
       { userId: targetUserId, orgId: tenantId! },
-      { skip: !tenantId || !targetUserId },
+      { skip: USE_MOCK || !tenantId || !targetUserId },
     );
 
-  const { data: roleData, isLoading: isRoleLoading } = useRoleListQuery(
+  const { data: roleDataApi, isLoading: isRoleLoadingApi } = useRoleListQuery(
     { tenantId: tenantId!, userId: loggedInUserId! },
-    { skip: !tenantId || !loggedInUserId },
+    { skip: USE_MOCK || !tenantId || !loggedInUserId },
   );
+
+  const mockUser = mockBackendUsers.find((u) => u.userId === targetUserId);
+  const mockDetails = mockUserDetailsById[targetUserId];
+  const mockOrgAppRoleId = mockOrgAppRoleIdByUserId[targetUserId];
+  const mockRole = mockOrgAppRoles.find((r) => r.org_app_role_id === mockOrgAppRoleId);
+
+  const userData = USE_MOCK
+    ? {
+        status: "success",
+        message: "Mock data",
+        data: {
+          first_name: mockUser?.first_name ?? "",
+          last_name: mockUser?.last_name ?? "",
+          email: mockUser?.email ?? "",
+          employee_id: mockDetails?.employee_id ?? "",
+          phoneNumber: mockUser?.phoneNumber ?? "",
+          userName: mockDetails?.userName ?? "",
+          image_path: mockDetails?.image_path,
+        },
+      }
+    : userDataApi;
+  const isUserLoading = USE_MOCK ? false : isUserLoadingApi;
+
+  const userRoleData = USE_MOCK
+    ? {
+        status: "success",
+        message: "Mock data",
+        data: {
+          status: "success",
+          message: "Mock data",
+          data: mockRole ? [{ orgAppRole: mockRole }] : [],
+        },
+      }
+    : userRoleDataApi;
+  const isUserRoleLoading = USE_MOCK ? false : isUserRoleLoadingApi;
+
+  const roleData = USE_MOCK ? mockEnvelope(mockOrgAppRoles) : roleDataApi;
+  const isRoleLoading = USE_MOCK ? false : isRoleLoadingApi;
 
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -129,6 +178,29 @@ const EditUser: React.FC = () => {
   };
 
   const onSubmit: SubmitHandler<UserFormValues> = async (data) => {
+    if (USE_MOCK) {
+      updateMockBackendUser(targetUserId, {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        employeeId: data.employeeId,
+        phone: data.phone,
+        userName: data.userName,
+        orgAppRoleId: data.orgAppRoleId,
+      });
+
+      dispatch(
+        showToast({
+          id: crypto.randomUUID(),
+          message: "Mock user updated successfully",
+          severity: "success",
+        }),
+      );
+
+      router.push("/userOverview");
+      return;
+    }
+
     try {
       await editUser({
         payload: {

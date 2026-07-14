@@ -28,6 +28,13 @@ import {
 import Loader from "@/app/components/atoms/Loader/Loader";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { RoleFeature } from "./EditRole.types";
+import {
+  USE_MOCK,
+  mockFeatures,
+  getMockAssignedFeatures,
+  mockEnvelope,
+  setMockAssignedFeatures,
+} from "../../../roleManagementMockData";
 
 /* ---------------- Types ---------------- */
 
@@ -52,24 +59,32 @@ const EditRole: React.FC = () => {
   const userId = useSelector((state: RootState) => state.auth.user?.userId);
 
   /* ---------------- API hooks ---------------- */
-  const { data: allFeaturesRes, isLoading: isAllLoading } =
+  const { data: allFeaturesResApi, isLoading: isAllLoadingApi } =
     useGetFeaturesByOrgIdQuery(
       { userId: userId!, orgId: tenantId! },
-      { skip: !userId || !tenantId },
+      { skip: USE_MOCK || !userId || !tenantId },
     );
+  const allFeaturesRes = USE_MOCK ? mockEnvelope(mockFeatures) : allFeaturesResApi;
+  const isAllLoading = USE_MOCK ? false : isAllLoadingApi;
 
 // ✅ Narrow types first, then no assertions needed
 const isReady = !!tenantId && !!roleId && !!orgAppRoleId;
 
-const { data: roleFeaturesRes, isLoading: isRoleLoading } =
+const { data: roleFeaturesResApi, isLoading: isRoleLoadingApi } =
   useGetFeaturesOfRoleByRoleIdQuery(
     {
       tenantId: tenantId ?? "",
       roleId: roleId ?? "",
       orgAppRoleId: orgAppRoleId ?? "",
     },
-    { skip: !isReady },
+    { skip: USE_MOCK || !isReady },
   );
+  const roleFeaturesRes = USE_MOCK
+    ? mockEnvelope(
+        getMockAssignedFeatures(orgAppRoleId).map((f) => ({ feature_id: f.feature_id, feature: f }))
+      )
+    : roleFeaturesResApi;
+  const isRoleLoading = USE_MOCK ? false : isRoleLoadingApi;
 
   const [assignFeatureToRole, { isLoading: isAssigning }] =
     useAssignFeatureToRoleMutation();
@@ -118,7 +133,7 @@ const { data: roleFeaturesRes, isLoading: isRoleLoading } =
   };
 
   const handleSave = async () => {
-    if (!tenantId || !orgAppRoleId) return;
+    if (!orgAppRoleId) return;
 
     const toAssign = selectedFeatureIds.filter(
       (id) => !initialFeatureIds.includes(id),
@@ -132,6 +147,21 @@ const { data: roleFeaturesRes, isLoading: isRoleLoading } =
     if (toAssign.length === 0 && toUnmap.length === 0) {
       return;
     }
+
+    if (USE_MOCK) {
+      setMockAssignedFeatures(orgAppRoleId, selectedFeatureIds);
+      dispatch(
+        showToast({
+          id: crypto.randomUUID(),
+          message: "Mock permissions updated.",
+          severity: "success",
+        }),
+      );
+      router.push("/roleOverview");
+      return;
+    }
+
+    if (!tenantId) return;
 
     try {
       if (toUnmap.length > 0) {
