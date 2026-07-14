@@ -33,6 +33,7 @@ import {
   mockFeatures,
   getMockAssignedFeatures,
   mockEnvelope,
+  setMockAssignedFeatures,
 } from "../../../roleManagementMockData";
 
 /* ---------------- Types ---------------- */
@@ -148,6 +149,7 @@ const { data: roleFeaturesResApi, isLoading: isRoleLoadingApi } =
     }
 
     if (USE_MOCK) {
+      setMockAssignedFeatures(orgAppRoleId, selectedFeatureIds);
       dispatch(
         showToast({
           id: crypto.randomUUID(),

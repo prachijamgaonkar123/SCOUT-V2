@@ -476,19 +476,24 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
     }
   }, [open, useCaseName, recalcCanvasSize, imageLoaded]);
 
+  // Fetches once per open/URL rather than on every canvasWidth/canvasHeight
+  // change. Re-fetching on every resize (the previous behavior) fought with
+  // the dialog-width-follows-image-size logic below: resizing the dialog
+  // changed the canvas size, which re-triggered a fresh network fetch and
+  // briefly blanked the canvas, which could cascade into further resizes.
+  // The image is decoded once and cached in imageRef; recalcCanvasSize (via
+  // the resize/ResizeObserver effect and the call in onload below) re-fits
+  // that same cached image to whatever canvas size is current.
   useEffect(() => {
     if (!open) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    if (canvasWidth < 100 || canvasHeight < 100) return;
+    setImageLoaded(false);
     const img = new Image();
     imageRef.current = img;
     img.onload = () => {
+      // Only now do we know the image's true aspect ratio, so re-fit the
+      // canvas to it (recalcCanvasSize falls back to a 16:9 guess otherwise).
+      recalcCanvasSize();
       setImageLoaded(true);
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     };
     img.onerror = () => {
       setTimeout(() => {
@@ -496,7 +501,7 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
       }, 500);
     };
     img.src = `${cameraFeedUrl}?t=${Date.now()}`;
-  }, [open, cameraFeedUrl, canvasWidth, canvasHeight]);
+  }, [open, cameraFeedUrl, recalcCanvasSize]);
 
   useEffect(() => {
     if (open && imageLoaded) {
@@ -822,23 +827,41 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
     }
   }, [editingNameIndex]);
 
+  // The camera image's aspect ratio rarely matches the dialog's (91vw x
+  // 89vh minus a fixed 300px sidebar), so fitting the canvas to that box
+  // while preserving aspect ratio (recalcCanvasSize) leaves the image
+  // narrower than the available width — visible as blank space on both
+  // sides. Once the true fitted width is known, shrink the dialog to hug
+  // it (capped at 92vw) instead of leaving the excess as dead space. This
+  // is a stable fixed point: on the next layout pass the container is
+  // exactly canvasWidth wide, which reproduces the same canvasWidth, so it
+  // settles in one step rather than oscillating.
+  const desktopChromeWidth = 300 /* sidebar */ + 24 /* left column padding */ + 3 /* borders */;
+  const fittedDialogWidth =
+    isMdUp && canvasWidth > 0 ? `min(92vw, ${canvasWidth + desktopChromeWidth}px)` : undefined;
+
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      fullWidth
-      maxWidth="xl"
+      fullWidth={false}
+      maxWidth={false}
       slotProps={{
         paper: {
           sx: {
-            width: { xs: '100%', sm: '95%', md: '95%', lg: '90%', xl: '1200px' },
-            maxWidth: '1300px',
-            // The canvas container top-aligns and shrink-wraps to the fitted
-            // image size, so a shorter dialog keeps the leftover space (below
-            // the frame) from showing as a large blank gap.
-            height: { xs: '100vh', sm: '78vh', md: '74vh' },
-            m: { xs: 0, sm: 1, md: 2 },
+            // Sized directly off the viewport (91vw / 89vh) rather than a
+            // fixed breakpoint scale so it fits a 1920x1080 screen and
+            // scales gracefully down to 1366x768 without wasted margin.
+            // Once the image loads, width instead hugs its fitted size
+            // (see fittedDialogWidth) so there's no dead space beside it.
+            // maxWidth={false} on the Dialog disables MUI's built-in
+            // paperWidthXl cap (1536px), which would otherwise clip this
+            // on wide screens.
+            width: fittedDialogWidth ?? { xs: '100%', sm: '91vw' },
+            height: { xs: '100vh', sm: '89vh' },
+            m: { xs: 0, sm: 2 },
             bgcolor: 'white',
+            transition: 'width 0.15s ease',
           },
         },
       }}
@@ -859,7 +882,7 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
             flex: '1 1 auto',
             minWidth: 0,
             minHeight: 0,
-            p: { xs: 1, sm: 2 },
+            p: { xs: 1, sm: 1.5 },
             bgcolor: 'white',
             display: 'flex',
             flexDirection: 'column',
@@ -867,7 +890,7 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
           }}
         >
           {/* Header */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: { xs: 1, sm: 2 } }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: { xs: 1, sm: 1.5 } }}>
             <IconButton
               onClick={() => setDrawerOpen(true)}
               sx={{ display: { xs: 'inline-flex', md: 'none' } }}
@@ -897,13 +920,15 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
             </Box>
           </Box>
 
-          {/* Toolbar */}
+          {/* Toolbar — single row on desktop; wraps only below md so
+              Undo/Redo/Clear never fall to a second line at 1366x768+. */}
           <Box
             sx={{
               display: 'flex',
-              flexWrap: 'wrap',
-              gap: { xs: 0.5, sm: 1, md: 2 },
-              mb: { xs: 1, sm: 2 },
+              flexWrap: { xs: 'wrap', md: 'nowrap' },
+              overflowX: { xs: 'visible', md: 'auto' },
+              gap: { xs: 0.5, sm: 1, md: 1.5 },
+              mb: { xs: 1, sm: 1.5 },
               alignItems: 'center',
             }}
           >
@@ -1069,68 +1094,63 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
             </Tooltip>
           </Box>
 
-          {/* ── Canvas container — flex:1/minHeight:0 defines the available
-               space for measurement only; the visible bordered box below
-               hugs the canvas's actual fitted size so no blank gray padding
-               shows above/below the image ── */}
+          {/* ── Preview container — fills all remaining width/height in the
+               left column (flex:1 1 auto, minHeight:0). The canvas itself is
+               sized by recalcCanvasSize to "contain" the image (fit within
+               this box preserving aspect ratio, like object-fit: contain);
+               the container's own background fills any leftover space so
+               it reads as a frame rather than blank dialog whitespace ── */}
           <Box
             ref={containerRef}
             sx={{
-              flex: '1 1 0',
+              flex: '1 1 auto',
               minHeight: 0,
               width: '100%',
               height: '100%',
               display: 'flex',
               justifyContent: 'center',
-              alignItems: 'flex-start',
+              alignItems: 'center',
               position: 'relative',
+              bgcolor: '#f5f5f5',
+              borderRadius: 1,
+              border: '1px solid #e0e0e0',
               overflow: 'hidden',
             }}
           >
-            <Box
-              sx={{
-                position: 'relative',
-                width: canvasWidth || '100%',
-                height: canvasHeight || '100%',
-                display: 'flex',
-                bgcolor: '#f5f5f5',
-                borderRadius: 1,
-                border: '2px solid #e0e0e0',
-                overflow: 'hidden',
+            <canvas
+              ref={canvasRef}
+              width={canvasWidth}
+              height={canvasHeight}
+              style={{
+                cursor: 'crosshair',
+                display: 'block',
+                width: canvasWidth ? `${canvasWidth}px` : '100%',
+                height: canvasHeight ? `${canvasHeight}px` : '100%',
+                maxWidth: '100%',
+                maxHeight: '100%',
+                objectFit: 'contain',
               }}
-            >
-              <canvas
-                ref={canvasRef}
-                width={canvasWidth}
-                height={canvasHeight}
-                style={{
-                  cursor: 'crosshair',
-                  display: 'block',
-                  width: '100%',
-                  height: '100%',
+              onMouseDown={handleCanvasMouseDown}
+              onMouseMove={handleCanvasMouseMove}
+              onMouseUp={handleCanvasMouseUp}
+              onClick={handleCanvasClick}
+              onContextMenu={handleCanvasContextMenu}
+            />
+            {!imageLoaded && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  textAlign: 'center',
+                  color: 'grey.500',
                 }}
-                onMouseDown={handleCanvasMouseDown}
-                onMouseMove={handleCanvasMouseMove}
-                onMouseUp={handleCanvasMouseUp}
-                onClick={handleCanvasClick}
-                onContextMenu={handleCanvasContextMenu}
-              />
-              {!imageLoaded && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    textAlign: 'center',
-                    color: 'grey.500',
-                  }}
-                >
-                  <CircularProgress size={24} sx={{ mb: 1 }} />
-                  <Typography variant="body2">Loading camera feed...</Typography>
-                </Box>
-              )}
-            </Box>
+              >
+                <CircularProgress size={24} sx={{ mb: 1 }} />
+                <Typography variant="body2">Loading camera feed...</Typography>
+              </Box>
+            )}
           </Box>
 
           {/* Hint text */}
@@ -1156,8 +1176,8 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
         {isMdUp && (
           <Box
             sx={{
-              width: '220px',
-              flex: '0 0 220px',
+              width: '300px',
+              flex: '0 0 300px',
               display: 'flex',
               flexDirection: 'column',
               borderLeft: '1px solid',

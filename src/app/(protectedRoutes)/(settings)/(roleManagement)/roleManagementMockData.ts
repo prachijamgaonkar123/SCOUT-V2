@@ -67,6 +67,37 @@ export const getMockAssignedFeatures = (orgAppRoleId: string | undefined) => {
   return mockFeatures.filter((f) => ids.includes(f.feature_id));
 };
 
+/* ---------- MOCK MUTATIONS ---------- */
+// Mutating the shared arrays in place (rather than reassigning) lets every
+// page that imports them — RoleOverview, ViewRole, EditRole — see the same
+// data across client-side navigations, without a real backend. A full page
+// refresh re-evaluates the module and resets everything back to the seed data.
+
+export const addMockRole = (roleName: string) => {
+  const now = new Date().toISOString();
+  const newRole = {
+    org_app_role_id: `org-role-${Date.now()}`,
+    createdAt: now,
+    updatedAt: now,
+    role_id: { role_id: `role-${Date.now()}`, name: roleName },
+  };
+  mockOrgAppRoles.push(newRole);
+  return newRole;
+};
+
+export const removeMockRole = (roleId: string) => {
+  const index = mockOrgAppRoles.findIndex((r) => r.role_id.role_id === roleId);
+  if (index === -1) return;
+  const [removed] = mockOrgAppRoles.splice(index, 1);
+  delete mockAssignedFeatureIdsByRole[removed.org_app_role_id];
+};
+
+export const setMockAssignedFeatures = (orgAppRoleId: string, featureIds: string[]) => {
+  mockAssignedFeatureIdsByRole[orgAppRoleId] = featureIds;
+  const role = mockOrgAppRoles.find((r) => r.org_app_role_id === orgAppRoleId);
+  if (role) role.updatedAt = new Date().toISOString();
+};
+
 /* ---------- ENVELOPE HELPER ---------- */
 
 // Mirrors the { status, message, data: { status, message, data: T } } shape

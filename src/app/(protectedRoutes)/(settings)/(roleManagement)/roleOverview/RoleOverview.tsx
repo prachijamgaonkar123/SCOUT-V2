@@ -23,7 +23,7 @@ import { showToast } from '@/app/store/slices/toasterSlice';
 import AddRole from '../addRole/AddRole';
 import RoleSettingTable from '@/app/components/organisms/RoleSettingTable/RoleSettingTable';
 import { getErrorMessage } from '@/utils/getErrorMessage';
-import { USE_MOCK, mockOrgAppRoles } from '../roleManagementMockData';
+import { USE_MOCK, mockOrgAppRoles, removeMockRole } from '../roleManagementMockData';
 
 export default function RoleOverview() {
   const router = useRouter();
@@ -139,7 +139,8 @@ export default function RoleOverview() {
     if (!selectedRoleId) return;
 
     if (USE_MOCK) {
-      setMockRoles((prev) => prev.filter((r) => r.role_id.role_id !== selectedRoleId));
+      removeMockRole(selectedRoleId);
+      setMockRoles([...mockOrgAppRoles]);
       dispatch(
         showToast({
           id: crypto.randomUUID(),

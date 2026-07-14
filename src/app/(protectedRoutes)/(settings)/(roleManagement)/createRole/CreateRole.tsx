@@ -17,7 +17,7 @@ import { RootState } from "@/app/store/store";
 import { useCreateRoleMutation } from "./CreateRoleApi";
 import { showToast } from "@/app/store/slices/toasterSlice";
 import { getErrorMessage } from "@/utils/getErrorMessage";
-import { USE_MOCK } from "../roleManagementMockData";
+import { USE_MOCK, addMockRole } from "../roleManagementMockData";
 
 const CreateRole: React.FC = () => {
   const router = useRouter();
@@ -47,6 +47,7 @@ const CreateRole: React.FC = () => {
     }
 
     if (USE_MOCK) {
+      const newRole = addMockRole(roleName);
       dispatch(
         showToast({
           message: "Mock role created.",
@@ -54,7 +55,7 @@ const CreateRole: React.FC = () => {
           id: crypto.randomUUID(),
         })
       );
-      router.push(`/addFeatures/mock-role-${Date.now()}`);
+      router.push(`/addFeatures/${newRole.org_app_role_id}`);
       return;
     }
 

@@ -25,7 +25,7 @@ import {
 } from "./AddFeaturesApi";
 import Loader from "@/app/components/atoms/Loader/Loader";
 import { getErrorMessage } from "@/utils/getErrorMessage";
-import { USE_MOCK, mockFeatures } from "../../roleManagementMockData";
+import { USE_MOCK, mockFeatures, setMockAssignedFeatures } from "../../roleManagementMockData";
 
 
 /* ---------------- Component ---------------- */
@@ -85,6 +85,7 @@ const AddFeatures: React.FC = () => {
     }
 
     if (USE_MOCK) {
+      setMockAssignedFeatures(orgAppRoleId, selectedFeatureIds);
       dispatch(
         showToast({
           id: crypto.randomUUID(),
