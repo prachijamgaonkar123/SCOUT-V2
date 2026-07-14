@@ -50,6 +50,9 @@ import {
   useUpdateZoneMutation,
   useDeleteZoneMutation,
   useCreateLocationMutation,
+  GetZonesResponse,
+  Zone as ApiZone,
+  Location as ApiLocation,
 } from "./ZoneLocationMappingApi";
 import { mockZonesResponse } from "./zoneLocationMockData";
 import { useDispatch } from "react-redux";
@@ -85,7 +88,8 @@ const ZoneLocationMapping: React.FC = () => {
   const { data: zonesResponseApi, isLoading, error } = useGetZonesQuery(undefined, {
     skip: USE_MOCK,
   });
-  const zonesResponse = USE_MOCK ? mockZonesResponse : zonesResponseApi;
+  const [mockZones, setMockZones] = useState<GetZonesResponse>(mockZonesResponse);
+  const zonesResponse = USE_MOCK ? mockZones : zonesResponseApi;
 
   const [createZone, { isLoading: isCreating }] = useCreateZoneMutation();
   const [updateZone] = useUpdateZoneMutation();
@@ -139,6 +143,10 @@ const ZoneLocationMapping: React.FC = () => {
     if (!zoneToDelete?.id) return;
 
     if (USE_MOCK) {
+      setMockZones((prev) => ({
+        ...prev,
+        zones: prev.zones.filter((z) => z.id !== zoneToDelete.id),
+      }));
       dispatch(showToast({ id: crypto.randomUUID(), message: "Mock zone deleted.", severity: "success" }));
       setZoneToDelete(null);
       return;
@@ -155,6 +163,29 @@ const ZoneLocationMapping: React.FC = () => {
   // Save zone (add or edit)
   const handleSaveZone = async (zoneData: ZoneFormData) => {
     if (USE_MOCK) {
+      setMockZones((prev) => {
+        if (zoneData.id) {
+          return {
+            ...prev,
+            zones: prev.zones.map((z) =>
+              z.id === zoneData.id
+                ? { ...z, zoneName: zoneData.name, description: zoneData.description }
+                : z
+            ),
+          };
+        }
+
+        const newZone: ApiZone = {
+          id: crypto.randomUUID(),
+          zoneName: zoneData.name,
+          description: zoneData.description,
+          locationsCount: 0,
+          camerasCount: 0,
+          locations: [],
+        };
+
+        return { ...prev, zones: [...prev.zones, newZone] };
+      });
       dispatch(showToast({ id: crypto.randomUUID(), message: "Mock zone saved.", severity: "success" }));
       return;
     }
@@ -188,6 +219,20 @@ const ZoneLocationMapping: React.FC = () => {
   // Save locations
   const handleSaveLocations = async (zoneId: string, locations: LocationItem[]) => {
     if (USE_MOCK) {
+      setMockZones((prev) => ({
+        ...prev,
+        zones: prev.zones.map((z) => {
+          if (z.id !== zoneId) return z;
+          const newLocations: ApiLocation[] = locations.map((loc) => ({
+            id: loc.id,
+            zoneId,
+            locationName: loc.name,
+            description: loc.description,
+          }));
+          const mergedLocations = [...(z.locations ?? []), ...newLocations];
+          return { ...z, locations: mergedLocations, locationsCount: mergedLocations.length };
+        }),
+      }));
       dispatch(showToast({ id: crypto.randomUUID(), message: "Mock locations saved.", severity: "success" }));
       return;
     }
@@ -234,14 +279,7 @@ const ZoneLocationMapping: React.FC = () => {
     <Container maxWidth="xl" sx={{ py: 4 }}>
 
       {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom fontWeight={700}>
-          Zone-Location Mapping
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Manage zones and create locations inside zones for organized monitoring.
-        </Typography>
-      </Box>
+      
 
       {/* Stats Cards */}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)", md: "repeat(4,1fr)" }, gap: 2, mb: 3 }}>

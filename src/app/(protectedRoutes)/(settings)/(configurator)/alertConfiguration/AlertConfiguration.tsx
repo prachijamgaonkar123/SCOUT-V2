@@ -168,6 +168,9 @@ const AlertConfiguration: React.FC = () => {
   const [saveUserSubscriptions, { isLoading: isSaving }] = useSaveUserSubscriptionsMutation();
   const [setUserStatus] = useSetUserStatusMutation();
 
+  const [mockUsersState, setMockUsersState] = useState<ScoutUser[]>(mockUsers);
+  const [mockConfigsState, setMockConfigsState] = useState<UserAlertConfig[]>(mockUserAlertConfigs);
+
   const statusByUserId = useMemo(() => {
     const map: Record<string, boolean> = {};
     (statusesResponse ?? []).forEach((status) => {
@@ -178,7 +181,7 @@ const AlertConfiguration: React.FC = () => {
 
   const users: ScoutUser[] = useMemo(() => {
     if (USE_MOCK) {
-    return mockUsers;
+    return mockUsersState;
   }
     const backendUsers = usersResponse?.data?.data ?? [];
     return backendUsers.map((u) => ({
@@ -191,7 +194,7 @@ const AlertConfiguration: React.FC = () => {
       // No status row yet means the user has never been disabled.
       enabled: statusByUserId[u.userId] ?? true,
     }));
-  }, [usersResponse, statusByUserId]);
+  }, [usersResponse, statusByUserId, mockUsersState]);
 
   const useCases: UseCaseSummary[] = useMemo(() => {
 
@@ -250,7 +253,7 @@ const AlertConfiguration: React.FC = () => {
   const configsByUserId = useMemo(() => {
     if (USE_MOCK) {
 
-      return mockUserAlertConfigs.reduce<
+      return mockConfigsState.reduce<
         Record<string, UserAlertConfig>
       >((acc, config) => {
 
@@ -264,7 +267,7 @@ const AlertConfiguration: React.FC = () => {
       acc[config.userId] = config;
       return acc;
     }, {});
-  }, [subscriptionsResponse]);
+  }, [subscriptionsResponse, mockConfigsState]);
 
   const handleConfigure = (user: ScoutUser) => {
     setSelectedUser(user);
@@ -280,6 +283,13 @@ const AlertConfiguration: React.FC = () => {
     try {
 
       if (USE_MOCK) {
+
+        setMockConfigsState((prev) => {
+          const exists = prev.some((c) => c.userId === config.userId);
+          return exists
+            ? prev.map((c) => (c.userId === config.userId ? config : c))
+            : [...prev, config];
+        });
 
         dispatch(
           showToast({
@@ -321,6 +331,10 @@ const AlertConfiguration: React.FC = () => {
     const nextEnabled = !user.enabled;
     try {
       if (USE_MOCK) {
+
+        setMockUsersState((prev) =>
+          prev.map((u) => (u.id === user.id ? { ...u, enabled: nextEnabled } : u))
+        );
 
         dispatch(
           showToast({
@@ -405,9 +419,7 @@ const AlertConfiguration: React.FC = () => {
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom fontWeight={700}>
-          Alert Configuration
-        </Typography>
+        
         <Typography variant="body1" color="text.secondary">
           Configure which AI use case alerts each user receives, and through which
           channels — email, WhatsApp, or SMS.

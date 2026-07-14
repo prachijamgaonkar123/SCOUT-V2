@@ -306,7 +306,7 @@ const AIConfigurationStep: React.FC<AIConfigurationStepProps> = ({
     useState<Record<string, ConfigurationData>>({});
 
   const getCameraFeedUrl = useCallback(() => {
-    if (USE_MOCK || !camera?.id || !tenantId) return '/img/siteimage.jpg';
+    if (USE_MOCK || !camera?.id || !tenantId) return '/img1/siteimage.jpg';
     return `${process.env.NEXT_PUBLIC_BACKEND_URL}/configurator/camera-manager/${tenantId}/${camera.id}/frame`;
   }, [camera?.id, tenantId]);
 

@@ -74,9 +74,14 @@ const OrganizationCameraManagement: React.FC<
   const { data: dataApi, isLoading: isLoadingApi } = useGetAllCamerasQuery(undefined, {
     skip: USE_MOCK,
   });
-  const data = USE_MOCK ? mockCamerasResponse : dataApi;
+  const [mockCameras, setMockCameras] = useState<CameraApiResponse[]>(mockCamerasResponse);
+  const data = USE_MOCK ? mockCameras : dataApi;
   const isLoading = USE_MOCK ? false : isLoadingApi;
   const [deleteCamera] = useDeleteCameraMutation();
+
+  const handleCameraAdd = (camera: CameraApiResponse) => {
+    setMockCameras((prev) => [...prev, camera]);
+  };
 
   const cameras: OrgCamera[] = Array.isArray(data)
     ? data.map((cam: CameraApiResponse) => ({
@@ -96,6 +101,7 @@ const OrganizationCameraManagement: React.FC<
 
   const handleCameraRemove = async (cameraId: string) => {
     if (USE_MOCK) {
+      setMockCameras((prev) => prev.filter((cam) => cam.id !== cameraId));
       setSnackbar({
         open: true,
         message: "Mock camera removed.",
@@ -216,8 +222,7 @@ const OrganizationCameraManagement: React.FC<
       <Box sx={{ flexGrow: 1, p: { xs: 2, sm: 3 } }}>
         <CameraOnboardingStep
           cameras={onboardingCameras}
-          // onCameraAdd={handleCameraAdd}
-
+          onCameraAdd={handleCameraAdd}
           onCameraRemove={handleCameraRemove}
           onNext={() => setAddingCamera(false)}
           onBack={() => setAddingCamera(false)}

@@ -43,7 +43,7 @@ import {
 
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
-import type { OnboardingCamera } from "@/app/types/camera";
+import type { OnboardingCamera, CameraApiResponse } from "@/app/types/camera";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
@@ -91,7 +91,7 @@ interface AssignmentItem {
 interface CameraOnboardingStepProps {
   cameras: OnboardingCamera[];
 
-  // onCameraAdd: (camera: OnboardingCamera) => void;
+  onCameraAdd?: (camera: CameraApiResponse) => void;
 
   onCameraRemove: (cameraId: string) => void;
 
@@ -122,6 +122,7 @@ interface FormErrors {
 
 const CameraOnboardingStep: React.FC<CameraOnboardingStepProps> = ({
   cameras,
+  onCameraAdd,
   onCameraRemove,
   onNext,
   onBack,
@@ -364,7 +365,21 @@ const CameraOnboardingStep: React.FC<CameraOnboardingStepProps> = ({
     setIsAdding(true);
 
     try {
-      if (!USE_MOCK) {
+      if (USE_MOCK) {
+        onCameraAdd?.({
+          id: crypto.randomUUID(),
+          cameraIp: formData.ipAddress.trim(),
+          cameraName: formData.cameraname.trim(),
+          userName: formData.username.trim(),
+          password: formData.password.trim(),
+          RTSPport: formData.port.trim(),
+          rtspStream: formData.rtspUrl.trim(),
+          cameraZone: zoneList.find((z) => z.id === selectedZone)?.zoneName ?? "",
+          cameraLocation:
+            locationList.find((l) => l.id === selectedLocation)?.locationName ?? "",
+          connectionType: "DIRECT_TO_CAMERA",
+        });
+      } else {
         await addCamera({
           cameraIp: formData.ipAddress.trim(),
           cameraName: formData.cameraname.trim(),
@@ -382,8 +397,6 @@ const CameraOnboardingStep: React.FC<CameraOnboardingStepProps> = ({
         }).unwrap();
       }
 
-      // ✅ NO onCameraAdd here
-
       showToast("Camera added successfully!", "success");
 
       setFormData({
@@ -398,8 +411,6 @@ const CameraOnboardingStep: React.FC<CameraOnboardingStepProps> = ({
       });
       setSelectedZone("");
       setSelectedLocation("");
-
-      showToast("Camera added successfully!", "success");
     } catch (error: unknown) {
       console.error("Add camera error:", error);
 
@@ -501,11 +512,22 @@ const CameraOnboardingStep: React.FC<CameraOnboardingStepProps> = ({
         };
 
         console.log("Final payload:", payload);
-        if (!USE_MOCK) {
+        if (USE_MOCK) {
+          onCameraAdd?.({
+            id: crypto.randomUUID(),
+            cameraIp: payload.cameraIp,
+            cameraName: payload.cameraName,
+            userName: payload.userName,
+            password: payload.password,
+            RTSPport: payload.RTSPport,
+            rtspStream: payload.rtspUrl,
+            cameraZone: payload.cameraZone,
+            cameraLocation: payload.cameraLocation,
+            connectionType: payload.connectionType,
+          });
+        } else {
           await addCamera(payload).unwrap();
         }
-
-        // 🔥 This updates UI instantly
       }
 
       showToast("NVR cameras added successfully!", "success");
@@ -539,6 +561,12 @@ const CameraOnboardingStep: React.FC<CameraOnboardingStepProps> = ({
     updated[index].locationId = "";
     updated[index].locationOptions = [];
     setPendingAssignments(updated);
+
+    if (USE_MOCK) {
+      updated[index].locationOptions = MOCK_LOCATIONS_BY_ZONE[zoneId] ?? [];
+      setPendingAssignments([...updated]);
+      return;
+    }
 
     try {
       const res = await fetchLocationsByZone(zoneId).unwrap();
