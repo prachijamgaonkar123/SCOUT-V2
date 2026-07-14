@@ -113,10 +113,6 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ zones, onAssignLocations, 
                       color="text.secondary"
                       sx={{
                         fontSize: "0.875rem",
-                        maxWidth: 400,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
                       }}
                     >
                       {zone.description ?? "-"}

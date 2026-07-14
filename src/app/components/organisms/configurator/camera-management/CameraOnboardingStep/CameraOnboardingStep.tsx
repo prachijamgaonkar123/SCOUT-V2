@@ -1058,9 +1058,6 @@ const CameraOnboardingStep: React.FC<CameraOnboardingStepProps> = ({
                   <Typography
                     sx={{
                       width: "25%",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
                     }}
                   >
                     {cam.cameraName}

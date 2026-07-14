@@ -12,6 +12,9 @@ export interface UseCaseCardProps {
   accentColor?: string;
   accentTint?: string;
   locked?: boolean;
+  /** Blank filler tile — no icon/title/value/lock, just a gray placeholder to
+   * round out the grid when a category has fewer real use cases than columns. */
+  empty?: boolean;
   onClick?: () => void;
 }
 
@@ -23,8 +26,21 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
   accentColor = DASHBOARD_COLORS.primary,
   accentTint = DASHBOARD_COLORS.primaryTint,
   locked = false,
+  empty = false,
   onClick,
 }) => {
+  if (empty) {
+    return (
+      <Box
+        sx={{
+          border: `1.5px solid ${DASHBOARD_COLORS.border}`,
+          borderRadius: "10px",
+          backgroundColor: DASHBOARD_COLORS.bg,
+        }}
+      />
+    );
+  }
+
   if (locked) {
     return (
       <Tooltip title={`Upgrade your plan to access ${title}`} arrow placement="top">
@@ -65,10 +81,6 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
               fontWeight: 700,
               color: DASHBOARD_COLORS.textSecondary,
               lineHeight: 1.3,
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
             }}
           >
             {title}
@@ -117,10 +129,6 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
             fontWeight: 700,
             color: DASHBOARD_COLORS.textPrimary,
             lineHeight: 1.3,
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
           }}
         >
           {title}

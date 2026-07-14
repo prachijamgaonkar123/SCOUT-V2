@@ -15,6 +15,12 @@ type Props = Readonly<{
   xAxisDates: string[];
   xAxisTimes: string[];
   granularity: "hour" | "weekday" | "week";
+  /** Set false for category axes (e.g. gate names) where the line should start
+   * right at the first tick instead of leaving a blank leading tick. */
+  padStart?: boolean;
+  /** Overrides the caption below the chart — use for non-time category axes
+   * (e.g. "Zone") instead of the granularity-based "Time (...)" caption. */
+  xAxisLabel?: string;
 }>;
 const xAxisLabelMap = {
   hour: "Time (Hourly)",
@@ -23,12 +29,14 @@ const xAxisLabelMap = {
 };
 
 
-export default function TimeScaleLineChart({ series, xAxisDates, xAxisTimes, granularity }: Props) {
-const xAxisKeys = ["", ...xAxisTimes.map((time, i) => `${xAxisDates[i]}|${time}`)];
+export default function TimeScaleLineChart({ series, xAxisDates, xAxisTimes, granularity, padStart = true, xAxisLabel }: Props) {
+const xAxisKeys = padStart
+  ? ["", ...xAxisTimes.map((time, i) => `${xAxisDates[i]}|${time}`)]
+  : xAxisTimes.map((time, i) => `${xAxisDates[i]}|${time}`);
 const paddedSeries = series.map((s) => ({
   ...s,
-  data: [null, ...s.data],
-  showMark: false, // no circles on the line
+  data: padStart ? [null, ...s.data] : s.data,
+  showMark: padStart ? false : s.showMark, // no circles on the line
 }));
 const allValues = series.flatMap((s) => s.data);
 const allZero = allValues.length > 0 && allValues.every((v) => v === 0);
@@ -115,7 +123,7 @@ const hasNoData = allValues.length === 0 || allZero;
           width: "100%",
           "& .MuiLineElement-root": {
             strokeWidth: 2,
-            
+
           },
           "& .MuiChartsAxis-label": {
             fontWeight: 500,
@@ -132,7 +140,7 @@ const hasNoData = allValues.length === 0 || allZero;
           flexShrink: 0,
         }}
       >
-        {xAxisLabelMap[granularity]}
+        {xAxisLabel ?? xAxisLabelMap[granularity]}
       </Box>
       </>
     )}

@@ -134,9 +134,6 @@ const StatCard: React.FC<StatCardProps> = ({
             color: DASHBOARD_COLORS.textSecondary,
             fontWeight: 600,
             mt: "3px",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
             [theme.breakpoints.up("xl")]: {
               fontSize: "16px",
               mt: "6px",

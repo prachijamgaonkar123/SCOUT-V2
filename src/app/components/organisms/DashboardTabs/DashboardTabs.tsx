@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, ReactNode } from "react";
-import { Box, Paper, Tooltip } from "@mui/material";
-import styles from "./DashboardTabs.module.css";
+import { Box, Paper } from "@mui/material";
+import SegmentedTabBar from "@/app/components/atoms/SegmentedTabBar/SegmentedTabBar";
 import { hasFeature } from "@/utils/hasFeature";
 // Tab configuration
 export interface TabConfig {
@@ -82,56 +82,16 @@ const firstEnabledIndex = tabs.findIndex(
         minHeight: 0,
       }}
     >
-      <div className={styles.tabsContainer}>
-        <div className={styles.tabsList}>
-
-{tabs.map((tab, index) => {
-  const enabled = tab.featureId
-    ? hasFeature(features, tab.featureId)
-    : true;
-
-  const tabButton = (
-    <button
-      className={`${styles.tab} ${value === index ? styles.tabActive : ""}`}
-      onClick={() => {
-        if (enabled) handleChange(index);
-      }}
-      role="tab"
-      aria-selected={value === index}
-      id={`tab-${index}`}
-      disabled={!enabled}
-      style={{
-        opacity: enabled ? 1 : 0.4,
-        cursor: enabled ? "pointer" : "default",
-        pointerEvents: enabled ? "auto" : "none",
-        position: "relative",
-      }}
-    >
-      <span className={styles.tabLabel}>{tab.label}</span>
-      <div className={styles.tabBackground}></div>
-    </button>
-  );
-
-  return (
-     <React.Fragment key={index}>
-      {!enabled ? (
-        <Tooltip title="Upgrade your plan to access chart" arrow placement="top">
-          {/* Wrap in a span to satisfy Tooltip requirement */}
-          <span style={{ display: "inline-block" }}>{tabButton}</span>
-        </Tooltip>
-      ) : (
-        tabButton
-      )}
-
-      {index < tabs.length - 1 && (
-        <div className={styles.tabDivider}></div>
-      )}
-    </React.Fragment>
-  );
-})}
-        </div>
-        <div className={styles.tabsUnderline}></div>
-      </div>
+      <SegmentedTabBar
+        items={tabs.map((tab, index) => ({
+          key: String(index),
+          label: tab.label,
+          disabled: tab.featureId ? !hasFeature(features, tab.featureId) : false,
+          disabledTooltip: "Upgrade your plan to access chart",
+        }))}
+        activeKey={String(value)}
+        onChange={(key) => handleChange(Number(key))}
+      />
 
       <Box
         sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}

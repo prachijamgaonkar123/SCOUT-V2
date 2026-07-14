@@ -2,14 +2,18 @@ import {
   SurveillanceDashboardResponse,
   TrendSeries,
 } from "./SurveillanceMonitoringDashboard.types";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
 // ---------- Helpers ----------
 
 // Wave shape across the day: low at night, peaks around midday, plus a small
 // deterministic jitter so lines look like real activity instead of flat steps.
+// Each series' peak is staggered by `seed` so multiple lines don't crest in
+// lockstep — they spread out and read as distinct layers instead of parallel humps.
 const waveValue = (base: number, hour: number, day: number, seed: number) => {
-  const wave = Math.sin(((hour - 6) / 24) * Math.PI * 2) + 1; // 0..2, peak ~12:00
-  const jitter = ((day * 7 + hour * 3 + seed * 5) % 3) - 1; // -1..1
+  const phaseShift = (seed * 3) % 24;
+  const wave = Math.sin(((hour - 6 + phaseShift) / 24) * Math.PI * 2) + 1; // 0..2
+  const jitter = ((day * 7 + hour * 3 + seed * 5) % 5) - 2; // -2..2
   return Math.max(0, Math.round(base * wave + jitter));
 };
 
@@ -38,9 +42,9 @@ const generateZoneSeries = (
 
 const zoneSet = (a: number[], b: number[], c: number[]) =>
   generateZoneSeries([
-    { zone: "Zone A", color: "#93C4F5", dailyValues: a },
-    { zone: "Zone B", color: "#F5A693", dailyValues: b },
-    { zone: "Zone C", color: "#A8E6CF", dailyValues: c },
+    { zone: "Zone A", color: DASHBOARD_COLORS.primary, dailyValues: a },
+    { zone: "Zone B", color: DASHBOARD_COLORS.warning, dailyValues: b },
+    { zone: "Zone C", color: DASHBOARD_COLORS.workforce, dailyValues: c },
   ]);
 
 // ---------- MOCK DATA (typed as the union) ----------
@@ -90,19 +94,19 @@ export const mockSurveillanceDashboardData: SurveillanceDashboardResponse[] = [
       data: { granularity: "hour", series: [] }, // this use case is pie-chart driven
       pieCharts: {
         onlineCameras: [
-          { zone: "Zone A", count: 14, color: "#A8E6CF" },
-          { zone: "Zone B", count: 10, color: "#93C4F5" },
-          { zone: "Zone C", count: 8, color: "#FFEAA7" },
+          { zone: "Zone A", count: 14, color: DASHBOARD_COLORS.primary },
+          { zone: "Zone B", count: 10, color: DASHBOARD_COLORS.warning },
+          { zone: "Zone C", count: 8, color: DASHBOARD_COLORS.workforce },
         ],
         offlineCameras: [
-          { zone: "Zone A", count: 1, color: "#ffcdd2" },
-          { zone: "Zone B", count: 2, color: "#F5A693" },
-          { zone: "Zone C", count: 1, color: "#D4A5FF" },
+          { zone: "Zone A", count: 1, color: DASHBOARD_COLORS.primary },
+          { zone: "Zone B", count: 2, color: DASHBOARD_COLORS.warning },
+          { zone: "Zone C", count: 1, color: DASHBOARD_COLORS.workforce },
         ],
         tamperedCameras: [
-          { zone: "Zone A", count: 1, color: "#ffcdd2" },
-          { zone: "Zone B", count: 0, color: "#FFEAA7" },
-          { zone: "Zone C", count: 2, color: "#B0E0E6" },
+          { zone: "Zone A", count: 1, color: DASHBOARD_COLORS.primary },
+          { zone: "Zone B", count: 0, color: DASHBOARD_COLORS.warning },
+          { zone: "Zone C", count: 2, color: DASHBOARD_COLORS.workforce },
         ],
       },
     },

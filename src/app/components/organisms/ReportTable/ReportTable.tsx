@@ -22,7 +22,7 @@ import {
   CircularProgress,
   styled,
 } from "@mui/material";
-import { Description, Visibility, Download } from "@mui/icons-material";
+import { Description, Visibility, Download, ChevronRight } from "@mui/icons-material";
 import InfoOutlineIcon from "@mui/icons-material/InfoOutline";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -211,6 +211,9 @@ export interface ReportColumn<T> {
   label: string;
   minWidth?: number;
   align?: "left" | "right" | "center";
+  /** Custom cell rendering (e.g. a colored dot, a badge) — falls back to the
+   * table's default text/chip rendering when omitted. */
+  render?: (value: T[keyof T], row: T) => React.ReactNode;
 }
 
 export type FilterOption = string | number | boolean;
@@ -243,6 +246,11 @@ interface ReportTableProps<T extends object> {
   onDownload?: (row: T, index: number) => void;
   downloadingRows?: Set<number>;
   tooltipMessage: string;
+  /** Row click opens the row (e.g. a detail drawer) instead of using the
+   * Actions column's view/download icons — pair with `hideActions`. */
+  onRowClick?: (row: T) => void;
+  /** Omit the Actions column entirely — for tables driven by `onRowClick` instead. */
+  hideActions?: boolean;
 }
 
 // ----------------------------------------------
@@ -268,6 +276,8 @@ function ReportTable<T extends Record<string, string | number | boolean>>({
   rowsPerPage,
   onPageChange,
   onRowsPerPageChange,
+  onRowClick,
+  hideActions = false,
 }: ReportTableProps<T>) {
   const { t } = useTranslation();
 
@@ -368,10 +378,12 @@ function ReportTable<T extends Record<string, string | number | boolean>>({
       case "missing":
       case "violation":
       case "breach":
+      case "new":
         return { color: COLORS.error, bgColor: COLORS.errorTint };
       case "on_break":
       case "late_arrival":
       case "warning":
+      case "acknowledged":
         return { color: COLORS.warning, bgColor: COLORS.warningTint };
       case "investigating":
       case "pending":
@@ -512,18 +524,22 @@ function ReportTable<T extends Record<string, string | number | boolean>>({
             <Skeleton variant="text" width="80%" />
           </TableCell>
         ))}
-        <TableCell>
-          <Skeleton variant="circular" width={24} height={24} />
-        </TableCell>
+        {!hideActions && (
+          <TableCell>
+            <Skeleton variant="circular" width={24} height={24} />
+          </TableCell>
+        )}
       </TableRow>
     ));
   } else if (data.length > 0) {
     tableRows = data.map((row, index) => (
       <TableRow
         key={index + 1}
+        onClick={onRowClick ? () => onRowClick(row) : undefined}
         sx={{
           "&:nth-of-type(odd)": { backgroundColor: COLORS.bg },
           "&:hover": { backgroundColor: COLORS.hover },
+          cursor: onRowClick ? "pointer" : "default",
           "& td": {
             padding: "14px 16px",
             fontSize: "13.5px",
@@ -535,36 +551,54 @@ function ReportTable<T extends Record<string, string | number | boolean>>({
       >
         {columns.map((column, idx) => (
           <TableCell key={idx + 1} align={column.align ?? "left"}>
-            {renderCellValue(column, row[column.id])}
+            {column.render
+              ? column.render(row[column.id], row)
+              : renderCellValue(column, row[column.id])}
           </TableCell>
         ))}
-        <TableCell align="center">
-          <IconButton
-            size="small"
-            onClick={() => onView?.(row)}
-            sx={{ color: COLORS.textSecondary }}
-          >
-            <Visibility fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            onClick={() => onDownload?.(row, index)}
-            disabled={downloadingRows?.has(index)}
-            sx={{ color: COLORS.textSecondary }}
-          >
-            {downloadingRows?.has(index) ? (
-              <CircularProgress size={16} />
-            ) : (
-              <Download fontSize="small" />
-            )}
-          </IconButton>
-        </TableCell>
+        {hideActions && onRowClick && (
+          <TableCell align="right">
+            <ChevronRight sx={{ fontSize: 20, color: COLORS.textSecondary }} />
+          </TableCell>
+        )}
+        {!hideActions && (
+          <TableCell align="center">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onView?.(row);
+              }}
+              sx={{ color: COLORS.textSecondary }}
+            >
+              <Visibility fontSize="small" />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDownload?.(row, index);
+              }}
+              disabled={downloadingRows?.has(index)}
+              sx={{ color: COLORS.textSecondary }}
+            >
+              {downloadingRows?.has(index) ? (
+                <CircularProgress size={16} />
+              ) : (
+                <Download fontSize="small" />
+              )}
+            </IconButton>
+          </TableCell>
+        )}
       </TableRow>
     ));
   } else {
     tableRows = [
       <TableRow key="no-data">
-        <TableCell colSpan={columns.length + 1} align="center">
+        <TableCell
+          colSpan={!hideActions || onRowClick ? columns.length + 1 : columns.length}
+          align="center"
+        >
           <Typography sx={{ fontSize: "13.5px", color: COLORS.textSecondary }}>
             No matching records found
           </Typography>
@@ -697,21 +731,28 @@ function ReportTable<T extends Record<string, string | number | boolean>>({
                     {column.label}
                   </TableCell>
                 ))}
-                <TableCell
-                  align="center"
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: "11px",
-                    letterSpacing: "0.04em",
-                    textTransform: "uppercase",
-                    color: COLORS.textSecondary,
-                    padding: "12px 16px",
-                    minWidth: 80,
-                    borderBottom: `1px solid ${COLORS.border}`,
-                  }}
-                >
-                  {t("Actions")}
-                </TableCell>
+                {!hideActions && (
+                  <TableCell
+                    align="center"
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: "11px",
+                      letterSpacing: "0.04em",
+                      textTransform: "uppercase",
+                      color: COLORS.textSecondary,
+                      padding: "12px 16px",
+                      minWidth: 80,
+                      borderBottom: `1px solid ${COLORS.border}`,
+                    }}
+                  >
+                    {t("Actions")}
+                  </TableCell>
+                )}
+                {hideActions && onRowClick && (
+                  <TableCell
+                    sx={{ minWidth: 32, borderBottom: `1px solid ${COLORS.border}` }}
+                  />
+                )}
               </TableRow>
             </TableHead>
             <TableBody>{tableRows}</TableBody>

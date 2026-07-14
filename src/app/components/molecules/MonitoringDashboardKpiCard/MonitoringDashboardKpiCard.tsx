@@ -106,10 +106,6 @@ const DashboardKpiCard: React.FC<DashboardKpiCardProps> = ({
             fontWeight: 700,
             lineHeight: 1.25,
             color: isGray ? DASHBOARD_COLORS.textSecondary : color,
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
           }}
         >
           {title}
@@ -159,9 +155,6 @@ const DashboardKpiCard: React.FC<DashboardKpiCardProps> = ({
           fontSize: "11px",
           color: DASHBOARD_COLORS.textSecondary,
           mt: "6px",
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
           visibility: isGray ? "hidden" : "visible",
         }}
       >

@@ -29,6 +29,7 @@ import { useSocketEvent } from "@/customhooks/useSocketEvent";
 import { FEATURE } from "@/app/config/featureRegistry";
 import TimeScaleLineChart from "@/app/components/organisms/TimeScaleLineChart/TimeScaleLineChart";
 import DashboardKpiCard from "@/app/components/molecules/MonitoringDashboardKpiCard/MonitoringDashboardKpiCard";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
 // ---------- MOCK DATA IMPORTS ----------
 import { mockWorkforceDashboardData, mockWorkforceShifts } from "./Mockdata";
@@ -186,6 +187,37 @@ const WorkforceMonitoring: React.FC = () => {
     [dashboardData]
   );
 
+  // Same TimeScaleLineChart shape as Employee Presence in Critical Areas,
+  // built from the flat per-gate counts instead of a per-zone time series.
+  const employeeIdleLineProps = useMemo(() => {
+    const series = [
+      {
+        label: "Idle Count",
+        data: employeeIdleGraphData.map((p) => Number(p.idleCount) || 0),
+        color: DASHBOARD_COLORS.warning,
+        showMark: false,
+      },
+      {
+        label: "Working Count",
+        data: employeeIdleGraphData.map((p) => Number(p.workingCount) || 0),
+        color: DASHBOARD_COLORS.success,
+        showMark: false,
+      },
+      {
+        label: "Not Present Count",
+        data: employeeIdleGraphData.map((p) => Number(p.notPresentCount) || 0),
+        color: DASHBOARD_COLORS.workforce,
+        showMark: false,
+      },
+    ];
+    return {
+      series,
+      xAxisDates: employeeIdleGraphData.map((p) => p.gate),
+      xAxisTimes: employeeIdleGraphData.map(() => ""),
+      granularity: "hour" as const,
+    };
+  }, [employeeIdleGraphData]);
+
   const mobileUsageProps = useMemo(
     () =>
       buildCriticalAreaProps(dashboardData, "Mobile Phone Usage in Restricted Zones"),
@@ -222,17 +254,7 @@ const WorkforceMonitoring: React.FC = () => {
             {WorkforcekpiLoading ? (
               <CircularProgress />
             ) : (
-              <DynamicBarChart
-                data={employeeIdleGraphData}
-                xAxisKey="gate"
-                series={[
-                  { dataKey: "Idle", label: "Idle Count", color: "#FFD1DC" },
-                  { dataKey: "Working", label: "Working Count", color: "#AEEEEE" },
-                  { dataKey: "NotPresent", label: "Not Present Count", color: "#FFF5BA" },
-                ]}
-                yAxisLabel="Count"
-                stackId="exitStatus"
-              />
+              <TimeScaleLineChart {...employeeIdleLineProps} padStart={false} xAxisLabel="Zone" />
             )}
           </Grid>
         </Grid>
@@ -316,8 +338,8 @@ const WorkforceMonitoring: React.FC = () => {
               data={sleepingAbsenceGraphData}
               xAxisKey="gate"
               series={[
-                { dataKey: "Absent", label: "Absent Count", color: "#FFC0CB" },
-                { dataKey: "Present", label: "Present Count", color: "#B0E0E6" },
+                { dataKey: "Absent", label: "Absent Count", color: DASHBOARD_COLORS.workforce },
+                { dataKey: "Present", label: "Present Count", color: DASHBOARD_COLORS.success },
               ]}
               yAxisLabel="Count"
               stackId="exitStatus"

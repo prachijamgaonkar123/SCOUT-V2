@@ -19,6 +19,7 @@ import  DashboardTabs, {
 import DynamicBarChart from "@/app/components/organisms/BarChart/BarChart";
 import CameraStatusDonutChart from "@/app/components/organisms/DonutChart/DonutChart";
 import CollapsibleTimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/CollapsibleTimeFilter";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
 /* -------------------- KPI DATA -------------------- */
 const kpiData: Array<Omit<DashboardKpiCardProps, "route" | "tooltipMessage">> =
@@ -77,10 +78,10 @@ const tamperingTrendData = [
 
 // Donut
 const tamperingTypeData = [
-  { label: "Offline", value: 40, color: "#ffcdd2" },
-  { label: "Blur", value: 25, color: "#FFEAA7" },
-  { label: "Lens Covered", value: 15, color: "#A8E6CF" },
-  { label: "Online", value: 20, color: "#B3E5FC" },
+  { label: "Offline", value: 40, color: DASHBOARD_COLORS.workforce },
+  { label: "Blur", value: 25, color: DASHBOARD_COLORS.warning },
+  { label: "Lens Covered", value: 15, color: DASHBOARD_COLORS.accent },
+  { label: "Online", value: 20, color: DASHBOARD_COLORS.success },
 ];
 
 // Camera uptime / downtime (TOP 10)
@@ -125,8 +126,8 @@ const tabs: TabConfig[] = [
             data={cameraTrendData}
             xAxisKey="time"
             series={[
-              { dataKey: "online", label: "Online", color: "#A8E6CF" },
-              { dataKey: "offline", label: "Offline", color: "#ffcdd2" },
+              { dataKey: "online", label: "Online", color: DASHBOARD_COLORS.success },
+              { dataKey: "offline", label: "Offline", color: DASHBOARD_COLORS.workforce },
             ]}
             yAxisLabel="Camera Count"
           />
@@ -145,8 +146,8 @@ const tabs: TabConfig[] = [
             data={cameraUptimeDowntimeData}
             xAxisKey="camera"
             series={[
-              { dataKey: "uptime", label: "Uptime %", color: "#A8E6CF" },
-              { dataKey: "downtime", label: "Downtime %", color: "#ffcdd2" },
+              { dataKey: "uptime", label: "Uptime %", color: DASHBOARD_COLORS.success },
+              { dataKey: "downtime", label: "Downtime %", color: DASHBOARD_COLORS.workforce },
             ]}
             yAxisLabel="Percentage (%)"
           />
@@ -168,7 +169,7 @@ const tabs: TabConfig[] = [
               .slice(0, 5)}
             xAxisKey="camera"
             series={[
-              { dataKey: "uptime", label: "Uptime %", color: "#A8E6CF" },
+              { dataKey: "uptime", label: "Uptime %", color: DASHBOARD_COLORS.success },
             ]}
             yAxisLabel="Uptime %"
           />
@@ -187,9 +188,9 @@ const tabs: TabConfig[] = [
             data={cameraHealthByZone}
             xAxisKey="zone"
             series={[
-              { dataKey: "online", label: "Online", color: "#A8E6CF" },
-              { dataKey: "offline", label: "Offline", color: "#ffcdd2" },
-              { dataKey: "tampered", label: "Tampered", color: "#FFEAA7" },
+              { dataKey: "online", label: "Online", color: DASHBOARD_COLORS.success },
+              { dataKey: "offline", label: "Offline", color: DASHBOARD_COLORS.workforce },
+              { dataKey: "tampered", label: "Tampered", color: DASHBOARD_COLORS.warning },
             ]}
             yAxisLabel="Camera Count"
           />

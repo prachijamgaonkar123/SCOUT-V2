@@ -67,6 +67,27 @@ export const CATEGORY_TINT: Record<UseCaseCategory, string> = {
   workforce: DASHBOARD_COLORS.workforceTint,
 };
 
+/** Shared dark, saturated palette for chart series (pie/bar/line/donut) —
+ * replaces ad-hoc pastel hex arrays so every chart matches the dashboard theme. */
+// export const CHART_COLORS = [
+//   DASHBOARD_COLORS.primary,
+//   DASHBOARD_COLORS.secondary,
+//   DASHBOARD_COLORS.accent,
+//   DASHBOARD_COLORS.success,
+//   DASHBOARD_COLORS.warning,
+//   DASHBOARD_COLORS.error,
+//   DASHBOARD_COLORS.workforce,
+// ] as const;
+
+// dashboardTheme.ts
+export const CHART_COLORS = [
+  "#264653", // slot 0 — deep navy/slate
+  "#2A9D8F", // slot 1 — teal
+  "#E9C46A", // slot 2 — gold
+  "#E76F51", // slot 3 — burnt orange
+  "#E63946", // slot 4 — red (reserve for true alerts)
+  "#457B9D", // slot 5 — steel blue
+];
 // Typography scale sourced from Sidebar.tsx's existing nav styles (the only
 // place these three roles were already defined), so standardizing on them
 // elsewhere doesn't change what the sidebar itself looks like.

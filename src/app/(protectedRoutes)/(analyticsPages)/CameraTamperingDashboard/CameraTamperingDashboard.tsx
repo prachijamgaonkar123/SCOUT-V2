@@ -17,6 +17,7 @@ import JointBarGraphChart from "@/app/components/organisms/JointBarGraphChart/Jo
 import { v4 as uuidv4 } from "uuid";
 import TimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/TimeFilter";
 import CameraStatusDonutChart from "@/app/components/organisms/DonutChart/DonutChart";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
 // -------------------- KPI DATA --------------------
 const kpiData = [
@@ -99,10 +100,10 @@ const tamperingTrendData = [
 ];
 
 const tamperingTypeData = [
-  { label: "Offline", value: 40, color: "#ffcdd2" },
-  { label: "Blur", value: 25, color: "#FFEAA7" },
-  { label: "Lens Covered", value: 15, color: "#A8E6CF" },
-  { label: "Online", value: 20, color: "#B3E5FC" },
+  { label: "Offline", value: 40, color: DASHBOARD_COLORS.workforce },
+  { label: "Blur", value: 25, color: DASHBOARD_COLORS.warning },
+  { label: "Lens Covered", value: 15, color: DASHBOARD_COLORS.accent },
+  { label: "Online", value: 20, color: DASHBOARD_COLORS.success },
 ];
 
 const topCameras = [
@@ -134,12 +135,12 @@ const series = [
   {
     label: "Uptime %",
     data: [99, 97, 95, 92, 98, 94, 90],
-    color: "#4CAF50",
+    color: DASHBOARD_COLORS.success,
   },
   {
     label: "Downtime %",
     data: [1, 3, 5, 8, 2, 6, 10],
-    color: "#F44336",
+    color: DASHBOARD_COLORS.workforce,
   },
 ];
 
@@ -172,12 +173,12 @@ export default function CameraTamperingDashboard() {
               data={tamperingTrendData}
               xAxisKey="time"
               series={[
-                { dataKey: "offline", label: "Offline", color: "#ffcdd2" },
-                { dataKey: "blur", label: "Blur", color: "#FFEAA7" },
+                { dataKey: "offline", label: "Offline", color: DASHBOARD_COLORS.workforce },
+                { dataKey: "blur", label: "Blur", color: DASHBOARD_COLORS.warning },
                 {
                   dataKey: "lensCovered",
                   label: "Lens Covered",
-                  color: "#A8E6CF",
+                  color: DASHBOARD_COLORS.accent,
                 },
               ]}
               yAxisLabel="Incident Count"
@@ -281,7 +282,7 @@ export default function CameraTamperingDashboard() {
             data={topCameras}
             xAxisKey="camera"
             series={[
-              { dataKey: "incidents", label: "Incidents", color: "#ffcdd2" },
+              { dataKey: "incidents", label: "Incidents", color: DASHBOARD_COLORS.workforce },
             ]}
             yAxisLabel="Count"
           />
@@ -306,9 +307,9 @@ export default function CameraTamperingDashboard() {
             data={cameraHealth}
             xAxisKey="zone"
             series={[
-              { dataKey: "online", label: "Online", color: "#A8E6CF" },
-              { dataKey: "offline", label: "Offline", color: "#ffcdd2" },
-              { dataKey: "tampered", label: "Tampered", color: "#FFEAA7" },
+              { dataKey: "online", label: "Online", color: DASHBOARD_COLORS.success },
+              { dataKey: "offline", label: "Offline", color: DASHBOARD_COLORS.workforce },
+              { dataKey: "tampered", label: "Tampered", color: DASHBOARD_COLORS.warning },
             ]}
             yAxisLabel="Cameras"
           />

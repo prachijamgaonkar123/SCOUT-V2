@@ -258,9 +258,6 @@ const ZoneViolations: React.FC<ZoneViolationsProps> = ({
                             fontSize: 11,
                             fontWeight: 600,
                             color: DASHBOARD_COLORS.textSecondary,
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
                           }}
                         >
                           {sub.label}

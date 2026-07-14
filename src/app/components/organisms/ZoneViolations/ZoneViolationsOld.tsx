@@ -290,9 +290,6 @@ const ZoneViolations: React.FC<ZoneViolationsProps> = ({
                                         },
                                         color: "#7a8593",
                                         lineHeight: 1.2,
-                                        whiteSpace: "nowrap",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
                                       }}
                                     >
                                       {sub.label} :

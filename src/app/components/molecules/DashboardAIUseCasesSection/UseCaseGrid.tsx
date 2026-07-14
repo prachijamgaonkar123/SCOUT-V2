@@ -10,6 +10,7 @@ export interface UseCaseGridItem {
   title: string;
   value?: number;
   locked?: boolean;
+  empty?: boolean;
 }
 
 export interface UseCaseGridProps {
@@ -40,13 +41,14 @@ const UseCaseGrid: React.FC<UseCaseGridProps> = ({ items, onItemClick, onLockedC
         gap: "12px",
       }}
     >
-      {items.map((item) => (
+      {items.map((item, index) => (
         <UseCaseCard
-          key={item.title}
+          key={item.empty ? `empty-${index}` : item.title}
           icon={item.icon}
           title={item.title}
           value={item.value}
           locked={item.locked}
+          empty={item.empty}
           accentColor={CATEGORY_COLOR[item.category]}
           accentTint={CATEGORY_TINT[item.category]}
           onClick={() => (item.locked ? onLockedClick?.(item) : onItemClick?.(item))}

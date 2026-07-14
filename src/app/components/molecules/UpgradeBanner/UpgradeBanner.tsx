@@ -56,9 +56,6 @@ const UpgradeBanner: React.FC<UpgradeBannerProps> = ({
           color: DASHBOARD_COLORS.textSecondary,
           mt: "3px",
           lineHeight: 1.5,
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
         }}
       >
         {subtitle}

@@ -186,10 +186,18 @@ const Dashboard: React.FC = () => {
   const statusItems = useStatusItems();
   const router = useRouter();   // <-- added
 
-  const filteredUseCases = useMemo(
-    () => statusItems.filter((item) => item.category === activeCategory),
-    [statusItems, activeCategory],
-  );
+  const filteredUseCases = useMemo(() => {
+    const categoryItems = statusItems.filter((item) => item.category === activeCategory);
+    // Surveillance Monitoring only has 3 active use cases — add a blank filler
+    // tile so the row doesn't look lopsided next to the other 3-wide categories.
+    if (activeCategory === "surveillance") {
+      return [
+        ...categoryItems,
+        { icon: AppsOutlined, category: "surveillance", title: "", empty: true } as UseCaseGridItem,
+      ];
+    }
+    return categoryItems;
+  }, [statusItems, activeCategory]);
 
   // -------- NEW: Click handler for UseCaseGrid items --------
   const handleUseCaseClick = (item: UseCaseGridItem) => {
@@ -223,7 +231,7 @@ const Dashboard: React.FC = () => {
         <StatCard icon={CheckCircleOutline} tone="green" value={115} total=" /120" label="Cameras Online" onClick={() => setCameraPopup("online")} />
         <StatCard icon={VideocamOffOutlined} tone="red" value={5} label="Cameras Offline" onClick={() => setCameraPopup("offline")} />
         <StatCard icon={ReportProblemOutlined} tone="amber" value={12} label="Open Incidents"  onClick={() => router.push('/alertsPage')} hideArrow />
-        <StatCard icon={QueryStatsOutlined} tone="blue" value={143} label="Total Detections Today" />
+        <StatCard icon={QueryStatsOutlined} tone="blue" value={143} label="Total Detections Today" onClick={() => router.push('/alertsPage')} hideArrow />
         {/* <StatCard icon={VerifiedOutlined} tone="gray" value={null} total="" label="" /> */}
         <Box
   sx={{

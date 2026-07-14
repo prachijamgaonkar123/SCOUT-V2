@@ -188,9 +188,6 @@ export default function RecentViolations(
                     fontSize: "12.5px",
                     fontWeight: 700,
                     color: DASHBOARD_COLORS.textPrimary,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
                   }}
                 >
                   {title}
@@ -202,9 +199,6 @@ export default function RecentViolations(
                       color: DASHBOARD_COLORS.textSecondary,
                       fontWeight: 500,
                       mt: "4px",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
                     }}
                   >
                     {meta}

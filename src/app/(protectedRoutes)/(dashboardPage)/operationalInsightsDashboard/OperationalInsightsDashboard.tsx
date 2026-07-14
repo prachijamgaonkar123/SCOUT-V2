@@ -28,6 +28,7 @@ import {
   useLazyGetOperationalDashboardDataQuery,
 } from "./OperationalInsightsDashboardApi";
 import Loader from "@/app/components/atoms/Loader/Loader";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
 // ---------- MOCK DATA IMPORTS ----------
 import {
@@ -58,15 +59,13 @@ function buildEntryExitProps(
   const series = [
     {
       label: "Entry Count",
-        color: "#93C4F5", // pastel blue
-
+      color: DASHBOARD_COLORS.primary,
       showMark: false,
       data: rawData.map((p) => p.entryCount),
     },
     {
       label: "Exit Count",
-    color: "#F5A693", // pastel orange
-
+      color: DASHBOARD_COLORS.success,
       showMark: false,
       data: rawData.map((p) => p.exitCount),
     },
@@ -117,19 +116,19 @@ function buildCanteenInsideProps(dashboardData: OperationalInsightsDashboardResp
   const series = [
     {
       label: "Breakfast",
-      color: "#F5C893", // pastel yellow/orange
+      color: DASHBOARD_COLORS.warning,
       showMark: false,
       data: rawData.map((p) => p.breakfastCount),
     },
     {
       label: "Lunch",
-      color: "#93C4F5", // pastel blue
+      color: DASHBOARD_COLORS.primary,
       showMark: false,
       data: rawData.map((p) => p.lunchCount),
     },
     {
       label: "Dinner",
-      color: "#C893F5", // pastel purple
+      color: DASHBOARD_COLORS.workforce,
       showMark: false,
       data: rawData.map((p) => p.dinnerCount),
     },

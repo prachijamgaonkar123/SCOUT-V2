@@ -90,9 +90,6 @@ const ViolationBreakdown: React.FC<ViolationBreakdownProps> = ({
                     fontWeight: 800,
                     lineHeight: 1,
                     color: DASHBOARD_COLORS.textPrimary,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
                   }}
                 >
                   {metric.value}
@@ -103,9 +100,6 @@ const ViolationBreakdown: React.FC<ViolationBreakdownProps> = ({
                     fontWeight: 600,
                     color: DASHBOARD_COLORS.textSecondary,
                     mt: "2px",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
                   }}
                 >
                   {metric.label}

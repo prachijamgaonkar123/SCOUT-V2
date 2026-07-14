@@ -5,14 +5,18 @@ import {
   ShiftType,
   ZoneCountSeries,
 } from "./OperationalInsightsDashboard.types";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
 // ---------- Helpers ----------
 
 // Wave shape across the day: low at night, peaks around midday, plus a small
 // deterministic jitter so lines look like real activity instead of flat steps.
+// Each series' peak is staggered by `seed` so multiple lines don't crest in
+// lockstep — they spread out and read as distinct layers instead of parallel humps.
 const waveValue = (base: number, hour: number, day: number, seed: number) => {
-  const wave = Math.sin(((hour - 6) / 24) * Math.PI * 2) + 1; // 0..2, peak ~12:00
-  const jitter = ((day * 7 + hour * 3 + seed * 5) % 3) - 1; // -1..1
+  const phaseShift = (seed * 3) % 24;
+  const wave = Math.sin(((hour - 6 + phaseShift) / 24) * Math.PI * 2) + 1; // 0..2
+  const jitter = ((day * 7 + hour * 3 + seed * 5) % 5) - 2; // -2..2
   return Math.max(0, Math.round(base * wave + jitter));
 };
 
@@ -108,7 +112,7 @@ export const mockOperationalDashboardData: OperationalInsightsDashboardResponse[
         series: [
           {
             zone: "Main Gate",
-            color: "#93C4F5",
+            color: DASHBOARD_COLORS.primary,
             data: generateEntryExitPoints(18, 15),
           },
         ],
@@ -130,7 +134,7 @@ export const mockOperationalDashboardData: OperationalInsightsDashboardResponse[
         series: [
           {
             zone: "Gate 2",
-            color: "#93C4F5",
+            color: DASHBOARD_COLORS.primary,
             data: generateEntryExitPoints(10, 9),
           },
         ],
@@ -168,7 +172,7 @@ export const mockOperationalDashboardData: OperationalInsightsDashboardResponse[
         series: [
           {
             zone: "Dock 1",
-            color: "#93C4F5",
+            color: DASHBOARD_COLORS.primary,
             data: generateEntryExitPoints(6, 5),
           },
         ],
@@ -188,9 +192,9 @@ export const mockOperationalDashboardData: OperationalInsightsDashboardResponse[
       data: {
         granularity: "hour",
         series: generateZoneCountSeries([
-          { zone: "Zone A", color: "#93C4F5", dailyValues: [2, 3, 1, 2, 4, 1, 2] },
-          { zone: "Zone B", color: "#F5A693", dailyValues: [3, 2, 2, 1, 3, 2, 3] },
-          { zone: "Zone C", color: "#A8E6CF", dailyValues: [1, 1, 2, 2, 1, 0, 1] },
+          { zone: "Zone A", color: DASHBOARD_COLORS.primary, dailyValues: [2, 3, 1, 2, 4, 1, 2] },
+          { zone: "Zone B", color: DASHBOARD_COLORS.warning, dailyValues: [3, 2, 2, 1, 3, 2, 3] },
+          { zone: "Zone C", color: DASHBOARD_COLORS.workforce, dailyValues: [1, 1, 2, 2, 1, 0, 1] },
         ]),
       },
     },

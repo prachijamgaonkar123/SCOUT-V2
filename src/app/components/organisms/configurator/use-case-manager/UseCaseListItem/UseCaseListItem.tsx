@@ -76,10 +76,6 @@ export const UseCaseListItem: React.FC<UseCaseListItemProps> = ({
             sx={{
               fontSize: "0.875rem",
               lineHeight: 1.6,
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
             }}
           >
             {useCase.description}

@@ -7,6 +7,7 @@ import {
   FallSeriesItem,
   CrowdSeriesItem,
 } from "./SafetyAndComplianceDashboard.types";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
 // ---------- Helpers ----------
 const kpi = (
@@ -23,18 +24,42 @@ const kpi = (
   lastDetectionTime,
 });
 
+// Mockdata.ts
+
+// Semantic colors for specific known labels — drawn from DASHBOARD_COLORS so
+// every chart matches the sidebar/KPI-card theme (red avoided per design feedback).
+const SEMANTIC_COLORS: Record<string, string> = {
+  Fire: DASHBOARD_COLORS.warning,
+  Smoke: DASHBOARD_COLORS.primary,
+  "No Helmet": DASHBOARD_COLORS.primary,
+  "No Vest": DASHBOARD_COLORS.warning,
+  "No Glasses": DASHBOARD_COLORS.workforce,
+};
+
+// Fallback rotation for unlabeled/zone-wise pies (Zone A/B/C, or more) — same
+// DASHBOARD_COLORS tokens as the rest of the app, kept light on blue. 4 distinct
+// entries so pies with up to 4 slices (e.g. Emergency Exit's 4 gates) never repeat.
+const ZONE_COLORS = [
+  DASHBOARD_COLORS.primary,
+  DASHBOARD_COLORS.warning,
+  DASHBOARD_COLORS.workforce,
+  DASHBOARD_COLORS.success,
+];
+
 const pieData = (labels: string[], values: number[]) =>
   labels.map((label, i) => ({
     label,
     value: values[i],
-    color: ["#ffcdd2", "#FFEAA7", "#A8E6CF", "#B0E0E6", "#D4A5FF"][i % 5],
+    color: SEMANTIC_COLORS[label] ?? ZONE_COLORS[i % ZONE_COLORS.length],
   }));
-
 // Wave shape across the day: low at night, peaks around midday, plus a small
 // deterministic jitter so lines look like real activity instead of flat steps.
+// Each series' peak is staggered by `seed` so multiple lines don't crest in
+// lockstep — they spread out and read as distinct layers instead of parallel humps.
 const waveValue = (base: number, hour: number, day: number, seed: number) => {
-  const wave = Math.sin(((hour - 6) / 24) * Math.PI * 2) + 1; // 0..2, peak ~12:00
-  const jitter = ((day * 7 + hour * 3 + seed * 5) % 3) - 1; // -1..1
+  const phaseShift = (seed * 3) % 24;
+  const wave = Math.sin(((hour - 6 + phaseShift) / 24) * Math.PI * 2) + 1; // 0..2
+  const jitter = ((day * 7 + hour * 3 + seed * 5) % 5) - 2; // -2..2
   return Math.max(0, Math.round(base * wave + jitter));
 };
 
