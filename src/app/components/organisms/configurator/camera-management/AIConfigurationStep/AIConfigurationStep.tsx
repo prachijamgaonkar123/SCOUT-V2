@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import RoiSelectionModal from '../ROISelectionModel/RoiSelectionModal';
 import UseCaseConfigurationDialog, {
   UseCaseConfigurationData,
+  CanteenSession
 } from '../UseCaseConfigurationDialog/UseCaseConfigurationDialog';
 
 import {
@@ -17,6 +18,13 @@ import {
   useLazyGetRoiQuery,
   useSaveRoiMutation,
 } from '@/app/(protectedRoutes)/(settings)/(configurator)/cameraManagement/RoiApi';
+import {
+  mockUsecasesResponse,
+  mockAssignmentMap,
+} from '@/app/(protectedRoutes)/(settings)/(configurator)/useCaseManager/useCaseManagerMockData';
+
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
+
 
 import {
   Box,
@@ -59,11 +67,33 @@ interface ROIData {
 
 interface ConfigurationData {
   tuned: boolean;
+
   fpsRate?: number;
   fpsUnit?: 'second' | 'minute' | 'hour';
+
   inferenceMode?: '24_hours' | 'custom';
+
   startTime?: string;
   endTime?: string;
+
+  canteenSchedule?: {
+    sessionName: string;
+    startTime: string;
+    endTime: string;
+  }[];
+}
+interface ConfigureUsecasePayload {
+  cameraMapperId: string;
+
+  fpsRate: number;
+  fpsUnit: 'second' | 'minute' | 'hour';
+
+  inferenceMode: '24_hours' | 'custom';
+
+  startTime?: string;
+  endTime?: string;
+
+  canteenSchedule?: CanteenSession[];
 }
 
 interface AIConfig {
@@ -72,9 +102,9 @@ interface AIConfig {
   configure: Record<string, ConfigurationData>;
   enabled: boolean;
   viewName?: string;
-  
+
 }
- 
+
 interface CameraData {
   id: string;
   ipAddress: string;
@@ -113,6 +143,7 @@ interface UseCaseData {
   configure?: ConfigurationData;
 }
 
+
 type FrameStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
 const MAX_RETRIES = 3;
@@ -125,7 +156,11 @@ const AIConfigurationStep: React.FC<AIConfigurationStepProps> = ({
 }) => {
 
   // RTK Query hooks
-  const { data: useCasesResponse, isLoading: loadingUseCases } = useGetUsecasesQuery();
+  const { data: useCasesResponseApi, isLoading: loadingUseCasesApi } = useGetUsecasesQuery(undefined, {
+    skip: USE_MOCK,
+  });
+  const useCasesResponse = USE_MOCK ? mockUsecasesResponse : useCasesResponseApi;
+  const loadingUseCases = USE_MOCK ? false : loadingUseCasesApi;
   const [assignCameras] = useAssignCamerasMutation();
   const [unassignCamera] = useUnassignCameraMutation();
   const [configureUsecaseMutation] =
@@ -140,12 +175,19 @@ const AIConfigurationStep: React.FC<AIConfigurationStepProps> = ({
 
   const loadAssignments = React.useCallback(
     async (mapped: UseCaseData[]): Promise<UseCaseData[]> => {
+      if (USE_MOCK) {
+        return mapped.map((uc) => ({
+          ...uc,
+          selected: mockAssignmentMap[uc.id]?.includes(camera.id) ?? false,
+          cameraMapperId: `mock-mapper-${uc.id}`,
+        }));
+      }
       const res = await getCameraAssignments(camera.id).unwrap();
       if (!Array.isArray(res)) return mapped;
       return mapped.map((uc) => {
 
         const assignment = res.find(
-          (a: {usecaseId: string}) => a.usecaseId === uc.id
+          (a: { usecaseId: string }) => a.usecaseId === uc.id
         );
 
         return {
@@ -166,19 +208,12 @@ const AIConfigurationStep: React.FC<AIConfigurationStepProps> = ({
           configure: assignment
             ? {
               tuned: !!assignment.fpsRate,
-
               fpsRate: assignment.fpsRate,
-
               fpsUnit: assignment.fpsUnit,
-
-              inferenceMode:
-                assignment.inferenceMode,
-
-              startTime:
-                assignment.startTime,
-
-              endTime:
-                assignment.endTime,
+              inferenceMode: assignment.inferenceMode,
+              startTime: assignment.startTime,
+              endTime: assignment.endTime,
+              canteenSchedule: assignment.canteenSchedule,
             }
             : undefined,
         };
@@ -189,6 +224,7 @@ const AIConfigurationStep: React.FC<AIConfigurationStepProps> = ({
 
   const loadRoiForUseCases = React.useCallback(
     async (useCases: UseCaseData[]): Promise<UseCaseData[]> => {
+      if (USE_MOCK) return useCases;
       return Promise.all(
         useCases.map(async (uc) => {
           if (!uc.selected) return uc;
@@ -270,7 +306,7 @@ const AIConfigurationStep: React.FC<AIConfigurationStepProps> = ({
     useState<Record<string, ConfigurationData>>({});
 
   const getCameraFeedUrl = useCallback(() => {
-    if (!camera?.id || !tenantId) return '/img/siteimage.jpg';
+    if (USE_MOCK || !camera?.id || !tenantId) return '/img/siteimage.jpg';
     return `${process.env.NEXT_PUBLIC_BACKEND_URL}/configurator/camera-manager/${tenantId}/${camera.id}/frame`;
   }, [camera?.id, tenantId]);
 
@@ -396,6 +432,15 @@ const AIConfigurationStep: React.FC<AIConfigurationStepProps> = ({
       prev.map(uc => uc.id === usecaseId ? { ...uc, selected: isSelected } : uc)
     );
 
+    if (USE_MOCK) {
+      setSnackbar({
+        open: true,
+        severity: 'success',
+        message: isSelected ? 'Camera assigned to usecase' : 'Camera unassigned',
+      });
+      return;
+    }
+
     try {
       if (isSelected) {
         await assignCameras({ usecaseId, cameraIds: [camera.id] }).unwrap();
@@ -418,6 +463,10 @@ const AIConfigurationStep: React.FC<AIConfigurationStepProps> = ({
 
   const handleAddROI = async (useCaseId: string) => {
     setCurrentUseCaseForROI(useCaseId);
+    if (USE_MOCK) {
+      setRoiModalOpen(true);
+      return;
+    }
     try {
       const res = await getRoi({ cameraId: camera.id, usecaseId: useCaseId }).unwrap();
       setUseCases(prev =>
@@ -435,6 +484,21 @@ const AIConfigurationStep: React.FC<AIConfigurationStepProps> = ({
 
   const handleROISave = async (roiShapes: ROIShape[]) => {
     if (!currentUseCaseForROI) return;
+
+    if (USE_MOCK) {
+      setUseCases(prev =>
+        prev.map(uc =>
+          uc.id === currentUseCaseForROI
+            ? { ...uc, roiConfigured: roiShapes.length > 0, roiShapes }
+            : uc
+        )
+      );
+      setSnackbar({ open: true, message: 'Mock ROI saved.', severity: 'success' });
+      setRoiModalOpen(false);
+      setCurrentUseCaseForROI(null);
+      return;
+    }
+
     try {
       setLoading(true);
       const currentUC = useCases.find(u => u.id === currentUseCaseForROI);
@@ -443,7 +507,7 @@ const AIConfigurationStep: React.FC<AIConfigurationStepProps> = ({
         usecaseId: currentUseCaseForROI,
         modelThreshold: currentUC?.modelThreshold ?? undefined,
         rois: roiShapes.map(r => ({
-          type: r.type, label: r.name, mode: r.mode, color: r.color, points: r.points,
+          type: r.type, labels:r.labels, mode: r.mode, color: r.color, points: r.points,
         })),
       }).unwrap();
 
@@ -483,6 +547,23 @@ const AIConfigurationStep: React.FC<AIConfigurationStepProps> = ({
 
     if (!currentUseCaseForConfig) return;
 
+    if (USE_MOCK) {
+      setUseCaseConfigurations(prev => ({
+        ...prev,
+        [currentUseCaseForConfig]: { tuned: true, ...config },
+      }));
+      setUseCases(prev =>
+        prev.map(useCase =>
+          useCase.id === currentUseCaseForConfig
+            ? { ...useCase, configureUsecase: true }
+            : useCase
+        )
+      );
+      setConfigDialogOpen(false);
+      setSnackbar({ open: true, severity: 'success', message: 'Mock use case configuration saved.' });
+      return;
+    }
+
     try {
 
       const currentUseCase = useCases.find(
@@ -495,16 +576,14 @@ const AIConfigurationStep: React.FC<AIConfigurationStepProps> = ({
         );
       }
 
-      await configureUsecaseMutation({
-        cameraMapperId:
-          currentUseCase.cameraMapperId,
+      const payload: ConfigureUsecasePayload = {
+        cameraMapperId: currentUseCase.cameraMapperId,
 
         fpsRate: config.fpsRate,
 
         fpsUnit: config.fpsUnit,
 
-        inferenceMode:
-          config.inferenceMode,
+        inferenceMode: config.inferenceMode,
 
         startTime:
           config.inferenceMode === 'custom'
@@ -515,7 +594,13 @@ const AIConfigurationStep: React.FC<AIConfigurationStepProps> = ({
           config.inferenceMode === 'custom'
             ? config.endTime
             : undefined,
-      }).unwrap();
+      };
+
+      if (currentUseCase.id === 'SUC018') {
+        payload.canteenSchedule = config.canteenSchedule;
+      }
+
+      await configureUsecaseMutation(payload).unwrap();
 
       setUseCaseConfigurations(prev => ({
         ...prev,
@@ -856,6 +941,11 @@ const AIConfigurationStep: React.FC<AIConfigurationStepProps> = ({
           useCases.find(
             uc => uc.id === currentUseCaseForConfig
           )?.name ?? ''
+        }
+        useCaseId={
+          useCases.find(
+            uc => uc.id === currentUseCaseForConfig
+          )?.id ?? ''
         }
         initialData={
           useCases.find(

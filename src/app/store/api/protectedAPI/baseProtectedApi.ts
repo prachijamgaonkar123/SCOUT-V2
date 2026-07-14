@@ -106,7 +106,8 @@ export const baseProtectedApi = createApi({
     "CameraTamperingData",
     "FireSmokeDetectionData" ,
     "CanteenUsageData",
-    "CanteenUsageDetailedReport"
+    "CanteenUsageDetailedReport",
+    "AlertConfig",
 
 ],
 });

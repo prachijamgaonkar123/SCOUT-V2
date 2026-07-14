@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
+import { Provider } from "react-redux";
+import { store } from "@/app/store/store";
 import RoiSelectionModal from "./RoiSelectionModal";
 
 // ---------------------------------------------
@@ -38,6 +40,13 @@ const meta: Meta<typeof RoiSelectionModal> = {
     layout: "fullscreen",
   },
   tags: ["autodocs"],
+  decorators: [
+    (Story) => (
+      <Provider store={store}>
+        <Story />
+      </Provider>
+    ),
+  ],
   args: {
     open: true,
     cameraFeedUrl: "/img/siteimage.jpg",
@@ -45,6 +54,7 @@ const meta: Meta<typeof RoiSelectionModal> = {
     onSave: (roi) => console.log("ROI Saved", roi),
     useCaseName: "Personal Protective Equipment (PPE) Detection",
     existingROI: undefined,
+    labels: ["Person", "Helmet", "Vest", "Vehicle"],
   },
 };
 
@@ -86,7 +96,7 @@ export const IntrusionDetection: Story = {
         ],
         completed: true,
         color: "#ff00ff",
-        name: "Perimeter",
+        labels: ["Perimeter"],
         mode: "include",
         id: ""
       },
@@ -106,9 +116,9 @@ export const WithExcludeZone: Story = {
         ],
         completed: true,
         color: "#00ff00",
-        name: "Standing Person",
+        labels: ["Perimeter"],
         mode: "include",
-        id: ""
+        id: "exclude-zone-roi-1"
       },
       {
         type: "rectangle",
@@ -118,9 +128,9 @@ export const WithExcludeZone: Story = {
         ],
         completed: true,
         color: "#ff0000",
-        name: "Fallen Person",
+        labels: ["Perimeter"],
         mode: "exclude",
-        id: ""
+        id: "exclude-zone-roi-2"
       },
     ],
   },

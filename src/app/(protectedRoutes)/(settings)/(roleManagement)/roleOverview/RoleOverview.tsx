@@ -23,6 +23,7 @@ import { showToast } from '@/app/store/slices/toasterSlice';
 import AddRole from '../addRole/AddRole';
 import RoleSettingTable from '@/app/components/organisms/RoleSettingTable/RoleSettingTable';
 import { getErrorMessage } from '@/utils/getErrorMessage';
+import { USE_MOCK, mockOrgAppRoles } from '../roleManagementMockData';
 
 export default function RoleOverview() {
   const router = useRouter();
@@ -41,13 +42,19 @@ export default function RoleOverview() {
   const canDeleteRole = features.includes(FEATURE.DELETE_ROLE);
 
   /* ---------- API ---------- */
-  const { data, isLoading, isFetching } = useRoleListQuery(
+  const { data, isLoading: isLoadingApi, isFetching: isFetchingApi } = useRoleListQuery(
     { tenantId: tenantId!, userId: userId! },
-    { skip: !tenantId || !userId }
+    { skip: USE_MOCK || !tenantId || !userId }
   );
-const rows = useMemo(() => {
-  return data?.data?.data ?? [];
-}, [data]);
+  const isLoading = USE_MOCK ? false : isLoadingApi;
+  const isFetching = USE_MOCK ? false : isFetchingApi;
+
+  const [mockRoles, setMockRoles] = useState(mockOrgAppRoles);
+
+  const rows = useMemo(() => {
+    if (USE_MOCK) return mockRoles;
+    return data?.data?.data ?? [];
+  }, [data, mockRoles]);
 
   const [deleteRoleById, { isLoading: isDeleting }] =
     useDeleteRoleByIdMutation();
@@ -129,7 +136,22 @@ const rows = useMemo(() => {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!tenantId || !userId || !selectedRoleId) return;
+    if (!selectedRoleId) return;
+
+    if (USE_MOCK) {
+      setMockRoles((prev) => prev.filter((r) => r.role_id.role_id !== selectedRoleId));
+      dispatch(
+        showToast({
+          id: crypto.randomUUID(),
+          message: 'Mock role deleted.',
+          severity: 'success',
+        })
+      );
+      handleCloseConfirm();
+      return;
+    }
+
+    if (!tenantId || !userId) return;
 
     try {
       const res = await deleteRoleById({

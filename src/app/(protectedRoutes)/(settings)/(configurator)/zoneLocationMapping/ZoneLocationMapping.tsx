@@ -51,6 +51,11 @@ import {
   useDeleteZoneMutation,
   useCreateLocationMutation,
 } from "./ZoneLocationMappingApi";
+import { mockZonesResponse } from "./zoneLocationMockData";
+import { useDispatch } from "react-redux";
+import { showToast } from "@/app/store/slices/toasterSlice";
+
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 
 type LocationItem = {
@@ -67,6 +72,7 @@ type ZoneFormData = {
 };
 
 const ZoneLocationMapping: React.FC = () => {
+  const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedZone, setSelectedZone] = useState<ZoneType | null>(null);
   const [zoneToDelete, setZoneToDelete] = useState<ZoneType | null>(null);
@@ -76,7 +82,10 @@ const ZoneLocationMapping: React.FC = () => {
   const [locationsDrawerOpen, setLocationsDrawerOpen] = useState(false);
 
   // RTK Query hooks
-  const { data: zonesResponse, isLoading, error } = useGetZonesQuery();
+  const { data: zonesResponseApi, isLoading, error } = useGetZonesQuery(undefined, {
+    skip: USE_MOCK,
+  });
+  const zonesResponse = USE_MOCK ? mockZonesResponse : zonesResponseApi;
 
   const [createZone, { isLoading: isCreating }] = useCreateZoneMutation();
   const [updateZone] = useUpdateZoneMutation();
@@ -129,6 +138,12 @@ const ZoneLocationMapping: React.FC = () => {
   const confirmDelete = async () => {
     if (!zoneToDelete?.id) return;
 
+    if (USE_MOCK) {
+      dispatch(showToast({ id: crypto.randomUUID(), message: "Mock zone deleted.", severity: "success" }));
+      setZoneToDelete(null);
+      return;
+    }
+
     try {
       await deleteZone(zoneToDelete.id).unwrap();
       setZoneToDelete(null);
@@ -139,6 +154,11 @@ const ZoneLocationMapping: React.FC = () => {
 
   // Save zone (add or edit)
   const handleSaveZone = async (zoneData: ZoneFormData) => {
+    if (USE_MOCK) {
+      dispatch(showToast({ id: crypto.randomUUID(), message: "Mock zone saved.", severity: "success" }));
+      return;
+    }
+
     try {
       if (zoneData.id) {
         await updateZone({
@@ -167,6 +187,11 @@ const ZoneLocationMapping: React.FC = () => {
 
   // Save locations
   const handleSaveLocations = async (zoneId: string, locations: LocationItem[]) => {
+    if (USE_MOCK) {
+      dispatch(showToast({ id: crypto.randomUUID(), message: "Mock locations saved.", severity: "success" }));
+      return;
+    }
+
     try {
       for (const loc of locations) {
         await createLocation({
@@ -186,7 +211,7 @@ const ZoneLocationMapping: React.FC = () => {
   const totalLocations = zones.reduce((sum, z) => sum + (z.locationsCount ?? 0), 0);
 
   // Loading state
-  if (isLoading) {
+  if (!USE_MOCK && isLoading) {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Typography>Loading zones...</Typography>
@@ -195,7 +220,7 @@ const ZoneLocationMapping: React.FC = () => {
   }
 
   // Error state
-  if (error) {
+  if (!USE_MOCK && error) {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Alert severity="error">

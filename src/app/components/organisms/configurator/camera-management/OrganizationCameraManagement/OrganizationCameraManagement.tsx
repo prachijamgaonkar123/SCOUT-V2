@@ -38,6 +38,9 @@ import {
   OnboardingCamera,
   CameraApiResponse,
 } from "@/app/types/camera";
+import { mockCamerasResponse } from "@/app/(protectedRoutes)/(settings)/(configurator)/cameraManagement/cameraManagementMockData";
+
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 interface OrganizationCameraManagementProps {
   initialCameras?: OrgCamera[];
@@ -68,7 +71,11 @@ const OrganizationCameraManagement: React.FC<
     severity: "success",
   });
 
-  const { data, isLoading } = useGetAllCamerasQuery();
+  const { data: dataApi, isLoading: isLoadingApi } = useGetAllCamerasQuery(undefined, {
+    skip: USE_MOCK,
+  });
+  const data = USE_MOCK ? mockCamerasResponse : dataApi;
+  const isLoading = USE_MOCK ? false : isLoadingApi;
   const [deleteCamera] = useDeleteCameraMutation();
 
   const cameras: OrgCamera[] = Array.isArray(data)
@@ -88,6 +95,15 @@ const OrganizationCameraManagement: React.FC<
     : initialCameras;
 
   const handleCameraRemove = async (cameraId: string) => {
+    if (USE_MOCK) {
+      setSnackbar({
+        open: true,
+        message: "Mock camera removed.",
+        severity: "warning",
+      });
+      return;
+    }
+
     try {
       await deleteCamera(cameraId).unwrap();
 

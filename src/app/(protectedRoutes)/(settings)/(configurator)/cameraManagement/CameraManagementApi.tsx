@@ -132,6 +132,18 @@ export const cameraManagementApi = baseProtectedApi.injectEndpoints({
     }),
 
 
+//     getCameraFrame: builder.query<Blob, {
+//   tenantId: string;
+//   cameraId: string;
+// }>({
+//   query: ({ tenantId, cameraId }) => ({
+//     url: `${apiRoutes.configurator.root}/camera-manager/${tenantId}/${cameraId}/frame`,
+//     method: 'GET',
+//     responseHandler: async (response) => response.blob(),
+//   }),
+// }),
+
+
   }),
 });
 
@@ -145,4 +157,5 @@ export const {
   useAddCameraMutation,
   useDeleteCameraMutation,
   useDetectNvrChannelsMutation,
+  // useLazyGetCameraFrameQuery,
 } = cameraManagementApi;

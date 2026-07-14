@@ -44,6 +44,33 @@ import {
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
 import type { OnboardingCamera } from "@/app/types/camera";
+
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
+
+const MOCK_ZONES = [
+  { id: "zone-1", zoneName: "Manufacturing Floor" },
+  { id: "zone-2", zoneName: "Warehouse" },
+  { id: "zone-3", zoneName: "Perimeter" },
+  { id: "zone-4", zoneName: "Office Block" },
+];
+
+const EMPTY_LOCATIONS: { id: string; locationName: string }[] = [];
+
+const MOCK_LOCATIONS_BY_ZONE: Record<string, { id: string; locationName: string }[]> = {
+  "zone-1": [
+    { id: "loc-1", locationName: "Assembly Line 1" },
+    { id: "loc-2", locationName: "Assembly Line 2" },
+  ],
+  "zone-2": [
+    { id: "loc-5", locationName: "Loading Dock" },
+    { id: "loc-6", locationName: "Storage Rack A" },
+  ],
+  "zone-3": [
+    { id: "loc-8", locationName: "Main Gate" },
+    { id: "loc-9", locationName: "Rear Gate" },
+  ],
+  "zone-4": [],
+};
 interface LocationOption {
   id: string;
   locationName: string;
@@ -182,7 +209,8 @@ const CameraOnboardingStep: React.FC<CameraOnboardingStepProps> = ({
   const [nvrCameras, setNvrCameras] = useState<NvrCamera[]>([]);
 
   const [selectedNvrCams, setSelectedNvrCams] = useState<number[]>([]);
-  const { data: zonesData } = useGetCameraZonesQuery()
+  const { data: zonesDataApi } = useGetCameraZonesQuery(undefined, { skip: USE_MOCK });
+  const zonesData = USE_MOCK ? MOCK_ZONES : zonesDataApi;
 
   const [addCamera] = useAddCameraMutation();
   const [detectNvrChannels] = useDetectNvrChannelsMutation();
@@ -220,9 +248,10 @@ const CameraOnboardingStep: React.FC<CameraOnboardingStepProps> = ({
   }, [zonesData]);
 
 
-  const { data: locationsData } = useGetLocationsByZoneQuery(selectedZone, {
-    skip: !selectedZone,
+  const { data: locationsDataApi } = useGetLocationsByZoneQuery(selectedZone, {
+    skip: USE_MOCK || !selectedZone,
   });
+  const locationsData = USE_MOCK ? MOCK_LOCATIONS_BY_ZONE[selectedZone] ?? EMPTY_LOCATIONS : locationsDataApi;
 
   useEffect(() => {
     if (Array.isArray(locationsData)) {
@@ -335,21 +364,23 @@ const CameraOnboardingStep: React.FC<CameraOnboardingStepProps> = ({
     setIsAdding(true);
 
     try {
-      await addCamera({
-        cameraIp: formData.ipAddress.trim(),
-        cameraName: formData.cameraname.trim(),
-        userName: formData.username.trim(),
-        password: formData.password.trim(),
-        RTSPport: formData.port.trim(),
-        rtspUrl: formData.rtspUrl.trim(),
-        cameraZone: zoneList.find((z) => z.id === selectedZone)?.zoneName ?? "",
-        cameraLocation:
-          locationList.find((l) => l.id === selectedLocation)?.locationName ?? "",
+      if (!USE_MOCK) {
+        await addCamera({
+          cameraIp: formData.ipAddress.trim(),
+          cameraName: formData.cameraname.trim(),
+          userName: formData.username.trim(),
+          password: formData.password.trim(),
+          RTSPport: formData.port.trim(),
+          rtspUrl: formData.rtspUrl.trim(),
+          cameraZone: zoneList.find((z) => z.id === selectedZone)?.zoneName ?? "",
+          cameraLocation:
+            locationList.find((l) => l.id === selectedLocation)?.locationName ?? "",
 
-        channel: null,
-        refreshRate: 10,
-        connectionType: "DIRECT_TO_CAMERA",
-      }).unwrap();
+          channel: null,
+          refreshRate: 10,
+          connectionType: "DIRECT_TO_CAMERA",
+        }).unwrap();
+      }
 
       // ✅ NO onCameraAdd here
 
@@ -470,7 +501,9 @@ const CameraOnboardingStep: React.FC<CameraOnboardingStepProps> = ({
         };
 
         console.log("Final payload:", payload);
-        await addCamera(payload).unwrap();
+        if (!USE_MOCK) {
+          await addCamera(payload).unwrap();
+        }
 
         // 🔥 This updates UI instantly
       }
@@ -917,16 +950,27 @@ const CameraOnboardingStep: React.FC<CameraOnboardingStepProps> = ({
                       onClick={async () => {
                         try {
                           setIsDiscovering(true);
-                          const { activeChannels } = await detectNvrChannels({
-                            nvrName: nvrData.name,
-                            brandName: nvrData.nvrBrand,
-                            ip: nvrData.ip,
-                            port: Number(nvrData.port),
-                            username: nvrData.username,
-                            password: nvrData.password,
-                            numberofchannels: Number(nvrData.numberofchannels),
-                            rtsplink: nvrData.rtsplink,
-                          }).unwrap();
+
+                          const activeChannels = USE_MOCK
+                            ? Array.from(
+                                { length: Math.min(Number(nvrData.numberofchannels) || 4, 8) },
+                                (_, i) => ({
+                                  channel: i + 1,
+                                  rtspUrl: `rtsp://${nvrData.ip || "192.168.1.100"}/Channels/${i + 1}`,
+                                })
+                              )
+                            : (
+                                await detectNvrChannels({
+                                  nvrName: nvrData.name,
+                                  brandName: nvrData.nvrBrand,
+                                  ip: nvrData.ip,
+                                  port: Number(nvrData.port),
+                                  username: nvrData.username,
+                                  password: nvrData.password,
+                                  numberofchannels: Number(nvrData.numberofchannels),
+                                  rtsplink: nvrData.rtsplink,
+                                }).unwrap()
+                              ).activeChannels;
 
                           if (!Array.isArray(activeChannels) || activeChannels.length === 0) {
                             showToast(

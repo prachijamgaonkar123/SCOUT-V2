@@ -181,6 +181,14 @@ export const settingsMenu: CategoryConfig[] = [
             path: "/useCaseManager",
             featureId: FEATURE.USE_CASE_MANAGER,
           },
+
+          {
+            type: "link",
+            name: "Alert Configuration",
+            // icon: NotificationsActiveIcon,
+            path: "/alertConfiguration",
+            featureId: FEATURE.ALERT_CONFIGURATION,
+          },
         ],
       },
     ],
