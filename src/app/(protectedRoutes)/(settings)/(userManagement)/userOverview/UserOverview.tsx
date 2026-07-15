@@ -27,6 +27,11 @@ import { showToast } from "@/app/store/slices/toasterSlice";
 import { FEATURE } from "@/app/config/featureRegistry";
 import UserSettingTable from "@/app/components/organisms/UserSettingTable/UserSettingTable";
 import { getErrorMessage } from "@/utils/getErrorMessage";
+import {
+  USE_MOCK,
+  mockBackendUsers,
+  removeMockBackendUser,
+} from "../userManagementMockData";
 
 const UserOverview: React.FC = () => {
   const router = useRouter();
@@ -43,13 +48,16 @@ const UserOverview: React.FC = () => {
   const canEditUser = features.includes(FEATURE.EDIT_USER)  ;
   const canDeleteUser = features.includes(FEATURE.DELETE_USER);
 
-  const { data, isLoading, isError, error } = useGetUserOverviewQuery(
+  const { data, isLoading: isLoadingApi, isError, error } = useGetUserOverviewQuery(
     { tenantId: tenantId!, userId: userId! },
-    { skip: !tenantId || !userId }
+    { skip: USE_MOCK || !tenantId || !userId }
   );
- 
+  const isLoading = USE_MOCK ? false : isLoadingApi;
 
-  const [deleteUser, { isLoading: isDeleting }] = useDeleteUserMutation();
+  const [mockUsersState, setMockUsersState] = useState<BackendUser[]>(mockBackendUsers);
+
+  const [deleteUser, { isLoading: isDeletingApi }] = useDeleteUserMutation();
+  const isDeleting = USE_MOCK ? false : isDeletingApi;
 
   /** ----- SEARCH STATE ----- */
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,7 +67,7 @@ const UserOverview: React.FC = () => {
   data?.data?.data?.find((u) => u.userId === userId)?.roleName ?? null;
 
   const { filteredBackendUsers, filteredTableUsers } = useMemo(() => {
-  const backendUsers: BackendUser[] = data?.data?.data ?? [];
+  const backendUsers: BackendUser[] = USE_MOCK ? mockUsersState : (data?.data?.data ?? []);
 
   // 🔥 Hide Organisation_Admin_Scout users if logged-in user is not Organisation_Admin_Scout
   const roleFilteredUsers = backendUsers.filter((u) => {
@@ -109,7 +117,7 @@ const UserOverview: React.FC = () => {
 
     })),
   };
-}, [data?.data?.data, searchQuery, loggedInUserRole]);
+}, [data?.data?.data, searchQuery, loggedInUserRole, mockUsersState]);
   /** ----- DIALOG STATE ----- */
   const [openConfirm, setOpenConfirm] = useState(false);
   const [selectedUserIndex, setSelectedUserIndex] = useState<number | null>(null);
@@ -139,6 +147,20 @@ const UserOverview: React.FC = () => {
   const handleDeleteConfirm = async () => {
     if (selectedUserIndex === null) return;
     const selectedUser = filteredBackendUsers[selectedUserIndex];
+
+    if (USE_MOCK) {
+      removeMockBackendUser(selectedUser.userId);
+      setMockUsersState([...mockBackendUsers]);
+      dispatch(
+        showToast({
+          id: crypto.randomUUID(),
+          message: `User "${selectedUser.first_name} ${selectedUser.last_name}" deleted successfully`,
+          severity: "success",
+        })
+      );
+      handleCloseConfirm();
+      return;
+    }
 
     try {
       await deleteUser({

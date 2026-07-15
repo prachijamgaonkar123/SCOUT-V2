@@ -33,6 +33,8 @@ import { useRoleListQuery } from "../../(roleManagement)/roleOverview/RoleOvervi
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { skipToken } from "@reduxjs/toolkit/query";
 import { OrgAppRole } from "./AddUser.types";
+import { USE_MOCK, mockOrgAppRoles, mockEnvelope } from "../../(roleManagement)/roleManagementMockData";
+import { addMockBackendUser } from "../userManagementMockData";
 
 interface UserFormValues {
   role: string;
@@ -82,9 +84,11 @@ const AddUser: React.FC = () => {
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const { data, isLoading } = useRoleListQuery(
-    tenantId && userId ? { tenantId, userId } : skipToken,
+  const { data: dataApi, isLoading: isLoadingApi } = useRoleListQuery(
+    USE_MOCK || !tenantId || !userId ? skipToken : { tenantId, userId },
   );
+  const data = USE_MOCK ? mockEnvelope(mockOrgAppRoles) : dataApi;
+  const isLoading = USE_MOCK ? false : isLoadingApi;
 
   const { control, handleSubmit, reset, setValue } = useForm<UserFormValues>({
     defaultValues: {
@@ -118,6 +122,32 @@ const AddUser: React.FC = () => {
   };
 
   const onSubmit: SubmitHandler<UserFormValues> = async (formData) => {
+    if (USE_MOCK) {
+      addMockBackendUser({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        employeeId: formData.employeeId,
+        phone: formData.phone,
+        userName: formData.userName,
+        orgAppRoleId: formData.role,
+      });
+
+      dispatch(
+        showToast({
+          id: crypto.randomUUID(),
+          message: "Mock user added successfully",
+          severity: "success",
+        }),
+      );
+
+      reset();
+      setProfileImage(null);
+      setImagePreview(null);
+      router.push("/userOverview");
+      return;
+    }
+
     try {
       await addUser({
         payload: {

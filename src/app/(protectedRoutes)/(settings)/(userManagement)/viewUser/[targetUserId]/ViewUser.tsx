@@ -22,6 +22,12 @@ import { RootState } from "@/app/store/store";
 import { showToast } from "@/app/store/slices/toasterSlice";
 import { BackendUser } from "./viewUser.types";
 import CardForSettings from "@/app/components/molecules/CardForSettings/CardForSettings";
+import { USE_MOCK, mockOrgAppRoles } from "../../../(roleManagement)/roleManagementMockData";
+import {
+  mockBackendUsers,
+  mockUserDetailsById,
+  mockOrgAppRoleIdByUserId,
+} from "../../userManagementMockData";
 
 export default function ViewUserPage() {
   const router = useRouter();
@@ -36,23 +42,62 @@ export default function ViewUserPage() {
 
   // Fetch user roles
   const {
-    data: roleListData,
-    isLoading: roleListLoading,
+    data: roleListDataApi,
+    isLoading: roleListLoadingApi,
     isError: roleListError,
   } = useGetUserRoleQuery(
     { tenantId: tenantId!, userId: targetUserId },
-    { skip: !tenantId || !targetUserId },
+    { skip: USE_MOCK || !tenantId || !targetUserId },
   );
 
   // Fetch user details
   const {
-    data: userData,
-    isLoading: userLoading,
+    data: userDataApi,
+    isLoading: userLoadingApi,
     isError: userError,
   } = useGetUserDetailsByUserIdQuery(
     { tenantId: tenantId!, userId: targetUserId },
-    { skip: !tenantId || !userId },
+    { skip: USE_MOCK || !tenantId || !userId },
   );
+
+  const mockUser = mockBackendUsers.find((u) => u.userId === targetUserId);
+  const mockDetails = mockUserDetailsById[targetUserId];
+  const mockRole = mockOrgAppRoles.find(
+    (r) => r.org_app_role_id === mockOrgAppRoleIdByUserId[targetUserId],
+  );
+
+  const roleListData = USE_MOCK
+    ? {
+        statusCode: 200,
+        status: "success",
+        message: "Mock data",
+        data: {
+          status: "success",
+          message: "Mock data",
+          data: mockRole ? [{ orgAppRole: { role_id: { name: mockRole.role_id.name } } }] : [],
+        },
+      }
+    : roleListDataApi;
+  const roleListLoading = USE_MOCK ? false : roleListLoadingApi;
+
+  const userData = USE_MOCK
+    ? {
+        statusCode: 200,
+        status: "success",
+        message: "Mock data",
+        data: {
+          userId: mockUser?.userId ?? targetUserId,
+          first_name: mockUser?.first_name ?? "",
+          last_name: mockUser?.last_name ?? "",
+          email: mockUser?.email ?? "",
+          phoneNumber: mockUser?.phoneNumber ?? "",
+          createdAt: mockUser?.createdAt ?? "",
+          updatedAt: mockUser?.updatedAt ?? "",
+          image_path: mockDetails?.image_path,
+        },
+      }
+    : userDataApi;
+  const userLoading = USE_MOCK ? false : userLoadingApi;
   // Handle errors
   useEffect(() => {
     if (roleListError) {

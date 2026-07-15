@@ -9,7 +9,7 @@ export type SaveRoiPayload = {
     modelThreshold?: number;
     rois: {
         type: ROIShape["type"];
-        label: string;
+        labels: string[];
         mode: ROIShape["mode"];
         points: ROIShape["points"];
     }[];
@@ -27,7 +27,7 @@ export type RoiResponse = {
     rois: {
       id?: string;
       type: ROIShape["type"];
-      label: string;
+      labels: string[];
       mode: ROIShape["mode"];
       color?: string;
       points: ROIShape["points"];
@@ -56,7 +56,7 @@ export const roiApi = baseProtectedApi.injectEndpoints({
     rois: (response.roiCordinates?.rois ?? []).map((r, index) => ({
       id: r.id || `roi-${index}`,
       type: r.type,
-      name: r.label,
+      labels: r.labels,
       mode: r.mode,
       points: r.points,
       completed: true,

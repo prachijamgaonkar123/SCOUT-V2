@@ -9,6 +9,7 @@ import {
   ToggleButtonGroup,
   Typography,
   Chip,
+  Checkbox,
   IconButton,
   Tooltip,
   Divider,
@@ -43,6 +44,7 @@ import {
   Block as ExcludeIcon,
   ArrowDropDown as ArrowDropDownIcon,
   Menu as MenuIcon,
+  CropFree as FullFrameIcon,
 } from '@mui/icons-material';
 import { ROIShape } from '@/app/types/roi';
 import { showToast } from '@/app/store/slices/toasterSlice';
@@ -136,6 +138,7 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; roiIndex: number } | null>(null);
   const [labelMenu, setLabelMenu] = useState<{ x: number; y: number; roiIndex: number } | null>(null);
   const [modeMenuAnchor, setModeMenuAnchor] = useState<null | HTMLElement>(null);
+  const [labelsMenuAnchor, setLabelsMenuAnchor] = useState<null | HTMLElement>(null);
 
   const [canvasWidth, setCanvasWidth] = useState(0);
   const [canvasHeight, setCanvasHeight] = useState(0);
@@ -144,7 +147,7 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
   const [historyIndex, setHistoryIndex] = useState(0);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedLabel, setSelectedLabel] = useState<string>('');
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
 
   const denormalizeROI = (shapes: ROIShape[], canvas: HTMLCanvasElement): ROIShape[] => {
     return shapes.map((shape, index) => ({
@@ -161,10 +164,11 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
 
   useEffect(() => {
     if (!open) return;
-    if (labels && labels.length > 0) {
-      setSelectedLabel(labels[0]);
+
+    if (labels.length > 0) {
+      setSelectedLabels([labels[0]]);
     } else {
-      setSelectedLabel('ROI');
+      setSelectedLabels(["ROI"]);
     }
   }, [labels, open]);
 
@@ -219,7 +223,10 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
     const centerX = shape.points.reduce((s, p) => s + p.x, 0) / shape.points.length;
     const centerY = shape.points.reduce((s, p) => s + p.y, 0) / shape.points.length;
     const fallbackLabel = `ROI ${label ?? ''}`;
-    const text = `${shape.mode === 'exclude' ? '❌' : '✓'} ${shape.name || fallbackLabel}`;
+    // const text = `${shape.mode === 'exclude' ? '❌' : '✓'} ${shape.name || fallbackLabel}`;
+    const text =
+      `${shape.mode === 'exclude' ? '❌' : '✓'} ${shape.labels.join(", ")
+      }`;
     ctx.setLineDash([]);
     ctx.font = 'bold 12px Arial';
     const padding = 8;
@@ -382,40 +389,40 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
 
 
   const recalcCanvasSize = useCallback(() => {
-  const canvas = canvasRef.current;
-  const container = containerRef.current;
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
 
-  if (!canvas || !container) return;
+    if (!canvas || !container) return;
 
-  const containerRect = container.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
 
-  const containerWidth = containerRect.width;
-  const containerHeight = containerRect.height;
+    const containerWidth = containerRect.width;
+    const containerHeight = containerRect.height;
 
-  if (containerHeight < 50) return;
+    if (containerHeight < 50) return;
 
-  const imageAspectRatio =
-    imageRef.current &&
-    imageRef.current.width > 0 &&
-    imageRef.current.height > 0
-      ? imageRef.current.width / imageRef.current.height
-      : 16 / 9;
+    const imageAspectRatio =
+      imageRef.current &&
+        imageRef.current.width > 0 &&
+        imageRef.current.height > 0
+        ? imageRef.current.width / imageRef.current.height
+        : 16 / 9;
 
-  let newCanvasWidth = containerWidth;
-  let newCanvasHeight = containerWidth / imageAspectRatio;
+    let newCanvasWidth = containerWidth;
+    let newCanvasHeight = containerWidth / imageAspectRatio;
 
-  // If height exceeds available area
-  if (newCanvasHeight > containerHeight) {
-    newCanvasHeight = containerHeight;
-    newCanvasWidth = containerHeight * imageAspectRatio;
-  }
+    // If height exceeds available area
+    if (newCanvasHeight > containerHeight) {
+      newCanvasHeight = containerHeight;
+      newCanvasWidth = containerHeight * imageAspectRatio;
+    }
 
-  canvas.width = Math.floor(newCanvasWidth);
-  canvas.height = Math.floor(newCanvasHeight);
+    canvas.width = Math.floor(newCanvasWidth);
+    canvas.height = Math.floor(newCanvasHeight);
 
-  setCanvasWidth(Math.floor(newCanvasWidth));
-  setCanvasHeight(Math.floor(newCanvasHeight));
-}, []);
+    setCanvasWidth(Math.floor(newCanvasWidth));
+    setCanvasHeight(Math.floor(newCanvasHeight));
+  }, []);
 
 
 
@@ -469,19 +476,24 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
     }
   }, [open, useCaseName, recalcCanvasSize, imageLoaded]);
 
+  // Fetches once per open/URL rather than on every canvasWidth/canvasHeight
+  // change. Re-fetching on every resize (the previous behavior) fought with
+  // the dialog-width-follows-image-size logic below: resizing the dialog
+  // changed the canvas size, which re-triggered a fresh network fetch and
+  // briefly blanked the canvas, which could cascade into further resizes.
+  // The image is decoded once and cached in imageRef; recalcCanvasSize (via
+  // the resize/ResizeObserver effect and the call in onload below) re-fits
+  // that same cached image to whatever canvas size is current.
   useEffect(() => {
     if (!open) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    if (canvasWidth < 100 || canvasHeight < 100) return;
+    setImageLoaded(false);
     const img = new Image();
     imageRef.current = img;
     img.onload = () => {
+      // Only now do we know the image's true aspect ratio, so re-fit the
+      // canvas to it (recalcCanvasSize falls back to a 16:9 guess otherwise).
+      recalcCanvasSize();
       setImageLoaded(true);
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     };
     img.onerror = () => {
       setTimeout(() => {
@@ -489,7 +501,7 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
       }, 500);
     };
     img.src = `${cameraFeedUrl}?t=${Date.now()}`;
-  }, [open, cameraFeedUrl, canvasWidth, canvasHeight]);
+  }, [open, cameraFeedUrl, recalcCanvasSize]);
 
   useEffect(() => {
     if (open && imageLoaded) {
@@ -529,6 +541,26 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
     setHistoryIndex(newHistory.length - 1);
   }, [history, historyIndex]);
 
+  const handleSelectEntireFrame = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const newShape: ROIShape = {
+      id: crypto.randomUUID(),
+      type: 'rectangle',
+      points: [
+        { x: 0, y: 0 },
+        { x: canvas.width, y: canvas.height },
+      ],
+      completed: true,
+      color: getNextColor(),
+      labels: selectedLabels,
+      mode: roiMode,
+    };
+    const newShapes = [...roiShapes, newShape];
+    setRoiShapes(newShapes);
+    addToHistory(newShapes);
+  };
+
   const getCanvasCoordinates = (e: React.MouseEvent<HTMLCanvasElement>): Point => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
@@ -564,6 +596,7 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (e.button !== 0) return;
     isDrawingRef.current = true;
     const point = getCanvasCoordinates(e);
     if (drawingTool === 'rectangle') {
@@ -573,7 +606,8 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
         points: [point],
         completed: false,
         color: getNextColor(),
-        name: selectedLabel,
+        // name: selectedLabel,
+        labels: selectedLabels,
         mode: roiMode,
       };
       currentShapeRef.current = newShape;
@@ -586,7 +620,8 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
         points: [point],
         completed: false,
         color: getNextColor(),
-        name: selectedLabel,
+        // name: selectedLabel,
+        labels: selectedLabels,
         mode: roiMode,
       };
       currentShapeRef.current = newShape;
@@ -671,7 +706,8 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
       points: [point],
       completed: false,
       color: getNextColor(),
-      name: selectedLabel,
+      // name: selectedLabel,
+      labels: selectedLabels,
       mode: roiMode,
     };
     currentShapeRef.current = newShape;
@@ -729,6 +765,10 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
 
   const handleCanvasContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+    isDrawingRef.current = false;
+    currentShapeRef.current = null;
+    setCurrentShape(null);
+    setIsDrawing(false);
     const point = getCanvasCoordinates(e);
     for (let i = roiShapes.length - 1; i >= 0; i--) {
       if (isPointInShape(point, roiShapes[i])) {
@@ -746,11 +786,21 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
     if (selectedROIIndex === index) setSelectedROIIndex(null);
   };
 
-  const handleROINameChange = (index: number, newName: string) => {
-    const newShapes: ROIShape[] = roiShapes.map((shape, i) =>
-      i === index ? { ...shape, name: newName } : shape
+  const handleROILabelChange = (
+    index: number,
+    newLabels: string[]
+  ) => {
+    const newShapes = roiShapes.map((shape, i) =>
+      i === index
+        ? {
+          ...shape,
+          labels: newLabels,
+        }
+        : shape
     );
+
     setRoiShapes(newShapes);
+    addToHistory(newShapes);
   };
 
   const handleROIColorChange = (index: number, newColor: string) => {
@@ -777,24 +827,41 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
     }
   }, [editingNameIndex]);
 
+  // The camera image's aspect ratio rarely matches the dialog's (91vw x
+  // 89vh minus a fixed 300px sidebar), so fitting the canvas to that box
+  // while preserving aspect ratio (recalcCanvasSize) leaves the image
+  // narrower than the available width — visible as blank space on both
+  // sides. Once the true fitted width is known, shrink the dialog to hug
+  // it (capped at 92vw) instead of leaving the excess as dead space. This
+  // is a stable fixed point: on the next layout pass the container is
+  // exactly canvasWidth wide, which reproduces the same canvasWidth, so it
+  // settles in one step rather than oscillating.
+  const desktopChromeWidth = 300 /* sidebar */ + 24 /* left column padding */ + 3 /* borders */;
+  const fittedDialogWidth =
+    isMdUp && canvasWidth > 0 ? `min(92vw, ${canvasWidth + desktopChromeWidth}px)` : undefined;
+
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      fullWidth
-      maxWidth="xl"
+      fullWidth={false}
+      maxWidth={false}
       slotProps={{
         paper: {
           sx: {
-            width: { xs: '100%', sm: '95%', md: '95%', lg: '90%', xl: '1200px' },
-            maxWidth: '1300px',
-            // Fill as much vertical space as possible; the canvas container
-            // uses flex:1/minHeight:0 to consume whatever is left after the
-            // toolbar and hint text, so no blank gap appears.
-            // height: { xs: '100vh', sm: '95vh', md: '92vh' },
-            height: { xs: '100vh', sm: '88vh', md: '85vh' },
-            m: { xs: 0, sm: 1, md: 2 },
+            // Sized directly off the viewport (91vw / 89vh) rather than a
+            // fixed breakpoint scale so it fits a 1920x1080 screen and
+            // scales gracefully down to 1366x768 without wasted margin.
+            // Once the image loads, width instead hugs its fitted size
+            // (see fittedDialogWidth) so there's no dead space beside it.
+            // maxWidth={false} on the Dialog disables MUI's built-in
+            // paperWidthXl cap (1536px), which would otherwise clip this
+            // on wide screens.
+            width: fittedDialogWidth ?? { xs: '100%', sm: '91vw' },
+            height: { xs: '100vh', sm: '89vh' },
+            m: { xs: 0, sm: 2 },
             bgcolor: 'white',
+            transition: 'width 0.15s ease',
           },
         },
       }}
@@ -815,7 +882,7 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
             flex: '1 1 auto',
             minWidth: 0,
             minHeight: 0,
-            p: { xs: 1, sm: 2 },
+            p: { xs: 1, sm: 1.5 },
             bgcolor: 'white',
             display: 'flex',
             flexDirection: 'column',
@@ -823,7 +890,7 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
           }}
         >
           {/* Header */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: { xs: 1, sm: 2 } }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: { xs: 1, sm: 1.5 } }}>
             <IconButton
               onClick={() => setDrawerOpen(true)}
               sx={{ display: { xs: 'inline-flex', md: 'none' } }}
@@ -853,13 +920,15 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
             </Box>
           </Box>
 
-          {/* Toolbar */}
+          {/* Toolbar — single row on desktop; wraps only below md so
+              Undo/Redo/Clear never fall to a second line at 1366x768+. */}
           <Box
             sx={{
               display: 'flex',
-              flexWrap: 'wrap',
-              gap: { xs: 0.5, sm: 1, md: 2 },
-              mb: { xs: 1, sm: 2 },
+              flexWrap: { xs: 'wrap', md: 'nowrap' },
+              overflowX: { xs: 'visible', md: 'auto' },
+              gap: { xs: 0.5, sm: 1, md: 1.5 },
+              mb: { xs: 1, sm: 1.5 },
               alignItems: 'center',
             }}
           >
@@ -901,6 +970,23 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
               </ToggleButton>
             </ToggleButtonGroup>
 
+            <Tooltip title="Add the entire frame as a single ROI">
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={handleSelectEntireFrame}
+                startIcon={<FullFrameIcon sx={{ fontSize: 16 }} />}
+                sx={{
+                  textTransform: 'none',
+                  whiteSpace: 'nowrap',
+                  fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.875rem' },
+                  px: { xs: 0.5, sm: 1 },
+                }}
+              >
+                Full Frame
+              </Button>
+            </Tooltip>
+
             <Divider
               orientation="vertical"
               flexItem
@@ -931,24 +1017,27 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
               )}
             </Button>
 
-            <TextField
-              select
+            <Button
               size="small"
-              value={selectedLabel}
-              onChange={(e) => setSelectedLabel(e.target.value)}
               variant="outlined"
+              onClick={(e) => setLabelsMenuAnchor(e.currentTarget)}
+              endIcon={<ArrowDropDownIcon />}
               sx={{
+                textTransform: 'none',
                 minWidth: 100,
-                '& .MuiSelect-select': { fontSize: { xs: '0.72rem', sm: '0.8rem' }, py: '8px' },
-                '& .MuiOutlinedInput-root': { height: '35px' },
+                maxWidth: 220,
+                justifyContent: 'space-between',
+                fontSize: { xs: '0.72rem', sm: '0.8rem' },
               }}
             >
-              {(labels.length > 0 ? labels : ['ROI']).map((labelOption) => (
-                <MenuItem key={labelOption} value={labelOption}>
-                  {labelOption}
-                </MenuItem>
-              ))}
-            </TextField>
+              <Typography
+                component="span"
+                noWrap
+                sx={{ fontSize: 'inherit', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}
+              >
+                {selectedLabels.length ? selectedLabels.join(', ') : 'Labels'}
+              </Typography>
+            </Button>
 
             <Divider
               orientation="vertical"
@@ -1005,36 +1094,41 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
             </Tooltip>
           </Box>
 
-          {/* ── Canvas container — flex:1/minHeight:0 so it fills the remaining
-               space exactly, with no blank padding above or below ── */}
+          {/* ── Preview container — fills all remaining width/height in the
+               left column (flex:1 1 auto, minHeight:0). The canvas itself is
+               sized by recalcCanvasSize to "contain" the image (fit within
+               this box preserving aspect ratio, like object-fit: contain);
+               the container's own background fills any leftover space so
+               it reads as a frame rather than blank dialog whitespace ── */}
           <Box
             ref={containerRef}
             sx={{
-              flex: '1 1 0',
+              flex: '1 1 auto',
               minHeight: 0,
               width: '100%',
               height: '100%',
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
-              // alignItems: 'flex-start',
               position: 'relative',
-              overflow: 'hidden',
               bgcolor: '#f5f5f5',
               borderRadius: 1,
-              border: '2px solid #e0e0e0',
+              border: '1px solid #e0e0e0',
+              overflow: 'hidden',
             }}
           >
             <canvas
               ref={canvasRef}
               width={canvasWidth}
               height={canvasHeight}
-              // style={{ cursor: 'crosshair', objectFit: 'contain', display: 'block' }}
               style={{
                 cursor: 'crosshair',
                 display: 'block',
+                width: canvasWidth ? `${canvasWidth}px` : '100%',
+                height: canvasHeight ? `${canvasHeight}px` : '100%',
                 maxWidth: '100%',
                 maxHeight: '100%',
+                objectFit: 'contain',
               }}
               onMouseDown={handleCanvasMouseDown}
               onMouseMove={handleCanvasMouseMove}
@@ -1082,8 +1176,8 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
         {isMdUp && (
           <Box
             sx={{
-              width: '220px',
-              flex: '0 0 220px',
+              width: '300px',
+              flex: '0 0 300px',
               display: 'flex',
               flexDirection: 'column',
               borderLeft: '1px solid',
@@ -1213,13 +1307,22 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
                           <TextField
                             select
                             inputRef={index === editingNameIndex ? editFieldRef : null}
-                            value={shape.name}
+                            value={shape.labels}
                             onChange={(e) => {
-                              handleROINameChange(index, e.target.value);
+                              handleROILabelChange(
+                                index,
+                                typeof e.target.value === "string"
+                                  ? e.target.value.split(",")
+                                  : e.target.value
+                              )
                               setEditingNameIndex(null);
                             }}
                             onBlur={() => setEditingNameIndex(null)}
-                            slotProps={{ select: { native: true } }}
+                            SelectProps={{
+                              multiple: true,
+                              renderValue: (selected) =>
+                                (selected as string[]).join(", "),
+                            }}
                             size="small"
                             fullWidth
                             variant="standard"
@@ -1247,7 +1350,7 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
                                   gap: 0.5,
                                 }}
                               >
-                                <span>{shape.name}</span>
+                                <span>{shape.labels.join(", ")}</span>
                                 <span style={{ opacity: 0.5 }}>•</span>
                                 <span
                                   style={{
@@ -1446,7 +1549,7 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
                         <ListItemText
                           primary={
                             <Typography variant="caption" sx={{ fontWeight: 500, fontSize: '0.65rem' }}>
-                              {shape.name}
+                              {shape.labels.join(", ")}
                             </Typography>
                           }
                           secondary={
@@ -1552,6 +1655,30 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
           </MenuItem>
         </Menu>
 
+        {/* Labels menu — drawing labels (multi-select) */}
+        <Menu
+          anchorEl={labelsMenuAnchor}
+          open={Boolean(labelsMenuAnchor)}
+          onClose={() => setLabelsMenuAnchor(null)}
+        >
+          {(labels.length ? labels : ['ROI']).map(label => {
+            const isChecked = selectedLabels.includes(label);
+            return (
+              <MenuItem
+                key={label}
+                onClick={() => {
+                  setSelectedLabels(isChecked
+                    ? selectedLabels.filter(l => l !== label)
+                    : [...selectedLabels, label]);
+                }}
+              >
+                <Checkbox checked={isChecked} size="small" sx={{ p: 0, mr: 1 }} />
+                {label}
+              </MenuItem>
+            );
+          })}
+        </Menu>
+
         {/* ROI context menu */}
         <Menu
           open={contextMenu !== null}
@@ -1605,18 +1732,26 @@ const RoiSelectionModal: React.FC<RoiSelectionModalProps> = ({
           anchorReference="anchorPosition"
           anchorPosition={labelMenu ? { top: labelMenu.y, left: labelMenu.x } : undefined}
         >
-          {(labels.length > 0 ? labels : ['ROI']).map((opt) => (
-            <MenuItem
-              key={opt}
-              selected={labelMenu !== null && roiShapes[labelMenu.roiIndex]?.name === opt}
-              onClick={() => {
-                if (labelMenu !== null) handleROINameChange(labelMenu.roiIndex, opt);
-                setLabelMenu(null);
-              }}
-            >
-              {opt}
-            </MenuItem>
-          ))}
+          {(labels.length > 0 ? labels : ['ROI']).map((opt) => {
+            const currentLabels = labelMenu !== null ? (roiShapes[labelMenu.roiIndex]?.labels ?? []) : [];
+            const isChecked = currentLabels.includes(opt);
+            return (
+              <MenuItem
+                key={opt}
+                onClick={() => {
+                  if (labelMenu === null) return;
+                  const existing = roiShapes[labelMenu.roiIndex]?.labels ?? [];
+                  const newLabels = isChecked
+                    ? existing.filter((l) => l !== opt)
+                    : [...existing, opt];
+                  handleROILabelChange(labelMenu.roiIndex, newLabels);
+                }}
+              >
+                <Checkbox checked={isChecked} size="small" sx={{ p: 0, mr: 1 }} />
+                {opt}
+              </MenuItem>
+            );
+          })}
         </Menu>
       </DialogContent>
     </Dialog>

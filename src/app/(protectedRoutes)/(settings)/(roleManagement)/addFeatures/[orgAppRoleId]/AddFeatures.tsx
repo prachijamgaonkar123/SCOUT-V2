@@ -25,6 +25,7 @@ import {
 } from "./AddFeaturesApi";
 import Loader from "@/app/components/atoms/Loader/Loader";
 import { getErrorMessage } from "@/utils/getErrorMessage";
+import { USE_MOCK, mockFeatures, setMockAssignedFeatures } from "../../roleManagementMockData";
 
 
 /* ---------------- Component ---------------- */
@@ -40,10 +41,12 @@ const AddFeatures: React.FC = () => {
   const tenantId = useSelector((state: RootState) => state.auth.user?.org_id);
   const userId = useSelector((state: RootState) => state.auth.user?.userId);
 
-const { data: features = [], isLoading } = useGetFeaturesByOrgIdQuery(
+  const { data: featuresApi = [], isLoading: isLoadingApi } = useGetFeaturesByOrgIdQuery(
     { userId: userId!, orgId: tenantId! },
-    { skip: !userId || !tenantId }
+    { skip: USE_MOCK || !userId || !tenantId }
   );
+  const features = USE_MOCK ? mockFeatures : featuresApi;
+  const isLoading = USE_MOCK ? false : isLoadingApi;
 
   const [assignFeatureToRole, { isLoading: isAssigning }] =
     useAssignFeatureToRoleMutation();
@@ -70,7 +73,7 @@ const { data: features = [], isLoading } = useGetFeaturesByOrgIdQuery(
   };
 
   const handleAssignFeatures = async () => {
-    if (!tenantId || !orgAppRoleId || selectedFeatureIds.length === 0) {
+    if (!orgAppRoleId || selectedFeatureIds.length === 0) {
       dispatch(
         showToast({
           id: crypto.randomUUID(),
@@ -80,6 +83,21 @@ const { data: features = [], isLoading } = useGetFeaturesByOrgIdQuery(
       );
       return;
     }
+
+    if (USE_MOCK) {
+      setMockAssignedFeatures(orgAppRoleId, selectedFeatureIds);
+      dispatch(
+        showToast({
+          id: crypto.randomUUID(),
+          message: "Mock features assigned.",
+          severity: "success",
+        })
+      );
+      router.push("/roleOverview");
+      return;
+    }
+
+    if (!tenantId) return;
 
     try {
       await assignFeatureToRole({
