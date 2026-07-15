@@ -51,10 +51,11 @@ const AIUseCaseOverview: React.FC<AIUseCaseOverviewProps> = ({
         </Typography>
       </Box>
 
-      <Box sx={{ display: "flex", alignItems: "center", gap: "18px", padding: "4px 20px 14px 20px", flex: 1, minHeight: 0 }}>
-        {/* Donut fills the card height (responsive PieChart), capped by the
-            100px column width so it grows a little on taller viewports. */}
-        <Box sx={{ position: "relative", width: 120, alignSelf: "stretch", flexShrink: 0 }}>
+      <Box sx={{ display: "flex", alignItems: "stretch", gap: "18px", padding: "4px 20px 14px 20px", flex: 1, minHeight: 0 }}>
+        {/* Donut is a square that tracks the card's full height (capped),
+            so it grows on taller/full-HD viewports instead of sitting small
+            inside a much taller card. */}
+        <Box sx={{ position: "relative", height: "100%", aspectRatio: "1", maxWidth: 220, alignSelf: "stretch", flexShrink: 0, containerType: "size" }}>
           <PieChart
             series={[
               {
@@ -80,16 +81,16 @@ const AIUseCaseOverview: React.FC<AIUseCaseOverviewProps> = ({
               pointerEvents: "none",
             }}
           >
-            <Typography sx={{ fontSize: "20px", fontWeight: 800, color: DASHBOARD_COLORS.textPrimary, lineHeight: 1 }}>
+            <Typography sx={{ fontSize: "clamp(20px, 8cqh, 30px)", fontWeight: 800, color: DASHBOARD_COLORS.textPrimary, lineHeight: 1 }}>
               {total}
             </Typography>
-            <Typography sx={{ fontSize: "9px", fontWeight: 600, color: DASHBOARD_COLORS.textSecondary, mt: "2px" }}>
+            <Typography sx={{ fontSize: "clamp(9px, 3cqh, 12px)", fontWeight: 600, color: DASHBOARD_COLORS.textSecondary, mt: "2px" }}>
               {centerLabel}
             </Typography>
           </Box>
         </Box>
 
-        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: "9px" }}>
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-evenly", alignSelf: "stretch", gap: "9px" }}>
           {data.map((item) => {
             const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
             return (

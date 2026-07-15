@@ -9,7 +9,7 @@ import ReportTable, {
   ReportFilter,
 } from '@/app/components/organisms/ReportTable/ReportTable';
 import AlertDrawer from '../AlertDrawer/AlertDrawer';
-import { DASHBOARD_COLORS } from '@/app/config/dashboardTheme';
+import { CATEGORY_LABEL, DASHBOARD_COLORS, UseCaseCategory } from '@/app/config/dashboardTheme';
 
 // ---------- Type definitions (exported) ----------
 export type AlertSeverity = 'critical' | 'non-critical';
@@ -23,23 +23,28 @@ export interface Alert {
   camera: string;
   zone: string;
   status: AlertStatus;
+  category: UseCaseCategory;
 }
 
 // ---------- Mock data ----------
 const mockAlerts: Alert[] = [
-  { id: 'ALT-20456', timestamp: '2026-07-07T17:42:00', severity: 'critical', title: 'Fire and Smoke Detection', camera: 'CAM-08', zone: 'Warehouse', status: 'new' },
-  { id: 'ALT-20455', timestamp: '2026-07-07T17:40:00', severity: 'non-critical', title: 'PPE Detection (Helmet, Vest, Gloves, Mask)', camera: 'CAM-12', zone: 'Assembly Line', status: 'new' },
-  { id: 'ALT-20454', timestamp: '2026-07-07T17:39:00', severity: 'non-critical', title: 'Employee Presence in Restricted Areas', camera: 'CAM-15', zone: 'Gate B', status: 'acknowledged' },
-  { id: 'ALT-20453', timestamp: '2026-07-07T17:37:00', severity: 'non-critical', title: 'Forklift / Vehicle in Walkways', camera: 'CAM-04', zone: 'Loading Dock', status: 'viewed' },
-  { id: 'ALT-20452', timestamp: '2026-07-07T17:35:00', severity: 'non-critical', title: 'Camera Tampering Detection', camera: 'CAM-02', zone: 'Parking', status: 'new' },
-  { id: 'ALT-20451', timestamp: '2026-07-07T17:31:00', severity: 'critical', title: 'Fire and Smoke Detection', camera: 'CAM-20', zone: 'Warehouse', status: 'acknowledged' },
-  { id: 'ALT-20450', timestamp: '2026-07-07T17:28:00', severity: 'non-critical', title: 'Crowd Detection in Hazardous Zones', camera: 'CAM-09', zone: 'Assembly Line', status: 'viewed' },
-  { id: 'ALT-20449', timestamp: '2026-07-07T17:24:00', severity: 'non-critical', title: 'Vehicle Unloading / Loading Monitoring', camera: 'CAM-06', zone: 'Loading Dock', status: 'viewed' },
-  { id: 'ALT-20448', timestamp: '2026-07-07T17:19:00', severity: 'non-critical', title: 'Vehicle Count & ANPR at Gates', camera: 'CAM-14', zone: 'Gate A', status: 'viewed' },
-  { id: 'ALT-20447', timestamp: '2026-07-07T17:12:00', severity: 'critical', title: 'Intrusion Detection at Perimeter', camera: 'CAM-05', zone: 'Gate A', status: 'resolved' },
-  { id: 'ALT-20446', timestamp: '2026-07-07T17:05:00', severity: 'non-critical', title: 'Canteen Usage Monitoring', camera: 'CAM-08', zone: 'canteen A', status: 'viewed' },
-  { id: 'ALT-20445', timestamp: '2026-07-07T16:58:00', severity: 'non-critical', title: 'Mobile Phone Usage in Restricted Zones', camera: 'CAM-09', zone: 'Production Floor', status: 'viewed' },
+  { id: 'ALT-20456', timestamp: '2026-07-07T17:42:00', severity: 'critical', title: 'Fire and Smoke Detection', camera: 'CAM-08', zone: 'Warehouse', status: 'new', category: 'safety' },
+  { id: 'ALT-20455', timestamp: '2026-07-07T17:40:00', severity: 'non-critical', title: 'PPE Detection (Helmet, Vest, Gloves, Mask)', camera: 'CAM-12', zone: 'Assembly Line', status: 'new', category: 'safety' },
+  { id: 'ALT-20454', timestamp: '2026-07-07T17:39:00', severity: 'non-critical', title: 'Employee Presence in Restricted Areas', camera: 'CAM-15', zone: 'Gate B', status: 'acknowledged', category: 'workforce' },
+  { id: 'ALT-20453', timestamp: '2026-07-07T17:37:00', severity: 'non-critical', title: 'Forklift / Vehicle in Walkways', camera: 'CAM-04', zone: 'Loading Dock', status: 'viewed', category: 'safety' },
+  { id: 'ALT-20452', timestamp: '2026-07-07T17:35:00', severity: 'non-critical', title: 'Camera Tampering Detection', camera: 'CAM-02', zone: 'Parking', status: 'new', category: 'surveillance' },
+  { id: 'ALT-20451', timestamp: '2026-07-07T17:31:00', severity: 'critical', title: 'Fire and Smoke Detection', camera: 'CAM-20', zone: 'Warehouse', status: 'acknowledged', category: 'safety' },
+  { id: 'ALT-20450', timestamp: '2026-07-07T17:28:00', severity: 'non-critical', title: 'Crowd Detection in Hazardous Zones', camera: 'CAM-09', zone: 'Assembly Line', status: 'viewed', category: 'safety' },
+  { id: 'ALT-20449', timestamp: '2026-07-07T17:24:00', severity: 'non-critical', title: 'Vehicle Unloading / Loading Monitoring', camera: 'CAM-06', zone: 'Loading Dock', status: 'viewed', category: 'operational' },
+  { id: 'ALT-20448', timestamp: '2026-07-07T17:19:00', severity: 'non-critical', title: 'Vehicle Count & ANPR at Gates', camera: 'CAM-14', zone: 'Gate A', status: 'viewed', category: 'operational' },
+  { id: 'ALT-20447', timestamp: '2026-07-07T17:12:00', severity: 'critical', title: 'Intrusion Detection at Perimeter', camera: 'CAM-05', zone: 'Gate A', status: 'resolved', category: 'surveillance' },
+  { id: 'ALT-20446', timestamp: '2026-07-07T17:05:00', severity: 'non-critical', title: 'Canteen Usage Monitoring', camera: 'CAM-08', zone: 'canteen A', status: 'viewed', category: 'operational' },
+  { id: 'ALT-20445', timestamp: '2026-07-07T16:58:00', severity: 'non-critical', title: 'Mobile Phone Usage in Restricted Zones', camera: 'CAM-09', zone: 'Production Floor', status: 'viewed', category: 'workforce' },
 ];
+
+// ---------- Category options (shared labels/colors with the rest of the dashboard) ----------
+const categoryOrder: UseCaseCategory[] = ['surveillance', 'safety', 'operational', 'workforce'];
+const categoryOptions = categoryOrder.map((key) => CATEGORY_LABEL[key]);
 
 // ---------- Timestamp formatting ----------
 export function formatTimestamp(iso: string): string {
@@ -194,6 +199,7 @@ const filters: ReportFilter<TableRow>[] = [
   { id: 'zone', label: 'Zone', type: 'select', options: uniqueZones },
   { id: 'severity', label: 'Severity', type: 'select', options: ['Critical', 'Non-Critical'] },
   { id: 'status', label: 'Status', type: 'select', options: ['New', 'Viewed', 'Acknowledged', 'Resolved'] },
+  { id: 'category', label: 'Category', type: 'select', options: categoryOptions },
   { id: 'startDate', label: 'Start date', type: 'datetime' },
   { id: 'endDate', label: 'End date', type: 'datetime' },
 ];
@@ -210,6 +216,7 @@ export default function AlertsTable() {
 
   const filteredAlerts = useMemo(() => {
     return mockAlerts.filter((alert) => {
+      if (appliedFilters.category && CATEGORY_LABEL[alert.category] !== appliedFilters.category) return false;
       if (appliedFilters.alert && alert.title !== appliedFilters.alert) return false;
       if (appliedFilters.camera && alert.camera !== appliedFilters.camera) return false;
       if (appliedFilters.zone && alert.zone !== appliedFilters.zone) return false;

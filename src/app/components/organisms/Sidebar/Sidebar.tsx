@@ -192,7 +192,8 @@ const BRAND = {
   orgNameFallback: "Customer Logo",
   subtitle: "Scout Platform",
   fallbackLogo: "/CustomerLogo1.png",
-  footerLogo: "/scoutLogo.png",
+  //footerLogo: "/scoutLogo.png",
+    footerLogo: "/icon.png",
   company: "Elansol Technologies",
 } as const;
 

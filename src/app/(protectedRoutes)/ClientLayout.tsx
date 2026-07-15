@@ -85,9 +85,26 @@ export default function ClientLayout({
             minHeight: 0,
           }}
         >
-          <FeatureGuardProvider>
-            <PageTransitionWrapper>{children}</PageTransitionWrapper>
-          </FeatureGuardProvider>
+          {/* Caps content width on very large / ultra-wide monitors so it
+              doesn't stretch edge-to-edge; below "xl" (i.e. on Mac screens)
+              this is a no-op — width stays 100% as before. */}
+          <Box
+            sx={{
+              width: "100%",
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              minHeight: 0,
+              [sidebartheme.breakpoints.up("xl")]: {
+                maxWidth: "1800px",
+                marginX: "auto",
+              },
+            }}
+          >
+            <FeatureGuardProvider>
+              <PageTransitionWrapper>{children}</PageTransitionWrapper>
+            </FeatureGuardProvider>
+          </Box>
         </Box>
       </Box>
     </LocalizationProvider>

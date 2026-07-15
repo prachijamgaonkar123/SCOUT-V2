@@ -232,25 +232,21 @@ const Dashboard: React.FC = () => {
         <StatCard icon={VideocamOffOutlined} tone="red" value={5} label="Cameras Offline" onClick={() => setCameraPopup("offline")} />
         <StatCard icon={ReportProblemOutlined} tone="amber" value={12} label="Open Incidents"  onClick={() => router.push('/alertsPage')} hideArrow />
         <StatCard icon={QueryStatsOutlined} tone="blue" value={143} label="Total Detections Today" onClick={() => router.push('/alertsPage')} hideArrow />
-        {/* <StatCard icon={VerifiedOutlined} tone="gray" value={null} total="" label="" /> */}
         <Box
-  sx={{
-    display: "flex",
-    alignItems: "center",
-    gap: "11px",
-    padding: "14px",
-    border: `1.5px solid ${DASHBOARD_COLORS.border}`,
-//borderRadius: "10px",
-    backgroundColor:"#F0F2F5", 
-    cursor: "default",
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: "11px",
+            padding: "14px",
+            border: `1.5px solid ${DASHBOARD_COLORS.border}`,
             borderRadius: "12px",
-        boxShadow: "0 1px 2px rgba(0,0,0,.08), 0 1px 3px 1px rgba(0,0,0,.06)",
-
-  }}
->
-  
-  {/* No value, no lock */}
-</Box>
+            backgroundColor: "#F0F2F5",
+            cursor: "default",
+            boxShadow: "0 1px 2px rgba(0,0,0,.08), 0 1px 3px 1px rgba(0,0,0,.06)",
+          }}
+        >
+          {/* No value, no label */}
+        </Box>
       </Box>
 
       {/* AI Use Case Overview | Detections Trend | Recent Events (spans both rows) | AI Use Cases Status. */}
