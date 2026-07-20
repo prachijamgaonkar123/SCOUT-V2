@@ -9,11 +9,11 @@ export const surveillanceDashboardConfig = {
     tooltipMessage:
       "Shows detected intrusion incidents in monitored zones during restricted hours.",
   },
-  "Unauthorized Access in Restricted Areas": {
-    icon: People,
-    route: "/unauthorizedAccessInRestrictedAreas",
-    tooltipMessage: "Displays unauthorized acess in restricted ares.",
-  },
+  // "Unauthorized Access in Restricted Areas": {
+  //   icon: People,
+  //   route: "/unauthorizedAccessInRestrictedAreas",
+  //   tooltipMessage: "Displays unauthorized acess in restricted ares.",
+  // },
   "Camera Tampering Detection": {
     icon: VideocamOff,
     route: "/cameraTampering",

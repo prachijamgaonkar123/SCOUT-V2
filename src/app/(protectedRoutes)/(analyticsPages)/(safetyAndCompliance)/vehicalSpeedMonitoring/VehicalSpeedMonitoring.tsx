@@ -102,47 +102,57 @@ const VehicalSpeedMonitoring: React.FC = () => {
     };
   });
   console.log("vehical speed voilation", recentVehicleViolations);
+
+  // Single source of truth: every KPI and the zone breakdown below is
+  // derived from backendVehicleData so the totals always match the recent
+  // violations list and the report table.
+  const highestSpeedRecord = [...backendVehicleData].sort(
+    (a, b) => b.speed - a.speed
+  )[0];
+
+  const lastDetectionRecord = [...backendVehicleData].sort((a, b) =>
+    a.createdAt > b.createdAt ? -1 : 1
+  )[0];
+
   const VehicalSpeedMonitoringKpiData = [
     {
       title: "Speed Violation Count",
-      value: "267",
+      value: String(backendVehicleData.length),
       icon: Speed,
       tooltipMessage:
         "Total number of detected vehicle speed violations inside the premises.",
     },
     {
       title: "Highest Speed Recorded",
-      value: "110 km/h",
+      value: `${highestSpeedRecord.speed} km/h`,
       icon: TrendingUp,
       tooltipMessage:
         "The maximum speed recorded among all monitored vehicles.",
     },
     {
       title: "Highest Speed Violation Zone",
-      value: "Zone 3",
+      value: highestSpeedRecord.zone,
       icon: LocationOn,
       tooltipMessage:
         "The zone where the highest vehicle speed violation was detected.",
     },
     {
       title: "Last Detection Time",
-      value: "11:15 AM",
+      value: lastDetectionRecord.createdAt,
       icon: AccessTime,
       tooltipMessage:
         "The time when the most recent vehicle speed violation was detected.",
     },
   ];
 
-  const zoneViolationsData = [
-    {
-      zone: "Main Gate",
-      violations: 2,
-    },
-    {
-      zone: "Parking Lot",
-      violations: 2,
-    },
-  ];
+  const zoneCounts = backendVehicleData.reduce((acc, item) => {
+    acc[item.zone] = (acc[item.zone] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const zoneViolationsData = Object.entries(zoneCounts).map(
+    ([zone, violations]) => ({ zone, violations })
+  );
 
   const handleViewSingle = (row: Record<string, string | number | boolean>) => {
     console.log("view single row", row);

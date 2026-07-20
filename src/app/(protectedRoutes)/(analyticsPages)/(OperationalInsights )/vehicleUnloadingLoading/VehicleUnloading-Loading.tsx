@@ -32,28 +32,6 @@ const VehicleUnloadingLoading: React.FC = () => {
   const [viewPopupOpen, setViewPopupOpen] = useState(false);
   const [viewPopupData, setViewPopupData] =
     useState<VehicleLoadingEvent | null>(null);
-  const VehicleUnloadingLoadingKpiData = [
-    {
-      title: "Total Loading/Unloading Event",
-      value: "2",
-      icon: LocalShipping,
-      tooltipMessage: "Total loading/unloading events recorded.",
-    },
-    {
-      title: "Average Loading/Unloading Time",
-      value: "30 mins",
-      icon: AccessTimeIcon,
-      tooltipMessage:
-        "Shows the Average Time for Vehical Loading/Unloading event",
-    },
-
-    {
-      title: "Busiest Zone",
-      value: "Loading Bay A,Loading Bay B",
-      icon: Timeline,
-      tooltipMessage: "Zone with the highest operation activity.",
-    },
-  ];
   const backendData = [
     {
       id: 301,
@@ -116,22 +94,55 @@ const VehicleUnloadingLoading: React.FC = () => {
     };
   });
 
-  const zoneLoadingData = [
-    {
-      zone: "Loading Bay A",
-      incident: 1,
+  // Single source of truth: every KPI and the zone breakdown below is
+  // derived from backendData so the totals always match the recent events
+  // list and the report table.
+  const zoneTotals = backendData.reduce((acc, item) => {
+    if (!acc[item.zone]) {
+      acc[item.zone] = { zone: item.zone, start: 0, stop: 0 };
+    }
+    if (item.loadingState === "Start") acc[item.zone].start += 1;
+    if (item.loadingState === "Stop") acc[item.zone].stop += 1;
+    return acc;
+  }, {} as Record<string, { zone: string; start: number; stop: number }>);
+
+  const zoneLoadingData = Object.values(zoneTotals).map(
+    ({ zone, start, stop }) => ({
+      zone,
+      incident: Math.min(start, stop),
       subViolations: [
-        { label: "Start", value: 1, icon: PlayCircleIcon },
-        { label: "Stop", value: 1, icon: StopCircleIcon },
+        { label: "Start", value: start, icon: PlayCircleIcon },
+        { label: "Stop", value: stop, icon: StopCircleIcon },
       ],
+    }),
+  );
+
+  const busiestZones = Object.keys(zoneTotals);
+  const totalEvents = zoneLoadingData.reduce(
+    (sum, z) => sum + z.incident,
+    0,
+  );
+
+  const VehicleUnloadingLoadingKpiData = [
+    {
+      title: "Total Loading/Unloading Event",
+      value: String(totalEvents),
+      icon: LocalShipping,
+      tooltipMessage: "Total loading/unloading events recorded.",
     },
     {
-      zone: "Loading Bay B",
-      incident: 1,
-      subViolations: [
-        { label: "Start", value: 1, icon: PlayCircleIcon },
-        { label: "Stop", value: 1, icon: StopCircleIcon },
-      ],
+      title: "Average Loading/Unloading Time",
+      value: "30 mins",
+      icon: AccessTimeIcon,
+      tooltipMessage:
+        "Shows the Average Time for Vehical Loading/Unloading event",
+    },
+
+    {
+      title: "Busiest Zone",
+      value: busiestZones.join(", "),
+      icon: Timeline,
+      tooltipMessage: "Zone with the highest operation activity.",
     },
   ];
 
@@ -268,7 +279,7 @@ const VehicleUnloadingLoading: React.FC = () => {
       </Paper>
       {/*  Violations Report */}
       <ReportTable
-        totalCount={4}
+        totalCount={recentLoadingEvents.length}
         page={0}
         rowsPerPage={10}
         title="Detailed Report"

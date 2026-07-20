@@ -160,7 +160,7 @@ export default function RecentViolations(
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  bgcolor: "#374151",
+                  bgcolor: hasImage ? DASHBOARD_COLORS.card : "#374151",
                   overflow: "hidden",
                 }}
               >

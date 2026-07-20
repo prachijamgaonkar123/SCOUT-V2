@@ -34,10 +34,72 @@ const FallDetection: React.FC = () => {
   const [viewPopupData, setViewPopupData] =
     useState<RecentViolationData | null>(null);
 
+  const backendLaydownData = [
+    {
+      id: 401,
+      snapshot: "/img/fall-detections/fall1.png",
+      zone: "Production Floor A",
+      camera: "CAM-11",
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 18:06",
+      alarmTriggered: true,
+    },
+    {
+      id: 402,
+      snapshot: "/img/fall-detections/fall2.png",
+      zone: "Warehouse",
+      camera: "CAM-12",
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 18:13",
+      alarmTriggered: false,
+    },
+    {
+      id: 404,
+      snapshot: "/img/fall-detections/fall3.png",
+      zone: "Production Floor A",
+      camera: "CAM-11",
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 18:06",
+      alarmTriggered: true,
+    },
+   
+    
+  ];
+
+  // Map backend data to recentViolations format
+  const recentLaydownViolations = backendLaydownData.map((item) => {
+    return {
+      voilation: "Fall / Laydown detected",
+      zone: item.zone,
+      time: item.createdAt,
+      imageUrl: item.snapshot,
+      cameraId: item.camera,
+      alarmTriggered: item.alarmTriggered,
+    };
+  });
+
+  console.log("laydown recent voilation", recentLaydownViolations);
+
+  // Single source of truth: grouped straight from backendLaydownData so the
+  // zone breakdown, the "most incident-prone zone" KPI, and the total KPI
+  // always agree with the recent-violations/report rows.
+  const zoneCounts = backendLaydownData.reduce((acc, item) => {
+    acc[item.zone] = (acc[item.zone] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const zoneViolationsData = Object.entries(zoneCounts).map(
+    ([zone, violations]) => ({ zone, violations })
+  );
+
+  const mostIncidentProneZone = zoneViolationsData.reduce((max, curr) =>
+    curr.violations > max.violations ? curr : max
+  );
+
   const fallKpiData = [
     {
       title: "Total Fall Incidents",
-      value: "9",
+      value: String(backendLaydownData.length),
       icon: ReportProblem,
       tooltipMessage:
         "Total number of fall, laydown, or sleeping incidents detected across all monitored zones.",
@@ -59,7 +121,7 @@ const FallDetection: React.FC = () => {
     },
     {
       title: "Most Incident-Prone Zone",
-      value: "Zone B",
+      value: mostIncidentProneZone.zone,
       icon: Whatshot,
       tooltipMessage:
         "The zone with the highest number of fall, laydown, or sleeping incidents recorded.",
@@ -68,120 +130,6 @@ const FallDetection: React.FC = () => {
       bgColor: "#ffebee",
       borderColor: "#f44336",
       iconBg: "rgba(244, 67, 54, 0.1)",
-    },
-  ];
-
-  const backendLaydownData = [
-    {
-      id: 401,
-      snapshot: "/img/fall.avif",
-      zone: "Production Floor A",
-      camera: "CAM-11",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:06",
-      alarmTriggered: true,
-    },
-    {
-      id: 402,
-      snapshot: "/img/fall2.webp",
-      zone: "Warehouse",
-      camera: "CAM-12",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:13",
-      alarmTriggered: false,
-    },
-    {
-      id: 403,
-      snapshot: "/img/fall3.webp",
-      zone: "Maintenance Area",
-      camera: "CAM-13",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:19",
-      alarmTriggered: true,
-    },
-    {
-      id: 404,
-      snapshot: "/img/fall.avif",
-      zone: "Production Floor A",
-      camera: "CAM-11",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:06",
-      alarmTriggered: true,
-    },
-    {
-      id: 405,
-      snapshot: "/img/fall.avif",
-      zone: "Warehouse",
-      camera: "CAM-12",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:13",
-      alarmTriggered: false,
-    },
-    {
-      id: 406,
-      snapshot: "/img/fall.avif",
-      zone: "Maintenance Area",
-      camera: "CAM-13",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:19",
-      alarmTriggered: true,
-    },
-    {
-      id: 403,
-      snapshot: "/img/fall3.webp",
-      zone: "Maintenance Area",
-      camera: "CAM-13",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:19",
-      alarmTriggered: true,
-    },
-    {
-      id: 404,
-      snapshot: "/img/fall.avif",
-      zone: "Production Floor A",
-      camera: "CAM-11",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:06",
-      alarmTriggered: true,
-    },
-    {
-      id: 405,
-      snapshot: "/img/fall2.webp",
-      zone: "Warehouse",
-      camera: "CAM-12",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 18:13",
-      alarmTriggered: false,
-    },
-  ];
-
-  // Map backend data to recentViolations format
-  const recentLaydownViolations = backendLaydownData.map((item) => {
-    return {
-      voilation: "Fall / Laydown detected",
-      zone: item.zone,
-      time: item.createdAt,
-      imageUrl: item.snapshot,
-      cameraId: item.camera,
-      alarmTriggered: item.alarmTriggered,
-    };
-  });
-
-  console.log("laydown recent voilation", recentLaydownViolations);
-
-  const zoneViolationsData = [
-    {
-      zone: "Production Floor A",
-      violations: 3,
-    },
-    {
-      zone: "Warehouse",
-      violations: 3,
-    },
-
-    {
-      zone: "Maintenance Area",
-      violations: 3,
     },
   ];
   interface FilterParams {

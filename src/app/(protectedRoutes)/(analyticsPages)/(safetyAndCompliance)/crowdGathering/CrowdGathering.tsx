@@ -38,7 +38,7 @@ const CrowdGathering: React.FC = () => {
       gatheredMore: true,
       alarmTriggered: true,
       mobCount: 25,
-      snapshot: "/img/c1.jpg",
+      snapshot: "img/crowd/c1.png",
       zone: "Hazard Zone A",
       camera: "CAM-21",
       createdAt: getOneHourBefore().fullDate,
@@ -49,7 +49,7 @@ const CrowdGathering: React.FC = () => {
       gatheredMore: true,
       alarmTriggered: false,
       mobCount: 12,
-      snapshot: "/img/c5.jpg",
+      snapshot: "img/crowd/c2.png",
       zone: "Hazard Zone B",
       camera: "CAM-22",
       createdAt: getOneHourBefore().fullDate,
@@ -60,40 +60,7 @@ const CrowdGathering: React.FC = () => {
       gatheredMore: true,
       alarmTriggered: true,
       mobCount: 25,
-      snapshot: "/img/c3.jpg",
-      zone: "Hazard Zone A",
-      camera: "CAM-21",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 20:06",
-    },
-    {
-      id: 701,
-      gatheredMore: true,
-      alarmTriggered: true,
-      mobCount: 25,
-      snapshot: "/img/c4.jpg",
-      zone: "Hazard Zone A",
-      camera: "CAM-21",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 20:06",
-    },
-    {
-      id: 702,
-      gatheredMore: true,
-      alarmTriggered: false,
-      mobCount: 12,
-      snapshot: "/img/c5.jpg",
-      zone: "Hazard Zone B",
-      camera: "CAM-22",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 20:16",
-    },
-    {
-      id: 703,
-      gatheredMore: true,
-      alarmTriggered: true,
-      mobCount: 25,
-      snapshot: "/img/c3.jpg",
+      snapshot: "img/crowd/c3.png",
       zone: "Hazard Zone A",
       camera: "CAM-21",
       createdAt: getOneHourBefore().fullDate,
@@ -102,62 +69,26 @@ const CrowdGathering: React.FC = () => {
     {
       id: 704,
       gatheredMore: true,
-      alarmTriggered: false,
-      mobCount: 12,
-      snapshot: "/img/c5.jpg",
-      zone: "Hazard Zone B",
-      camera: "CAM-22",
+      alarmTriggered: true,
+      mobCount: 30,
+      snapshot: "img/crowd/c1.png",
+      zone: "Cafeteria Zone",
+      camera: "CAM-23",
       createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 20:16",
+      updatedAt: "2025-09-23 20:26",
     },
     {
-      id: 704,
+      id: 705,
       gatheredMore: true,
       alarmTriggered: false,
-      mobCount: 12,
-      snapshot: "/img/c1.jpg",
-      zone: "Hazard Zone B",
-      camera: "CAM-22",
+      mobCount: 18,
+      snapshot: "img/crowd/c2.png",
+      zone: "Loading Dock Zone",
+      camera: "CAM-24",
       createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 20:16",
-    },
-  ];
-
-  const CrowdKpiData = [
-    {
-      title: "Total Incidents Detected",
-      value: "8",
-      icon: ReportProblem,
-      tooltipMessage:
-        "Shows the total number of crowd gathering incidents detected so far.",
-    },
-    {
-      title: "Crowded Zone",
-      value: "Hazard Zone A",
-      icon: Groups,
-      tooltipMessage:
-        "Displays the zone that currently has the highest crowd gathering.",
+      updatedAt: "2025-09-23 20:36",
     },
 
-    {
-      title: "Peak Crowd Density ",
-      value: "50 (Zone B)",
-      icon: LocationOn,
-      tooltipMessage:
-        "Shows the highest recorded crowd density along with the zone where it occurred.",
-      trendColor: "#f44336",
-      color: "#f44336",
-      bgColor: "#ffebee",
-      borderColor: "#f44336",
-      iconBg: "rgba(244, 67, 54, 0.1)",
-    },
-    {
-      title: "Last Incidence",
-      value: getOneHourBefore().time,
-      icon: AccessTime,
-      tooltipMessage:
-        "Displays the timestamp of the most recent crowd gathering incident detected.",
-    },
   ];
 
   const recentCrowdViolations = backendCrowdData.map((item) => {
@@ -180,19 +111,66 @@ const CrowdGathering: React.FC = () => {
     };
   });
 
-  const zoneViolationsData = [
+  // Single source of truth: every KPI and the zone breakdown below is derived
+  // from backendCrowdData so the totals always match the incident list.
+  const zoneTotals = Object.values(
+    backendCrowdData.reduce((acc, item) => {
+      if (!acc[item.zone]) {
+        acc[item.zone] = { zone: item.zone, count: 0, mobCount: 0 };
+      }
+      acc[item.zone].count += 1;
+      acc[item.zone].mobCount += item.mobCount;
+      return acc;
+    }, {} as Record<string, { zone: string; count: number; mobCount: number }>)
+  );
+
+  const zoneViolationsData = zoneTotals.map(({ zone, count }) => ({
+    zone,
+    violations: count,
+  }));
+
+  const crowdedZone = [...zoneTotals].sort(
+    (a, b) => b.mobCount - a.mobCount
+  )[0];
+
+  const peakRecord = [...backendCrowdData].sort(
+    (a, b) => b.mobCount - a.mobCount
+  )[0];
+
+  const CrowdKpiData = [
     {
-      zone: "Hazard Zone A",
-      violations: 5,
+      title: "Total Incidents Detected",
+      value: String(backendCrowdData.length),
+      icon: ReportProblem,
+      tooltipMessage:
+        "Shows the total number of crowd gathering incidents detected so far.",
+    },
+    {
+      title: "Crowded Zone",
+      value: crowdedZone.zone,
+      icon: Groups,
+      tooltipMessage:
+        "Displays the zone that currently has the highest crowd gathering.",
     },
 
     {
-      zone: "Hazard Zone B",
-      violations: 3,
+      title: "Peak Crowd Density ",
+      value: `${peakRecord.mobCount} (${peakRecord.zone})`,
+      icon: LocationOn,
+      tooltipMessage:
+        "Shows the highest recorded crowd density along with the zone where it occurred.",
+      trendColor: "#f44336",
+      color: "#f44336",
+      bgColor: "#ffebee",
+      borderColor: "#f44336",
+      iconBg: "rgba(244, 67, 54, 0.1)",
     },
     {
-      zone: "Zone D",
-      violations: 1,
+      title: "Last Incidence",
+      value: getOneHourBefore().time,
+      icon: AccessTime,
+      tooltipMessage:
+        "Displays the timestamp of the most recent crowd gathering incident detected.",
     },
   ];
   interface FilterParams {

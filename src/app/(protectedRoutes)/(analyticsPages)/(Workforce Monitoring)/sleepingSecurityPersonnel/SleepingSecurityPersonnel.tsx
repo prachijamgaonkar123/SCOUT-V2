@@ -31,34 +31,6 @@ const SleepingSecurityPersonnel: React.FC = () => {
   const [viewPopupData, setViewPopupData] =
     useState<SleepingSecurityViolation | null>(null);
 
-  const SleepingSecurityPersonnelKpiData = [
-    {
-      title: "Security Presence",
-      value: "2",
-      icon: Security,
-      tooltipMessage:
-        "Shows the number of security personnel currently present.",
-      trendColor: "#4caf50",
-      color: "#4caf50",
-      bgColor: "#e8f5e9",
-      borderColor: "#4caf50",
-      iconBg: "rgba(76, 175, 80, 0.1)",
-    },
-    {
-      title: "Last Incidence",
-      value: getOneHourBefore().time,
-      icon: AccessTime,
-      tooltipMessage:
-        "Displays the time of the most recent incident involving security personnel.",
-    },
-    {
-      title: "Zone Violations",
-      value: "Gate 2,Gate 1",
-      icon: LocationOn,
-      tooltipMessage:
-        "Lists the zones where sleeping security personnel violations were detected.",
-    },
-  ];
   const backendSleepingSecurityData = [
     {
       id: 901,
@@ -84,7 +56,7 @@ const SleepingSecurityPersonnel: React.FC = () => {
       id: 901,
       sleeping: true,
       absence: false,
-      snapshot: "https://picsum.photos/400/200?random=51",
+      snapshot: "/img/sleeping-absence-security-guards/s2.avif",
       zone: "Main Gate",
       camera: "CAM-51",
       createdAt: getOneHourBefore().fullDate,
@@ -94,7 +66,7 @@ const SleepingSecurityPersonnel: React.FC = () => {
       id: 902,
       sleeping: false,
       absence: true,
-      snapshot: "https://picsum.photos/400/200?random=52",
+      snapshot: "/img/sleeping-absence-security-guards/s1.jpg",
       zone: "Assembly Line A",
       camera: "CAM-52",
       createdAt: getOneHourBefore().fullDate,
@@ -118,38 +90,57 @@ const SleepingSecurityPersonnel: React.FC = () => {
     };
   });
 
-  const zoneViolationsData = [
-    {
-      zone: "Gate 2",
-      violations: 1,
+  // Single source of truth: every KPI and the zone breakdown below is
+  // derived from backendSleepingSecurityData so the totals always match the
+  // recent violations list and the report table.
+  const zoneTotals = backendSleepingSecurityData.reduce((acc, item) => {
+    if (!acc[item.zone]) {
+      acc[item.zone] = { zone: item.zone, sleeping: 0, absence: 0 };
+    }
+    if (item.sleeping) acc[item.zone].sleeping += 1;
+    if (item.absence) acc[item.zone].absence += 1;
+    return acc;
+  }, {} as Record<string, { zone: string; sleeping: number; absence: number }>);
+
+  const zoneViolationsData = Object.values(zoneTotals).map(
+    ({ zone, sleeping, absence }) => ({
+      zone,
+      violations: sleeping + absence,
       subViolations: [
-        {
-          label: "Sleeping",
-          value: 1,
-          icon: HotelIcon,
-        },
-        {
-          label: "Absence",
-          value: 0,
-          icon: PersonOffIcon,
-        },
+        { label: "Sleeping", value: sleeping, icon: HotelIcon },
+        { label: "Absence", value: absence, icon: PersonOffIcon },
       ],
+    }),
+  );
+
+  const violatedZones = Object.keys(zoneTotals);
+
+  const SleepingSecurityPersonnelKpiData = [
+    {
+      title: "Security Presence",
+      value: "2",
+      icon: Security,
+      tooltipMessage:
+        "Shows the number of security personnel currently present.",
+      trendColor: "#4caf50",
+      color: "#4caf50",
+      bgColor: "#e8f5e9",
+      borderColor: "#4caf50",
+      iconBg: "rgba(76, 175, 80, 0.1)",
     },
     {
-      zone: "Gate 1",
-      violations: 1,
-      subViolations: [
-        {
-          label: "Sleeping",
-          value: 1,
-          icon: HotelIcon,
-        },
-        {
-          label: "Absence",
-          value: 0,
-          icon: PersonOffIcon,
-        },
-      ],
+      title: "Last Incidence",
+      value: getOneHourBefore().time,
+      icon: AccessTime,
+      tooltipMessage:
+        "Displays the time of the most recent incident involving security personnel.",
+    },
+    {
+      title: "Zone Violations",
+      value: violatedZones.join(", "),
+      icon: LocationOn,
+      tooltipMessage:
+        "Lists the zones where sleeping security personnel violations were detected.",
     },
   ];
 

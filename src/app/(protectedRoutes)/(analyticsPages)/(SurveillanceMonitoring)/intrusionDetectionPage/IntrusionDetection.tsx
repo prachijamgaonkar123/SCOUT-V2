@@ -56,7 +56,7 @@ const IntrusionDetection: React.FC = () => {
     },
     {
       title: "Zone Breaches",
-      value: "4 (Zone A, Zone B,Zone C, Zone D)",
+      value: "4 (Perimeter Fence, Warehouse Gate,Assembly shop floor, Internal secure storage)",
       icon: LocationOn,
       tooltipMessage:
         "Displays the number of zones breached and lists those zones.",
@@ -65,36 +65,36 @@ const IntrusionDetection: React.FC = () => {
   const backendIntrusionData = [
     {
       id: 201,
-      snapshot: "/img/intrusion-detection-perimeter/i2.jpg",
-      zone: "Zone A",
-      camera: "CAM-11",
+      snapshot: "/img/intrusion-detection-perimeter/i1.png",
+      zone: "Perimeter Fence",
+      camera: "CAM-1",
       alarmTriggered: true,
       createdAt: getOneHourBefore().fullDate,
       updatedAt: "2025-09-23 18:06",
     },
     {
       id: 202,
-      snapshot: "/img/intrusion-detection-perimeter/i3.jpg",
-      zone: "Zone B",
-      camera: "CAM-12",
+      snapshot: "/img/intrusion-detection-perimeter/i2.png",
+      zone: "Warehouse Gate",
+      camera: "CAM-2",
       alarmTriggered: true,
       createdAt: getOneHourBefore().fullDate,
       updatedAt: "2025-09-23 18:16",
     },
     {
       id: 203,
-      snapshot: "/img/intrusion-detection-perimeter/i4.jpg",
-      zone: "Zone C",
-      camera: "CAM-11",
+      snapshot: "/img/intrusion-detection-perimeter/i3.png",
+      zone: "Assembly shop floor",
+      camera: "CAM-3",
       alarmTriggered: true,
       createdAt: getOneHourBefore().fullDate,
       updatedAt: "2025-09-23 18:06",
     },
     {
       id: 204,
-      snapshot: "/img/intrusion-detection-perimeter/i5.jpg",
-      zone: "Zone D",
-      camera: "CAM-12",
+      snapshot: "/img/intrusion-detection-perimeter/i4.png",
+      zone: "Internal secure storage",
+      camera: "CAM-4",
       alarmTriggered: true,
       createdAt: getOneHourBefore().fullDate,
       updatedAt: "2025-09-23 18:16",
@@ -121,24 +121,17 @@ const IntrusionDetection: React.FC = () => {
     };
   });
 
-  const zoneViolationsData = [
-    {
-      zone: "Zone A",
-      incident: 1,
-    },
-    {
-      zone: "Zone B",
-      incident: 1,
-    },
-    {
-      zone: "Zone C",
-      incident: 1,
-    },
-    {
-      zone: "Zone D",
-      incident: 1,
-    },
-  ];
+  // Single source of truth: derived from backendIntrusionData so the zone
+  // breakdown always matches the recent-violations/report rows instead of
+  // a hardcoded, disconnected placeholder.
+  const zoneCounts = backendIntrusionData.reduce((acc, item) => {
+    acc[item.zone] = (acc[item.zone] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const zoneViolationsData = Object.entries(zoneCounts).map(
+    ([zone, violations]) => ({ zone, violations })
+  );
   const handleViewSingle = (row: Record<string, string | number | boolean>) => {
     console.log("view single row", row);
     setViewPopupData(row as IntrusionViolation);

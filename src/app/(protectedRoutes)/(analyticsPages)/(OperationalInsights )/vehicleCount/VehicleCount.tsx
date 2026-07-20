@@ -39,63 +39,6 @@ const VehicleCount: React.FC = () => {
   const [viewPopupData, setViewPopupData] = useState<VehicleCountEvent | null>(
     null,
   );
-  const VehicleCountKpiData = [
-    {
-      title: "Total Vehicle Entries",
-      value: "6",
-      icon: Login,
-      tooltipMessage:
-        "Total number of vehicles that entered through all gates during the selected time period.",
-      trendColor: "#2196f3",
-      color: "#2196f3",
-      bgColor: "#e3f2fd",
-      borderColor: "#2196f3",
-      iconBg: "rgba(33, 150, 243, 0.1)",
-    },
-    {
-      title: "Total Vehicle Exits",
-      value: "1",
-      icon: Logout,
-      tooltipMessage:
-        "Total number of vehicles that exited through all gates during the selected time period.",
-      trendColor: "#2196f3",
-      color: "#2196f3",
-      bgColor: "#e3f2fd",
-      borderColor: "#2196f3",
-      iconBg: "rgba(33, 150, 243, 0.1)",
-    },
-    {
-      title: "Vehicles Inside",
-      value: "5",
-      icon: DirectionsCar,
-      tooltipMessage:
-        "Total number of vehicles currently inside the premises (calculated as entries minus exits).",
-      trendColor: "#2196f3",
-      color: "#2196f3",
-      bgColor: "#e3f2fd",
-      borderColor: "#2196f3",
-      iconBg: "rgba(33, 150, 243, 0.1)",
-    },
-    {
-      title: "Total Valid Numbers",
-      value: "0",
-      icon: CheckCircle,
-      tooltipMessage:
-        "Number of detected vehicles with valid license plate numbers.",
-      trendColor: "#4caf50",
-      color: "#4caf50",
-      bgColor: "#e8f5e9",
-      borderColor: "#4caf50",
-      iconBg: "rgba(76, 175, 80, 0.1)",
-    },
-    {
-      title: "Total Invalid Numbers",
-      value: "2",
-      icon: ReportProblem,
-      tooltipMessage:
-        "Number of detected vehicles with invalid or unreadable license plate numbers.",
-    },
-  ];
   const vehicleCountBackendData = [
     {
       id: 201,
@@ -122,6 +65,18 @@ const VehicleCount: React.FC = () => {
       updatedAt: "2025-09-23 10:14",
       alarmTriggered: false,
     },
+    {
+      id: 204,
+      numberDetected: "RJ14XY9012",
+      status: "Exit",
+      validNumber: false,
+      snapshot: "/img/vehicle-count-anpr-gates/v2.jpg",
+      zone: "Zone C",
+      camera: "CAM-EXIT-02",
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-09-23 11:02",
+      alarmTriggered: true,
+    },
   ];
 
   const vehicleViolations = vehicleCountBackendData.map((item) => {
@@ -146,20 +101,92 @@ const VehicleCount: React.FC = () => {
 
   console.log(vehicleViolations);
 
-  const vehicleZoneViolationsData = [
-    {
-      zone: "Zone A",
-      violations: 1,
+  // Single source of truth: every KPI and the zone breakdown below is
+  // derived from vehicleCountBackendData so the totals always match the
+  // recent violations list and the report table.
+  const zoneInvalidCounts = vehicleCountBackendData.reduce((acc, item) => {
+    if (!item.validNumber) acc[item.zone] = (acc[item.zone] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const vehicleZoneViolationsData = Object.entries(zoneInvalidCounts).map(
+    ([zone, count]) => ({
+      zone,
+      violations: count,
       subViolations: [
-        { label: "Invalid Number Plate", value: 1, icon: ErrorOutlineIcon },
+        { label: "Invalid Number Plate", value: count, icon: ErrorOutlineIcon },
       ],
+    }),
+  );
+
+  const entryCount = vehicleCountBackendData.filter(
+    (item) => item.status === "Entry",
+  ).length;
+  const exitCount = vehicleCountBackendData.filter(
+    (item) => item.status === "Exit",
+  ).length;
+  const validCount = vehicleCountBackendData.filter(
+    (item) => item.validNumber,
+  ).length;
+  const invalidCount = vehicleCountBackendData.filter(
+    (item) => !item.validNumber,
+  ).length;
+
+  const VehicleCountKpiData = [
+    {
+      title: "Total Vehicle Entries",
+      value: String(entryCount),
+      icon: Login,
+      tooltipMessage:
+        "Total number of vehicles that entered through all gates during the selected time period.",
+      trendColor: "#2196f3",
+      color: "#2196f3",
+      bgColor: "#e3f2fd",
+      borderColor: "#2196f3",
+      iconBg: "rgba(33, 150, 243, 0.1)",
     },
     {
-      zone: "Zone B",
-      violations: 1,
-      subViolations: [
-        { label: "Invalid Number Plate", value: 1, icon: ErrorOutlineIcon },
-      ],
+      title: "Total Vehicle Exits",
+      value: String(exitCount),
+      icon: Logout,
+      tooltipMessage:
+        "Total number of vehicles that exited through all gates during the selected time period.",
+      trendColor: "#2196f3",
+      color: "#2196f3",
+      bgColor: "#e3f2fd",
+      borderColor: "#2196f3",
+      iconBg: "rgba(33, 150, 243, 0.1)",
+    },
+    {
+      title: "Vehicles Inside",
+      value: String(Math.max(0, entryCount - exitCount)),
+      icon: DirectionsCar,
+      tooltipMessage:
+        "Total number of vehicles currently inside the premises (calculated as entries minus exits).",
+      trendColor: "#2196f3",
+      color: "#2196f3",
+      bgColor: "#e3f2fd",
+      borderColor: "#2196f3",
+      iconBg: "rgba(33, 150, 243, 0.1)",
+    },
+    {
+      title: "Total Valid Numbers",
+      value: String(validCount),
+      icon: CheckCircle,
+      tooltipMessage:
+        "Number of detected vehicles with valid license plate numbers.",
+      trendColor: "#4caf50",
+      color: "#4caf50",
+      bgColor: "#e8f5e9",
+      borderColor: "#4caf50",
+      iconBg: "rgba(76, 175, 80, 0.1)",
+    },
+    {
+      title: "Total Invalid Numbers",
+      value: String(invalidCount),
+      icon: ReportProblem,
+      tooltipMessage:
+        "Number of detected vehicles with invalid or unreadable license plate numbers.",
     },
   ];
 
@@ -293,7 +320,7 @@ const VehicleCount: React.FC = () => {
       </Paper>
       {/*  Violations Report */}
       <ReportTable
-        totalCount={4}
+        totalCount={vehicleViolations.length}
         page={0}
         rowsPerPage={10}
         title="Detailed Report"

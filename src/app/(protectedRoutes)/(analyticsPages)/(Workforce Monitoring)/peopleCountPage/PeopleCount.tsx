@@ -72,7 +72,7 @@ const PeopleCount: React.FC = () => {
       enteredCount: 20,
       exitCount: 18,
       zone: "Assembly Line B",
-      snapshot: "https://picsum.photos/400/200?random=14",
+      snapshot: "/img/people-count-factory-premises/p2.jpg",
       cameraid: "CAM-14",
       alarmTriggered: true,
       createdAt: getOneHourBefore().fullDate,
@@ -83,7 +83,7 @@ const PeopleCount: React.FC = () => {
       enteredCount: 5,
       exitCount: 2,
       zone: "Maintenance Area",
-      snapshot: "https://picsum.photos/400/200?random=15",
+      snapshot: "/img/people-count-factory-premises/p3.jpg",
       cameraid: "CAM-15",
       alarmTriggered: true,
       createdAt: getOneHourBefore().fullDate,
@@ -91,30 +91,16 @@ const PeopleCount: React.FC = () => {
     },
   ];
 
-  const zonePeopleCountData = [
-    {
-      zone: "Zone A",
-
-      subViolations: [
-        { label: "entered Count", value: 4, icon: PeopleIcon },
-        { label: "exit Count", value: 0, icon: ExitToAppIcon },
-      ],
-    },
-    {
-      zone: "Zone B",
-      subViolations: [
-        { label: "entered Count", value: 5, icon: PeopleIcon },
-        { label: "exit Count", value: 0, icon: ExitToAppIcon },
-      ],
-    },
-    {
-      zone: "Zone C",
-      subViolations: [
-        { label: "entered Count", value: 16, icon: PeopleIcon },
-        { label: "exit Count", value: 0, icon: ExitToAppIcon },
-      ],
-    },
-  ];
+  // Single source of truth: the zone breakdown and every KPI below is
+  // derived from backendData so the totals always match the recent
+  // violations list and the report table.
+  const zonePeopleCountData = backendData.map((item) => ({
+    zone: item.zone,
+    subViolations: [
+      { label: "entered Count", value: item.enteredCount, icon: PeopleIcon },
+      { label: "exit Count", value: item.exitCount, icon: ExitToAppIcon },
+    ],
+  }));
 
   const recentViolations = backendData.map((item) => {
     return {
@@ -129,10 +115,13 @@ const PeopleCount: React.FC = () => {
     };
   });
 
+  const totalEntered = backendData.reduce((sum, item) => sum + item.enteredCount, 0);
+  const totalExited = backendData.reduce((sum, item) => sum + item.exitCount, 0);
+
   const peopleCountKpiData = [
     {
       title: "People Inside",
-      value: "25",
+      value: String(Math.max(0, totalEntered - totalExited)),
       icon: People,
 
       tooltipMessage: "Current number of people present inside the area.",
@@ -144,7 +133,7 @@ const PeopleCount: React.FC = () => {
     },
     {
       title: "Entry Count",
-      value: "25",
+      value: String(totalEntered),
       icon: Login,
 
       tooltipMessage: "Total number of people who entered today.",
@@ -156,7 +145,7 @@ const PeopleCount: React.FC = () => {
     },
     {
       title: "Exit Count",
-      value: "0",
+      value: String(totalExited),
       icon: Logout,
       tooltipMessage: "Total number of people who exited today.",
       trendColor: "#2196f3",

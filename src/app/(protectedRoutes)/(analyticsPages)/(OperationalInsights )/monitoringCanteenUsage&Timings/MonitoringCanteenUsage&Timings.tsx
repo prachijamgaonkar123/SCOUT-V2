@@ -30,38 +30,6 @@ const MonitoringCanteenUsageTimings: React.FC = () => {
   }
   const [viewPopupOpen, setViewPopupOpen] = useState(false);
   const [viewPopupData, setViewPopupData] = useState<CanteenUsage | null>(null);
-  const canteenKpiCards = [
-    {
-      title: "Breakfast Usage",
-      value: "5",
-      icon: FreeBreakfastIcon,
-      tooltipMessage: "Total number of breakfasts served.",
-    },
-    {
-      title: "Lunch Usage",
-      value: "16",
-      icon: LunchDiningIcon,
-      tooltipMessage: "Total number of lunches served.",
-    },
-    {
-      title: "Dinner Usage",
-      value: "0",
-      icon: DinnerDiningIcon,
-      tooltipMessage: "Total number of dinners served.",
-    },
-    {
-      title: "Total Canteen Usage",
-      value: "21",
-      icon: RestaurantIcon,
-      tooltipMessage: "Total meals served in the canteen.",
-    },
-    {
-      title: "Last Canteen Usage",
-      value: getOneHourBefore().time,
-      icon: AccessTimeIcon,
-      tooltipMessage: "Most recent canteen usage record.",
-    },
-  ];
   const backendData = [
     {
       id: 201,
@@ -81,6 +49,15 @@ const MonitoringCanteenUsageTimings: React.FC = () => {
       createdAt: getOneHourBefore().fullDate,
       updatedAt: "2025-10-09 12:35",
     },
+    {
+      id: 203,
+      usage: "Dinner",
+      count: 35,
+      zone: "Night Shift Canteen",
+      snapshot: "/img/canteen-usage-monitoring/c1.avif",
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-10-09 20:10",
+    },
   ];
   const recentCanteenUsage = backendData.map((item) => {
     return {
@@ -92,15 +69,70 @@ const MonitoringCanteenUsageTimings: React.FC = () => {
     };
   });
 
-  const zoneUsageData = [
-    {
-      zone: "Main Canteen",
-      totalUsage: 21,
+  // Single source of truth: every KPI and the zone breakdown below is
+  // derived from backendData so the totals always match the recent usage
+  // list and the report table.
+  const zoneUsageTotals = backendData.reduce((acc, item) => {
+    if (!acc[item.zone]) {
+      acc[item.zone] = { zone: item.zone, Breakfast: 0, Lunch: 0, Dinner: 0 };
+    }
+    acc[item.zone][item.usage as "Breakfast" | "Lunch" | "Dinner"] +=
+      item.count;
+    return acc;
+  }, {} as Record<string, { zone: string; Breakfast: number; Lunch: number; Dinner: number }>);
+
+  const zoneUsageData = Object.values(zoneUsageTotals).map(
+    ({ zone, Breakfast, Lunch, Dinner }) => ({
+      zone,
+      totalUsage: Breakfast + Lunch + Dinner,
       subViolations: [
-        { label: "Breakfast", value: 5, icon: FreeBreakfastIcon },
-        { label: "Lunch", value: 16, icon: LunchDiningIcon },
-        { label: "Dinner", value: 0, icon: DinnerDiningIcon },
+        { label: "Breakfast", value: Breakfast, icon: FreeBreakfastIcon },
+        { label: "Lunch", value: Lunch, icon: LunchDiningIcon },
+        { label: "Dinner", value: Dinner, icon: DinnerDiningIcon },
       ],
+    }),
+  );
+
+  const breakfastTotal = backendData
+    .filter((item) => item.usage === "Breakfast")
+    .reduce((sum, item) => sum + item.count, 0);
+  const lunchTotal = backendData
+    .filter((item) => item.usage === "Lunch")
+    .reduce((sum, item) => sum + item.count, 0);
+  const dinnerTotal = backendData
+    .filter((item) => item.usage === "Dinner")
+    .reduce((sum, item) => sum + item.count, 0);
+
+  const canteenKpiCards = [
+    {
+      title: "Breakfast Usage",
+      value: String(breakfastTotal),
+      icon: FreeBreakfastIcon,
+      tooltipMessage: "Total number of breakfasts served.",
+    },
+    {
+      title: "Lunch Usage",
+      value: String(lunchTotal),
+      icon: LunchDiningIcon,
+      tooltipMessage: "Total number of lunches served.",
+    },
+    {
+      title: "Dinner Usage",
+      value: String(dinnerTotal),
+      icon: DinnerDiningIcon,
+      tooltipMessage: "Total number of dinners served.",
+    },
+    {
+      title: "Total Canteen Usage",
+      value: String(breakfastTotal + lunchTotal + dinnerTotal),
+      icon: RestaurantIcon,
+      tooltipMessage: "Total meals served in the canteen.",
+    },
+    {
+      title: "Last Canteen Usage",
+      value: getOneHourBefore().time,
+      icon: AccessTimeIcon,
+      tooltipMessage: "Most recent canteen usage record.",
     },
   ];
 

@@ -30,56 +30,8 @@ const CameraTampering: React.FC = () => {
   const [viewPopupData, setViewPopupData] =
     useState<CameraTamperingViolation | null>(null);
 
-  const CameraTamperingKpiData = [
-    {
-      title: "Total Offline Cameras",
-      value: "2",
-      tooltipMessage:
-        "Shows the total number of offline cameras currently monitored in the system.",
-      icon: VideocamOffIcon,
-    },
-    {
-      title: "Total Tampred Cameras",
-      value: "4",
-      tooltipMessage: "The total number of tampered detected cameras .",
-      icon: Warning,
-    },
-    {
-      title: "Offline Camera Zone",
-      value: "Zone B",
-      trendColor: "#2196f3",
-      color: "#2196f3",
-      bgColor: "#e3f2fd",
-      borderColor: "#2196f3",
-      iconBg: "rgba(33, 150, 243, 0.1)",
-      icon: Room,
-      tooltipMessage:
-        "The  zone where the most recent offline cameras occurred.",
-    },
-    {
-      title: "Tampred Camera Zone",
-      value: "Zone C",
-      trendColor: "#2196f3",
-      color: "#2196f3",
-      bgColor: "#e3f2fd",
-      borderColor: "#2196f3",
-      iconBg: "rgba(33, 150, 243, 0.1)",
-      icon: Room,
-      tooltipMessage:
-        "The  zone where the most recent tampred cameras occurred.",
-    },
-  ];
-
   const backendData = [
-    {
-      id: 201,
-      tamperingType: "Lens Covered",
-      zone: "Zone C",
-      snapshot: "/img/camera-tampering-detection/lenseCover.png",
-      cameraid: "CAM-T01",
-      alarmTriggered: true,
-      createdAt: getOneHourBefore().fullDate,
-    },
+    
     {
       id: 202,
       tamperingType: "Blur Vision",
@@ -93,56 +45,22 @@ const CameraTampering: React.FC = () => {
       id: 203,
       tamperingType: "Disconnected",
       zone: "Chemical Storage",
-      snapshot: "https://picsum.photos/400/200?random=13",
+      snapshot: "/img/camera-tampering-detection/offline.jpg",
       cameraid: "CAM-T03",
       alarmTriggered: true,
       createdAt: getOneHourBefore().fullDate,
     },
-    {
-      id: 204,
-      tamperingType: "Offline",
-      zone: "Zone B",
-      snapshot: "/img/camera-tampering-detection/offline.jpg",
-      cameraid: "CAM-T04",
-      alarmTriggered: false,
-      createdAt: getOneHourBefore().fullDate,
-    },
-    {
-      id: 205,
-      tamperingType: "Lens Covered",
-      zone: "Zone C",
-      snapshot: "/img/camera-tampering-detection/lenseCover.png",
-      cameraid: "CAM-T05",
-      alarmTriggered: true,
-      createdAt: getOneHourBefore().fullDate,
-    },
+
     {
       id: 202,
       tamperingType: "Blur Vision",
       zone: "Welding Station",
-      snapshot: "https://picsum.photos/400/200?random=12",
+      snapshot: "/img/camera-tampering-detection/blur2.jpg",
       cameraid: "CAM-T02",
       alarmTriggered: true,
       createdAt: getOneHourBefore().fullDate,
     },
-    {
-      id: 203,
-      tamperingType: "Disconnected",
-      zone: "Chemical Storage",
-      snapshot: "https://picsum.photos/400/200?random=13",
-      cameraid: "CAM-T03",
-      alarmTriggered: true,
-      createdAt: getOneHourBefore().fullDate,
-    },
-    {
-      id: 204,
-      tamperingType: "Offline",
-      zone: "Assembly Line B",
-      snapshot: "https://picsum.photos/400/200?random=14",
-      cameraid: "CAM-T04",
-      alarmTriggered: false,
-      createdAt: getOneHourBefore().fullDate,
-    },
+
   ];
 
   const recentTamperingEvents = backendData.map((item) => {
@@ -158,25 +76,93 @@ const CameraTampering: React.FC = () => {
 
   console.log("RECENT TAMPERING DATA", recentTamperingEvents);
 
-  const zoneTamperingData = [
+  // Single source of truth: every KPI and the zone breakdown below is
+  // derived from backendData so the totals always match the recent
+  // tampering events list and the report table.
+  const tamperingIcon: Record<string, typeof Warning> = {
+    Offline: VideocamOffIcon,
+    Disconnected: VideocamOffIcon,
+    "Lens Covered": VisibilityOffIcon,
+    "Blur Vision": VisibilityOffIcon,
+  };
+
+  const zoneTamperingTotals = backendData.reduce((acc, item) => {
+    if (!acc[item.zone]) acc[item.zone] = {};
+    acc[item.zone][item.tamperingType] =
+      (acc[item.zone][item.tamperingType] || 0) + 1;
+    return acc;
+  }, {} as Record<string, Record<string, number>>);
+
+  const zoneTamperingData = Object.entries(zoneTamperingTotals).map(
+    ([zone, types]) => ({
+      zone,
+      violations: Object.values(types).reduce((sum, n) => sum + n, 0),
+      subViolations: Object.entries(types).map(([label, value]) => ({
+        label,
+        value,
+        icon: tamperingIcon[label] || Warning,
+      })),
+    })
+  );
+
+  const offlineCount = backendData.filter(
+    (item) => item.tamperingType === "Offline"
+  ).length;
+  const tamperedCount = backendData.filter(
+    (item) => item.tamperingType !== "Offline"
+  ).length;
+
+  // Zone with the most offline / most (non-offline) tampering occurrences.
+  const zoneWithMostOfType = (predicate: (type: string) => boolean) => {
+    const counts = backendData
+      .filter((item) => predicate(item.tamperingType))
+      .reduce((acc, item) => {
+        acc[item.zone] = (acc[item.zone] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+    const entries = Object.entries(counts);
+    return entries.length
+      ? entries.sort((a, b) => b[1] - a[1])[0][0]
+      : "N/A";
+  };
+
+  const CameraTamperingKpiData = [
     {
-      zone: "Zone A",
-      violations: 2,
-      subViolations: [
-        { label: "Blur Vision", value: 2, icon: VisibilityOffIcon },
-      ],
+      title: "Total Offline Cameras",
+      value: String(offlineCount),
+      tooltipMessage:
+        "Shows the total number of offline cameras currently monitored in the system.",
+      icon: VideocamOffIcon,
     },
     {
-      zone: "Zone B",
-      violations: 2,
-      subViolations: [{ label: "Offline", value: 2, icon: Warning }],
+      title: "Total Tampred Cameras",
+      value: String(tamperedCount),
+      tooltipMessage: "The total number of tampered detected cameras .",
+      icon: Warning,
     },
     {
-      zone: "Zone C",
-      violations: 2,
-      subViolations: [
-        { label: "Lens Obstructed", value: 2, icon: VisibilityOffIcon },
-      ],
+      title: "Offline Camera Zone",
+      value: "-",
+      trendColor: "#2196f3",
+      color: "#2196f3",
+      bgColor: "#e3f2fd",
+      borderColor: "#2196f3",
+      iconBg: "rgba(33, 150, 243, 0.1)",
+      icon: Room,
+      tooltipMessage:
+        "The  zone where the most recent offline cameras occurred.",
+    },
+    {
+      title: "Tampred Camera Zone",
+      value: zoneWithMostOfType((type) => type !== "Offline"),
+      trendColor: "#2196f3",
+      color: "#2196f3",
+      bgColor: "#e3f2fd",
+      borderColor: "#2196f3",
+      iconBg: "rgba(33, 150, 243, 0.1)",
+      icon: Room,
+      tooltipMessage:
+        "The  zone where the most recent tampred cameras occurred.",
     },
   ];
 

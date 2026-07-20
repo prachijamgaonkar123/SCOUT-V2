@@ -62,7 +62,7 @@ const kpiData = [
   {
     title: "Zones Affected",
     violationsCount: 4,
-    lastDetection: "Zone A, Zone B, Zone C",
+    lastDetection: "Gate 1, Warehouse, Office, Parking",
     lastDetectionTime: "—",
     icon: Domain,
     tooltipMessage:

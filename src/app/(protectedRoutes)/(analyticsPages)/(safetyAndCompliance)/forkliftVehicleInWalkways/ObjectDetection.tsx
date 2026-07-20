@@ -35,10 +35,85 @@ const ObjectDetection: React.FC = () => {
   const [viewPopupOpen, setViewPopupOpen] = useState(false);
   const [viewPopupData, setViewPopupData] =
     useState<ForkliftDetectionEvent | null>(null);
+  const backendData = [
+    {
+      id: 201,
+      detected: true,
+      objectName: "Forklift",
+      snapshot: "/img/forklift-vehicle-detection/f1.png",
+      zone: "Walkway Zone A",
+      camera: "CAM-101",
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-10-08 09:20",
+    },
+    {
+      id: 202,
+      detected: true,
+      objectName: "Vehicle",
+      snapshot: "/img/forklift-vehicle-detection/f2.png",
+      zone: "Walkway Zone B",
+      camera: "CAM-102",
+      alarmTriggered: false,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-10-08 09:32",
+    },
+    {
+      id: 203,
+      detected: true,
+      objectName: "Forklift",
+      snapshot: "/img/forklift-vehicle-detection/f3.png",
+      zone: "Walkway Zone C",
+      camera: "CAM-103",
+      alarmTriggered: true,
+      createdAt: getOneHourBefore().fullDate,
+      updatedAt: "2025-10-08 10:10",
+    },
+ 
+  ];
+  const recentDetections = backendData.map((item) => {
+    return {
+      voilation: "Walkway Blocked ",
+      objectName: item.objectName,
+      zone: item.zone,
+      time: item.createdAt,
+      imageUrl: item.snapshot,
+      cameraId: item.camera,
+      alarmTriggered: item.alarmTriggered,
+    };
+  });
+
+  // Single source of truth: grouped straight from backendData so per-zone
+  // Forklift/Vehicle counts, the zone total, and the KPI totals below all
+  // agree with the recent-violations/report rows.
+  const zoneTotals = backendData.reduce((acc, item) => {
+    if (!acc[item.zone]) {
+      acc[item.zone] = { zone: item.zone, Forklift: 0, Vehicle: 0 };
+    }
+    if (item.objectName === "Forklift") acc[item.zone].Forklift += 1;
+    if (item.objectName === "Vehicle") acc[item.zone].Vehicle += 1;
+    return acc;
+  }, {} as Record<string, { zone: string; Forklift: number; Vehicle: number }>);
+
+  const zoneViolationsData = Object.values(zoneTotals).map(
+    ({ zone, Forklift, Vehicle }) => ({
+      zone,
+      violations: Forklift + Vehicle,
+      subViolations: [
+        { label: "Forklift", value: Forklift, icon: ForkliftIcon },
+        { label: "Vehicle", value: Vehicle, icon: DirectionsCar },
+      ],
+    })
+  );
+
+  const affectedZones = Array.from(
+    new Set(backendData.map((item) => item.zone))
+  ).slice(-3);
+
   const ObjectDetectionKpiData = [
     {
       title: "Blocked Walkways",
-      value: "8",
+      value: String(backendData.length),
       tooltipMessage:
         "Shows the total number of walkways that are currently blocked.",
       icon: Block,
@@ -57,132 +132,10 @@ const ObjectDetection: React.FC = () => {
     },
     {
       title: "Affected Zones (Last 3)",
-      value: "Zone A, Zone B, Zone C",
+      value: affectedZones.join(", "),
       tooltipMessage:
         "Displays the last three zones where blocked Walkways were detected.",
       icon: LocationOn,
-    },
-  ];
-
-  const backendData = [
-    {
-      id: 201,
-      detected: true,
-      objectName: "Forklift",
-      snapshot: "/img/v3.jpg",
-      zone: "Walkway Zone A",
-      camera: "CAM-101",
-      alarmTriggered: true,
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-10-08 09:20",
-    },
-    {
-      id: 202,
-      detected: true,
-      objectName: "Vehicle",
-      snapshot: "/img/v5.jpg",
-      zone: "Walkway Zone B",
-      camera: "CAM-102",
-      alarmTriggered: false,
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-10-08 09:32",
-    },
-    {
-      id: 203,
-      detected: true,
-      objectName: "Forklift",
-      snapshot: "/img/v3.jpg",
-      zone: "Walkway Zone C",
-      camera: "CAM-103",
-      alarmTriggered: true,
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-10-08 10:10",
-    },
-    {
-      id: 204,
-      detected: true,
-      objectName: "Vehicle",
-      snapshot: "/img/v5.jpg",
-      zone: "Walkway Zone A",
-      camera: "CAM-104",
-      alarmTriggered: true,
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-10-08 10:30",
-    },
-    {
-      id: 205,
-      detected: true,
-      objectName: "Forklift",
-      snapshot: "/img/v5.jpg",
-      zone: "Walkway Zone B",
-      camera: "CAM-105",
-      alarmTriggered: false,
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-10-08 11:05",
-    },
-    {
-      id: 203,
-      detected: true,
-      objectName: "Forklift",
-      snapshot: "/img/v3.jpg",
-      zone: "Walkway Zone C",
-      camera: "CAM-103",
-      alarmTriggered: true,
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-10-08 10:10",
-    },
-    {
-      id: 204,
-      detected: true,
-      objectName: "Vehicle",
-      snapshot: "/img/v5.jpg",
-      zone: "Walkway Zone A",
-      camera: "CAM-104",
-      alarmTriggered: true,
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-10-08 10:30",
-    },
-    {
-      id: 205,
-      detected: true,
-      objectName: "Forklift",
-      snapshot: "/img/v1.jpg",
-      zone: "Walkway Zone B",
-      camera: "CAM-105",
-      alarmTriggered: false,
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-10-08 11:05",
-    },
-  ];
-  const recentDetections = backendData.map((item) => {
-    return {
-      voilation: "Walkway Blocked ",
-      objectName: item.objectName,
-      zone: item.zone,
-      time: item.createdAt,
-      imageUrl: item.snapshot,
-      cameraId: item.camera,
-      alarmTriggered: item.alarmTriggered,
-    };
-  });
-
-  const zoneViolationsData = [
-    {
-      zone: "Walkway Zone A",
-      violations: 3,
-      subViolations: [
-        { label: "Forklift", value: 1, icon: ForkliftIcon },
-        { label: "Vehicle", value: 2, icon: DirectionsCar },
-      ],
-    },
-   
-    {
-      zone: "Walkway Zone C",
-      violations: 2,
-      subViolations: [
-        { label: "Forklift", value: 1, icon: ForkliftIcon },
-        { label: "Vehicle", value: 1, icon: DirectionsCar },
-      ],
     },
   ];
 

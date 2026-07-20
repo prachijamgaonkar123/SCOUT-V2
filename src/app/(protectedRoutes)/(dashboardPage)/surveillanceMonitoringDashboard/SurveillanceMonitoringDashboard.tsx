@@ -29,7 +29,7 @@ import {
 import { useSocketEvent } from "@/customhooks/useSocketEvent";
 import { SOCKET_EVENTS } from "@/sockets/socket.events";
 import { FEATURE } from "@/app/config/featureRegistry";
-import Loader from "@/app/components/atoms/Loader/Loader";
+import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 import TimeScaleLineChart from "@/app/components/organisms/TimeScaleLineChart/TimeScaleLineChart";
 import CollapsibleTimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/CollapsibleTimeFilter";
 
@@ -129,7 +129,16 @@ const SurveillanceMonitoring: React.FC = () => {
 
   const surveillanceKpiData = useMemo(() => {
     return displaySurveillanceKpi.map((item) => {
-      const config = surveillanceDashboardConfig[item.title];
+      // item.title can be "Unauthorized Access in Restricted Areas", which has
+      // no entry in surveillanceDashboardConfig (it's a blank filler tile, not
+      // a config-backed KPI card) — index as a partial record so that's a safe
+      // `undefined` lookup instead of a type error.
+      const config = (
+        surveillanceDashboardConfig as Record<
+          string,
+          (typeof surveillanceDashboardConfig)[keyof typeof surveillanceDashboardConfig]
+        >
+      )[item.title];
 
       return {
         title: t(item.kpi.title),
@@ -150,9 +159,6 @@ const SurveillanceMonitoring: React.FC = () => {
   const cameraTamperingDashboard = displaySurveillanceKpi.find(
   (d) => d.title === "Camera Tampering Detection",
 );
-  const unauthorizedDashboard = displaySurveillanceKpi.find(
-    (d) => d.title === "Unauthorized Access in Restricted Areas",
-  );
 
   const movementDashboard = displaySurveillanceKpi.find(
     (d) => d.title === "Movement During Shutdown Hours",
@@ -222,13 +228,6 @@ const tamperedPieData =
 console.log("onlinePieData", onlinePieData);
 console.log("offlinePieData", offlinePieData);
 console.log("tamperedPieData", tamperedPieData);
-// Unauthorized Access
-const unauthorizedGraphData =
-  unauthorizedDashboard?.graphs?.data &&
-  !Array.isArray(unauthorizedDashboard.graphs.data) &&
-  "series" in unauthorizedDashboard.graphs.data
-    ? (unauthorizedDashboard.graphs.data as TrendResponse)
-    : undefined;
 const renderChart = () => {
   if (SurveillancekpiLoading) {
     return (
@@ -287,39 +286,6 @@ const renderMovementChart = () => {
   return (
     <TimeScaleLineChart
       granularity={movementGraphData.granularity}
-      {...chartProps}
-      series={chartProps.series.map((s) => ({
-        ...s,
-        showMark: true,
-      }))}
-    />
-  );
-};
-const renderUnauthorizedChart = () => {
-  if (SurveillancekpiLoading) {
-    return (
-      <Box
-        sx={{
-          width: "100%",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Loader />
-      </Box>
-    );
-  }
-
-  if (!unauthorizedGraphData) {
-    return null;
-  }
-
-  const chartProps = toTimeScaleProps(unauthorizedGraphData);
-
-  return (
-    <TimeScaleLineChart
-      granularity={unauthorizedGraphData.granularity}
       {...chartProps}
       series={chartProps.series.map((s) => ({
         ...s,
@@ -441,36 +407,6 @@ const renderUnauthorizedChart = () => {
       ),
       featureId: FEATURE.CAMERA_TAMPERING,
     },
-
-    {
-      label: "Unauthorized Access in Restricted Areas",
-      content: (
-        <Grid
-          container
-          sx={{
-            alignItems: "stretch",
-            height: "100%",
-          }}
-        >
-          {/* Left side */}
-          <Grid
-            size={{ xs: 12 }}
-            sx={{
-              display: "flex",
-              height: { xs: "50vh", md: "100%" },
-              width: "100%",
-              "& .MuiCardContent-root": {
-                height: "100%",
-              },
-            }}
-          >
-       {renderUnauthorizedChart()}
-          </Grid>
-        </Grid>
-      ),
-      
-      featureId: FEATURE.UNAUTHORIZED_ACCESS,
-    },
   ];
 
   return (
@@ -497,7 +433,7 @@ const renderUnauthorizedChart = () => {
           mb: 4,
         }}
       >
-        <Grid container spacing={2.5} sx={{ flex: 1, minWidth: 0 }}>
+        <Grid container spacing={2.5} sx={{ flex: 1, minWidth: 0 }} alignItems="stretch">
           {SurveillancekpiLoading || !displaySurveillanceKpi.length
             ? Array.from({ length: 4 }).map((_, index) => (
                 <Grid
@@ -511,8 +447,25 @@ const renderUnauthorizedChart = () => {
                 <Grid
                   key={kpi.title}
                   size={{ xs: 12, sm: 6, md: 6, lg: 4, xl: 3 }}
+                  sx={{ height: "100%" }}
                 >
-                  <DashboardKpiCard {...kpi} />
+                  {/* Not an active use case on this menu yet — render the same
+                      blank filler tile the Dashboard's Use Case grid uses to
+                      round out empty grid slots, instead of a live-looking
+                      KPI card or a "locked" card. */}
+                  {kpi.title === "Unauthorized Access in Restricted Areas" ? (
+                    <Box
+                      sx={{
+                        height: "100%",
+                        minHeight: 76,
+                        border: `1.5px solid ${DASHBOARD_COLORS.border}`,
+                        borderRadius: "10px",
+                        backgroundColor: DASHBOARD_COLORS.bg,
+                      }}
+                    />
+                  ) : (
+                    <DashboardKpiCard {...kpi} />
+                  )}
                 </Grid>
               ))}
         </Grid>

@@ -20,53 +20,20 @@ import DynamicBarChart from "@/app/components/organisms/BarChart/BarChart";
 import CameraStatusDonutChart from "@/app/components/organisms/DonutChart/DonutChart";
 import CollapsibleTimeFilter from "@/app/components/organisms/TimeFilterForAllKPI/CollapsibleTimeFilter";
 import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
-
-/* -------------------- KPI DATA -------------------- */
-const kpiData: Array<Omit<DashboardKpiCardProps, "route" | "tooltipMessage">> =
-  [
-    {
-      title: "Total Cameras",
-      violationsCount: 120,
-      lastDetection: "System Overview",
-      lastDetectionTime: "—",
-      icon: VideocamOutlined,
-      tone: "green",
-    },
-    {
-      title: "Cameras Online",
-      violationsCount: 105,
-      lastDetection: "Last Updated",
-      lastDetectionTime: "10:15 AM",
-      icon: WifiTethering,
-      tone: "green",
-    },
-    {
-      title: "Cameras Offline",
-      violationsCount: 15,
-      lastDetection: "Zone C - Entry Gate",
-      lastDetectionTime: "09:45 AM",
-      icon: WifiOff,
-      tone: "red",
-    },
-    {
-      title: "Tampering Incidents Today",
-      violationsCount: 12,
-      lastDetection: "Zone B - Warehouse",
-      lastDetectionTime: "09:58 AM",
-      icon: WarningAmber,
-      tone: "blue",
-    },
-    {
-      title: "Zones Affected",
-      violationsCount: 4,
-      lastDetection: "Zones B, C, D",
-      lastDetectionTime: "—",
-      icon: Domain,
-      tone: "blue",
-    },
-  ];
+import { getOneHourBefore, getOnehalftBefore } from "@/utils/getOneHrBefore";
 
 /* -------------------- DATA -------------------- */
+
+// Camera trend (also drives the Total/Online/Offline KPI cards below —
+// use the latest reading so the cards match what the trend chart shows)
+const cameraTrendData = [
+  { time: "00:00", online: 105, offline: 15 },
+  { time: "06:00", online: 108, offline: 12 },
+  { time: "12:00", online: 110, offline: 10 },
+  { time: "18:00", online: 102, offline: 18 },
+];
+const latestCameraTrend = cameraTrendData[cameraTrendData.length - 1];
+const totalCameras = latestCameraTrend.online + latestCameraTrend.offline;
 
 // Tampering trend
 const tamperingTrendData = [
@@ -106,14 +73,69 @@ const cameraHealthByZone = [
   { zone: "Gate 1", online: 6, offline: 1, tampered: 2 },
 ];
 
+/* -------------------- KPI DATA -------------------- */
+// Single source of truth: derived from cameraTrendData / cameraHealthByZone
+// so the cards always agree with the charts below them.
+const tamperingIncidentsToday = cameraHealthByZone.reduce(
+  (sum, z) => sum + z.tampered,
+  0
+);
+const zonesAffected = cameraHealthByZone.filter((z) => z.tampered > 0);
+const topTamperedZone = [...cameraHealthByZone].sort(
+  (a, b) => b.tampered - a.tampered
+)[0];
+
+// Every card needs both a location and a time (hh:mm:ss, 24-hour) — no
+// placeholder "—" values and no 12-hour AM/PM strings.
+const nowTime = getOneHourBefore().time; // hh:mm:ss
+const earlierTime = getOnehalftBefore().time; // hh:mm:ss
+
+const kpiData: Array<Omit<DashboardKpiCardProps, "route" | "tooltipMessage">> =
+  [
+    {
+      title: "Total Cameras",
+      violationsCount: totalCameras,
+      lastDetection: "All Zones",
+      lastDetectionTime: nowTime,
+      icon: VideocamOutlined,
+      tone: "green",
+    },
+    {
+      title: "Cameras Online",
+      violationsCount: latestCameraTrend.online,
+      lastDetection: "All Zones",
+      lastDetectionTime: nowTime,
+      icon: WifiTethering,
+      tone: "green",
+    },
+    {
+      title: "Cameras Offline",
+      violationsCount: latestCameraTrend.offline,
+      lastDetection: "Parking",
+      lastDetectionTime: earlierTime,
+      icon: WifiOff,
+      tone: "red",
+    },
+    {
+      title: "Tampering Incidents Today",
+      violationsCount: tamperingIncidentsToday,
+      lastDetection: topTamperedZone.zone,
+      lastDetectionTime: earlierTime,
+      icon: WarningAmber,
+      tone: "blue",
+    },
+    {
+      title: "Zones Affected",
+      violationsCount: zonesAffected.length,
+      lastDetection: zonesAffected.map((z) => z.zone).join(", "),
+      lastDetectionTime: earlierTime,
+      icon: Domain,
+      tone: "blue",
+    },
+  ];
+
 /* -------------------- MAIN COMPONENT -------------------- */
 export default function CameraTamperingDashboard() {
-    const cameraTrendData = [
-    { time: "00:00", online: 105, offline: 15 },
-    { time: "06:00", online: 108, offline: 12 },
-    { time: "12:00", online: 110, offline: 10 },
-    { time: "18:00", online: 102, offline: 18 },
-  ];
 const tabs: TabConfig[] = [
   // -------- TAB 1: Camera Trend --------
 {
@@ -269,7 +291,7 @@ return (
       sx={{
         display: "flex",
         flexWrap: "wrap",
-        alignItems: "center",
+        alignItems: "flex-start",
         mb: 2,
       }}
     >

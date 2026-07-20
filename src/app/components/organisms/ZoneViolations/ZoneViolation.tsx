@@ -62,10 +62,13 @@ const ZoneViolations: React.FC<ZoneViolationsProps> = ({
   const totalFor = (zone: ZoneViolationsdata) =>
     zone.violations ?? zone.subViolations?.reduce((sum, s) => sum + s.value, 0) ?? 0;
 
-  // Flat list (no sub-violation breakdown) caps at 4 rows, no scroller needed.
-  // Bifurcated cards (e.g. PPE, Fire & Smoke) are taller, so instead of a cap
-  // they show 2 at a time and scroll through however many zones there are.
-  const displayZones = violationsZone.slice(0, 4);
+  // Flat list (no sub-violation breakdown) shows every zone — previously this
+  // sliced to the first 4, which silently dropped zones (and their counts)
+  // whenever a use case had more than 4 distinct zones, e.g. Mobile Phone
+  // Usage: 5 zones with 1 violation each summed to 4 here vs. 5 on the KPI
+  // card. Now it shows 4 rows at a time and scrolls for the rest, matching
+  // how the sub-violation breakdown cards (e.g. PPE, Fire & Smoke) behave.
+  const displayZones = violationsZone;
 
   return (
     <Card
@@ -123,7 +126,15 @@ const ZoneViolations: React.FC<ZoneViolationsProps> = ({
           // No sub-violation breakdown for this use case (e.g. Fall Detection) —
           // a multi-column table would render mostly empty, so use a clean
           // icon + zone + total list instead. No bar, per feedback on the table view.
-          <Box>
+          <Box
+            sx={{
+              // ~48px per row incl. padding/border; show 4 at once and let the
+              // rest scroll into view instead of being cut off.
+              maxHeight: 192,
+              overflowY: displayZones.length > 4 ? "auto" : "visible",
+              pr: displayZones.length > 4 ? "4px" : 0,
+            }}
+          >
             {displayZones.map((zone, index) => (
               <Box
                 key={index + 1}

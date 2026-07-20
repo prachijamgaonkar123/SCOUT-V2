@@ -66,22 +66,6 @@ export const mockSurveillanceDashboardData: SurveillanceDashboardResponse[] = [
     },
   },
   {
-    title: "Unauthorized Access in Restricted Areas",
-    kpi: {
-      title: "Unauthorized Access in Restricted Areas",
-      colour: "red",
-      violationsCount: 4,
-      lastDetection: "Zone B",
-      lastDetectionTime: "2026-07-08 11:15:08",
-    },
-    graphs: {
-      data: {
-        granularity: "hour",
-        series: zoneSet([2, 3, 1, 2, 4, 1, 2], [1, 2, 2, 1, 3, 2, 1], [1, 1, 0, 2, 1, 1, 2]),
-      },
-    },
-  },
-  {
     title: "Camera Tampering Detection",
     kpi: {
       title: "Camera Tampering Detection",
@@ -124,6 +108,25 @@ export const mockSurveillanceDashboardData: SurveillanceDashboardResponse[] = [
       data: {
         granularity: "hour",
         series: zoneSet([1, 2, 0, 1, 3, 1, 2], [2, 1, 1, 0, 2, 1, 1], [0, 1, 1, 1, 2, 0, 1]),
+      },
+    },
+  },
+  {
+    title: "Unauthorized Access in Restricted Areas",
+    kpi: {
+      // Not an active use case on this menu yet (commented out of
+      // analyticsMenu) — kept last so its blank filler tile lands in the
+      // 4th KPI slot, and its tab is removed entirely below.
+      title: "Unauthorized Access in Restricted Areas",
+      colour: "gray",
+      violationsCount: 0,
+      lastDetection: "-",
+      lastDetectionTime: "",
+    },
+    graphs: {
+      data: {
+        granularity: "hour",
+        series: zoneSet([2, 3, 1, 2, 4, 1, 2], [1, 2, 2, 1, 3, 2, 1], [1, 1, 0, 2, 1, 1, 2]),
       },
     },
   },

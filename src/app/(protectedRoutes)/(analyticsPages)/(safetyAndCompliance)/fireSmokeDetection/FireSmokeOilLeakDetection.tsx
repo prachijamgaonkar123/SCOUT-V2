@@ -38,7 +38,7 @@ const FireSmokeOilLeakDetection: React.FC = () => {
       id: 201,
       detection: true,
       objectname: "fire",
-      snapshot: "/img/f1.jpg",
+      snapshot: "/img/fire-smoke/fire1.png",
       zone: "Production Floor A",
       camera: "CAM-06",
       timestamp: "2025-09-23 16:00",
@@ -50,7 +50,7 @@ const FireSmokeOilLeakDetection: React.FC = () => {
       id: 202,
       detection: true,
       objectname: "smoke",
-      snapshot: "/img/f2.jpg",
+      snapshot: "/img/fire-smoke/smoke1.png",
       zone: "Welding Station",
       camera: "CAM-07",
       timestamp: "2025-09-23 16:10",
@@ -62,7 +62,7 @@ const FireSmokeOilLeakDetection: React.FC = () => {
       id: 203,
       detection: true,
       objectname: "smoke",
-      snapshot: "/img/f3.jpg",
+      snapshot: "/img/fire-smoke/smoke2.png",
       zone: "Chemical Storage",
       camera: "CAM-08",
       timestamp: "2025-09-23 16:20",
@@ -74,7 +74,7 @@ const FireSmokeOilLeakDetection: React.FC = () => {
       id: 202,
       detection: true,
       objectname: "fire",
-      snapshot: "/img/f1.jpg",
+      snapshot: "/img/fire-smoke/fire2.png",
       zone: "Welding Station",
       camera: "CAM-07",
       timestamp: "2025-09-23 16:10",
@@ -87,7 +87,7 @@ const FireSmokeOilLeakDetection: React.FC = () => {
       id: 202,
       detection: true,
       objectname: "smoke",
-      snapshot: "/img/f2.jpg",
+      snapshot: "/img/fire-smoke/smoke3.png",
       zone: "Welding Station",
       camera: "CAM-07",
       timestamp: "2025-09-23 16:10",
@@ -100,7 +100,7 @@ const FireSmokeOilLeakDetection: React.FC = () => {
       id: 203,
       detection: true,
       objectname: "smoke",
-      snapshot: "/img/f3.jpg",
+      snapshot: "/img/fire-smoke/smoke4.png",
       zone: "Chemical Storage",
       camera: "CAM-08",
       timestamp: "2025-09-23 16:20",
@@ -112,7 +112,7 @@ const FireSmokeOilLeakDetection: React.FC = () => {
       id: 202,
       detection: true,
       objectname: "fire",
-      snapshot: "/img/f1.jpg",
+      snapshot: "/img/fire-smoke/fire3.png",
       zone: "Welding Station",
       camera: "CAM-07",
       timestamp: "2025-09-23 16:10",
@@ -124,7 +124,7 @@ const FireSmokeOilLeakDetection: React.FC = () => {
       id: 203,
       detection: true,
       objectname: "smoke",
-      snapshot: "/img/f3.jpg",
+      snapshot: "/img/fire-smoke/smoke2.png",
       zone: "Chemical Storage",
       camera: "CAM-08",
       timestamp: "2025-09-23 16:20",
@@ -134,6 +134,9 @@ const FireSmokeOilLeakDetection: React.FC = () => {
     },
   ];
 
+  // Single source of truth: every derived view (KPIs, zone breakdown, recent
+  // violations, report table) is computed from backendFireData so the numbers
+  // always agree with each other.
   const recentFireViolations = backendFireData.map((item) => ({
     incident: `${
       item.objectname.charAt(0).toUpperCase() + item.objectname.slice(1)
@@ -144,18 +147,31 @@ const FireSmokeOilLeakDetection: React.FC = () => {
     cameraId: item.camera,
     alarmTriggered: item.alarmTriggered,
   }));
-  console.log("RECENT VOILATION FIRE,SMOKE", recentFireViolations);
+
+  const fireCount = backendFireData.filter(
+    (item) => item.objectname === "fire"
+  ).length;
+  const smokeCount = backendFireData.filter(
+    (item) => item.objectname === "smoke"
+  ).length;
+
+  // Most recent record, determined by the (fake) event timestamp rather than
+  // createdAt, since createdAt is the same "now" for every seeded row.
+  const lastDetection = [...backendFireData].sort((a, b) =>
+    a.timestamp > b.timestamp ? -1 : 1
+  )[0];
+
   const FireSmokeOilKpiData = [
     {
       title: "Fire Incidence",
-      value: "4",
+      value: String(fireCount),
       icon: LocalFireDepartment,
       tooltipMessage:
         "Total number of fire detections recorded across all monitored zones.",
     },
     {
       title: "Smoke Incidence",
-      value: "4",
+      value: String(smokeCount),
       icon: Air,
       tooltipMessage:
         "Total number of smoke detections recorded across all monitored zones.",
@@ -169,50 +185,32 @@ const FireSmokeOilLeakDetection: React.FC = () => {
     },
     {
       title: "Last Detection Zone",
-      value: "Zone A",
+      value: lastDetection.zone,
       icon: LocationOn,
       tooltipMessage:
         "The zone where the most recent fire or smoke detection occurred.",
     },
   ];
 
-  const zoneViolationsData = [
-    {
-      zone: "Production Floor A",
-      incident: 5,
-
-      subViolations: [
-        {
-          label: "Fire",
-          value: 2,
-          icon: LocalFireDepartment,
-        },
-        {
-          label: "Smoke",
-          value: 3,
-          icon: Air,
-        },
-      ],
-    },
-
-    {
-      zone: "Chemical Storage",
-      incident: 3,
-
-      subViolations: [
-        {
-          label: "Fire",
-          value: 1,
-          icon: LocalFireDepartment,
-        },
-        {
-          label: "Smoke",
-          value: 2,
-          icon: Air,
-        },
-      ],
-    },
-  ];
+  // Grouped straight from backendFireData so per-zone fire/smoke counts and
+  // the incident total always sum correctly.
+  const zoneViolationsData = Object.values(
+    backendFireData.reduce((acc, item) => {
+      if (!acc[item.zone]) {
+        acc[item.zone] = { zone: item.zone, fire: 0, smoke: 0 };
+      }
+      if (item.objectname === "fire") acc[item.zone].fire += 1;
+      if (item.objectname === "smoke") acc[item.zone].smoke += 1;
+      return acc;
+    }, {} as Record<string, { zone: string; fire: number; smoke: number }>)
+  ).map(({ zone, fire, smoke }) => ({
+    zone,
+    incident: fire + smoke,
+    subViolations: [
+      { label: "Fire", value: fire },
+      { label: "Smoke", value: smoke },
+    ],
+  }));
 
   const handleViewSingle = (row: Record<string, string | number | boolean>) => {
     console.log("view single row", row);
@@ -344,27 +342,25 @@ const FireSmokeOilLeakDetection: React.FC = () => {
             id: "incident",
             label: "Incident",
             type: "select",
-            options: ["Fire detected", "Smoke detected", "Gas detected"],
+            options: Array.from(
+              new Set(recentFireViolations.map((v) => v.incident))
+            ),
           },
           {
             id: "zone",
             label: "Zone",
             type: "select",
-            options: [
-              "Production Floor A",
-              "Welding Station",
-              "Chemical Storage",
-              "Emergency Exit Area",
-              "Conference Room B",
-              "Loading Dock",
-              "Parking Lot",
-            ],
+            options: Array.from(
+              new Set(recentFireViolations.map((v) => v.zone))
+            ),
           },
           {
             id: "cameraId",
             label: "Cameras",
             type: "select",
-            options: ["CAM-06", "CAM-07", "CAM-08"],
+            options: Array.from(
+              new Set(recentFireViolations.map((v) => v.cameraId))
+            ),
           },
           {
             id: "alarmTriggered",

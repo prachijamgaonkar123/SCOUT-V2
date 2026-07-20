@@ -28,35 +28,6 @@ const MobilePhoneUsage: React.FC = () => {
   const [viewPopupData, setViewPopupData] = useState<ViolationData | null>(
     null,
   );
-  const MobilePhoneUsageKpiData = [
-    {
-      title: "Total Violations",
-      value: "3",
-      icon: PhoneIphone,
-      trendColor: "#f44336",
-      color: "#f44336",
-      bgColor: "#ffebee",
-      borderColor: "#f44336",
-      iconBg: "rgba(244, 67, 54, 0.1)",
-
-      tooltipMessage:
-        "Total number of mobile phone usage violations detected in restricted areas.",
-    },
-    {
-      title: "Latest Incidence",
-      value: getOneHourBefore().time,
-      icon: AccessTime,
-      tooltipMessage:
-        "The time when the most recent mobile phone usage violation was detected.",
-    },
-    {
-      title: "Zone Detection",
-      value: "Zone A",
-      icon: LocationOn,
-      tooltipMessage:
-        "The zone where the latest mobile phone usage violation was detected.",
-    },
-  ];
   const backendMobilePhoneData = [
     {
       id: 201,
@@ -91,7 +62,7 @@ const MobilePhoneUsage: React.FC = () => {
     {
       id: 204,
       voilation: true,
-      snapshot: "https://picsum.photos/400/200?random=14",
+      snapshot: "/img/mobile-usage-restricted-zones/m1.avif",
       zone: "Main Entrance",
       cameraid: "CAM-14",
       alarmTriggered: true,
@@ -101,7 +72,7 @@ const MobilePhoneUsage: React.FC = () => {
     {
       id: 205,
       voilation: true,
-      snapshot: "https://picsum.photos/400/200?random=15",
+      snapshot: "/img/mobile-usage-restricted-zones/m3.png",
       zone: "Parking Area",
       cameraid: "CAM-15",
       alarmTriggered: false,
@@ -126,18 +97,45 @@ const MobilePhoneUsage: React.FC = () => {
 
   console.log("Recent Mobile Phone Violations", recentMobilePhoneViolations);
 
-  const zoneViolationsData = [
+  // Single source of truth: every KPI and the zone breakdown below is
+  // derived from backendMobilePhoneData so the totals always match the
+  // recent violations list and the report table.
+  const zoneCounts = backendMobilePhoneData.reduce((acc, item) => {
+    acc[item.zone] = (acc[item.zone] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const zoneViolationsData = Object.entries(zoneCounts).map(
+    ([zone, violations]) => ({ zone, violations }),
+  );
+
+  const MobilePhoneUsageKpiData = [
     {
-      zone: "Zone A",
-      violations: 1,
+      title: "Total Violations",
+      value: String(backendMobilePhoneData.length),
+      icon: PhoneIphone,
+      trendColor: "#f44336",
+      color: "#f44336",
+      bgColor: "#ffebee",
+      borderColor: "#f44336",
+      iconBg: "rgba(244, 67, 54, 0.1)",
+
+      tooltipMessage:
+        "Total number of mobile phone usage violations detected in restricted areas.",
     },
     {
-      zone: "Zone B",
-      violations: 1,
+      title: "Latest Incidence",
+      value: getOneHourBefore().time,
+      icon: AccessTime,
+      tooltipMessage:
+        "The time when the most recent mobile phone usage violation was detected.",
     },
     {
-      zone: "Zone C",
-      violations: 1,
+      title: "Zone Detection",
+      value: backendMobilePhoneData[0]?.zone ?? "N/A",
+      icon: LocationOn,
+      tooltipMessage:
+        "The zone where the latest mobile phone usage violation was detected.",
     },
   ];
 

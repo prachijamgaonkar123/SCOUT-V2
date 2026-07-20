@@ -30,28 +30,6 @@ const PeoplePresence: React.FC = () => {
   const [viewPopupData, setViewPopupData] =
     useState<PeoplePresenceViolation | null>(null);
 
-  const PeoplePresenceKpiData = [
-    {
-      title: "Total Movement Events",
-      value: "8",
-      icon: Groups,
-      tooltipMessage:
-        "Shows the total number of movement events detected in monitored zones.",
-    },
-    {
-      title: "Detected Zones",
-      value: "Zone A, Zone B,Zone C",
-      icon: LocationOn,
-      tooltipMessage: "Lists the zones where movement is currently detected.",
-    },
-    {
-      title: "Last Incidence",
-      value: getOneHourBefore().time,
-      icon: AccessTime,
-      tooltipMessage:
-        "Shows the time when the most recent movement event was detected.",
-    },
-  ];
   const backendPeoplePresenceData = [
     {
       id: 801,
@@ -125,7 +103,7 @@ const PeoplePresence: React.FC = () => {
     },
     {
       id: 802,
-      snapshot: "https://picsum.photos/400/200?random=32",
+      snapshot: "/img/movement-shutdown-hours/u2.jpg",
       zone: "Loading Dock",
       camera: "CAM-32",
       count: 7,
@@ -135,7 +113,7 @@ const PeoplePresence: React.FC = () => {
     },
     {
       id: 801,
-      snapshot: "https://picsum.photos/400/200?random=31",
+      snapshot: "/img/movement-shutdown-hours/m2.jpg",
       zone: "Production Floor",
       camera: "CAM-31",
       count: 15,
@@ -145,7 +123,7 @@ const PeoplePresence: React.FC = () => {
     },
     {
       id: 802,
-      snapshot: "https://picsum.photos/400/200?random=32",
+      snapshot: "/img/movement-shutdown-hours/u2.jpg",
       zone: "Loading Dock",
       camera: "CAM-32",
       count: 7,
@@ -155,7 +133,7 @@ const PeoplePresence: React.FC = () => {
     },
     {
       id: 801,
-      snapshot: "https://picsum.photos/400/200?random=31",
+      snapshot: "/img/movement-shutdown-hours/m2.jpg",
       zone: "Production Floor",
       camera: "CAM-31",
       count: 15,
@@ -165,7 +143,7 @@ const PeoplePresence: React.FC = () => {
     },
     {
       id: 802,
-      snapshot: "https://picsum.photos/400/200?random=32",
+      snapshot: "/img/movement-shutdown-hours/u2.jpg",
       zone: "Loading Dock",
       camera: "CAM-32",
       count: 7,
@@ -175,7 +153,7 @@ const PeoplePresence: React.FC = () => {
     },
     {
       id: 801,
-      snapshot: "https://picsum.photos/400/200?random=31",
+      snapshot: "/img/movement-shutdown-hours/m2.jpg",
       zone: "Production Floor",
       camera: "CAM-31",
       count: 15,
@@ -209,41 +187,48 @@ const PeoplePresence: React.FC = () => {
     };
   });
 
-  const zoneViolationsData = [
-    {
-      zone: "Zone A",
-      peopleCount: 2,
+  // Single source of truth: every KPI and the zone breakdown below is
+  // derived from backendPeoplePresenceData so the totals always match the
+  // recent incidents list and the report table.
+  const zoneEventCounts = backendPeoplePresenceData.reduce((acc, item) => {
+    acc[item.zone] = (acc[item.zone] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const zoneViolationsData = Object.entries(zoneEventCounts).map(
+    ([zone, peopleCount]) => ({
+      zone,
+      violations: peopleCount,
       icons: {
         peopleCount: PeopleIcon,
       },
+    }),
+  );
+
+  const detectedZones = Array.from(
+    new Set(backendPeoplePresenceData.map((item) => item.zone)),
+  );
+
+  const PeoplePresenceKpiData = [
+    {
+      title: "Total Movement Events",
+      value: String(backendPeoplePresenceData.length),
+      icon: Groups,
+      tooltipMessage:
+        "Shows the total number of movement events detected in monitored zones.",
     },
     {
-      zone: "Zone B",
-      peopleCount: 2,
-      icons: {
-        peopleCount: PeopleIcon,
-      },
+      title: "Detected Zones",
+      value: detectedZones.join(", "),
+      icon: LocationOn,
+      tooltipMessage: "Lists the zones where movement is currently detected.",
     },
     {
-      zone: "Zone D",
-      peopleCount: 2,
-      icons: {
-        peopleCount: PeopleIcon,
-      },
-    },
-    {
-      zone: "Zone C",
-      peopleCount: 1,
-      icons: {
-        peopleCount: PeopleIcon,
-      },
-    },
-    {
-      zone: "Zone E",
-      peopleCount: 1,
-      icons: {
-        peopleCount: PeopleIcon,
-      },
+      title: "Last Incidence",
+      value: getOneHourBefore().time,
+      icon: AccessTime,
+      tooltipMessage:
+        "Shows the time when the most recent movement event was detected.",
     },
   ];
 

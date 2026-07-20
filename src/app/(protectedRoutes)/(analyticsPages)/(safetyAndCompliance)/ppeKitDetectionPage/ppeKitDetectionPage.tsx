@@ -26,6 +26,7 @@ import CollapsibleTimeFilter from "@/app/components/organisms/TimeFilterForAllKP
 import ViewAlertPopup from "@/app/components/molecules/ViewAlertPopup/ViewAlertPopup";
 import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 import { getOneHourBefore } from "@/utils/getOneHrBefore";
+import { truncate } from "fs";
 
 // ---------- TYPES ----------
 // Base type that matches the component's Violation (all fields optional)
@@ -71,17 +72,131 @@ interface FilterParams {
 }
 
 // ---------- STATIC DATA ----------
+// Single source of truth: rawRecentViolations below drives the KPI cards,
+// the zone breakdown, the recent violations list, and the report table, so
+// all four views always agree on the same numbers.
+const rawRecentViolations = [
+  {
+    id: 101,
+    helmet: false,
+    vest: true,
+    goggles: true,
+    zone: "Zone A",
+    snapshot: "/img/ppe-kit-detection/no-helmet.png",
+    cameraid: "CAM-01",
+    alarmTriggered: true,
+    createdAt: getOneHourBefore().fullDate,
+  },
+  {
+    id: 102,
+    helmet: true,
+    vest: true,
+    goggles: false,
+    zone: "Zone B",
+    snapshot: "/img/ppe-kit-detection/no-goggle.png",
+    cameraid: "CAM-02",
+    alarmTriggered: true,
+    createdAt: getOneHourBefore().fullDate,
+  },
+  {
+    id: 103,
+    helmet: true,
+    vest: false,
+    goggles: true,
+    zone: "Zone A",
+    snapshot: "/img/ppe-kit-detection/no-vest.png",
+    cameraid: "CAM-03",
+    alarmTriggered: true,
+    createdAt: getOneHourBefore().fullDate,
+  },
+  // {
+  //   id: 104,
+  //   helmet: false,
+  //   vest: true,
+  //   goggles: false,
+  //   zone: "Zone A",
+  //   snapshot: "/img/ppe-kit-detection/helmet-goggles-missing-2.png",
+  //   cameraid: "CAM-04",
+  //   alarmTriggered: false,
+  //   createdAt: getOneHourBefore().fullDate,
+  // },
+  // {
+  //   id: 105,
+  //   helmet: false,
+  //   vest: true,
+  //   goggles: true,
+  //   zone: "Zone B",
+  //   snapshot: "/img/p2.png",
+  //   cameraid: "CAM-05",
+  //   alarmTriggered: true,
+  //   createdAt: getOneHourBefore().fullDate,
+  // },
+];
+
+const recentViolations: PPEViolation[] = rawRecentViolations.map((item) => {
+  const parts = [];
+  if (!item.helmet) parts.push("Hard hat missing");
+  if (!item.vest) parts.push("Safety vest not worn");
+  if (!item.goggles) parts.push("Safety goggles missing");
+  return {
+    violation: parts.join(", ") || "No violation",
+    zone: item.zone,
+    time: item.createdAt,
+    imageUrl: item.snapshot,
+    cameraId: item.cameraid,
+    alarmTriggered: item.alarmTriggered,
+  };
+});
+
+// Grouped straight from rawRecentViolations so per-zone missing-item counts,
+// the zone "violations" total, and the KPI totals below always add up.
+const zoneTotals = rawRecentViolations.reduce((acc, item) => {
+  if (!acc[item.zone]) {
+    acc[item.zone] = { zone: item.zone, helmet: 0, vest: 0, goggles: 0 };
+  }
+  if (!item.helmet) acc[item.zone].helmet += 1;
+  if (!item.vest) acc[item.zone].vest += 1;
+  if (!item.goggles) acc[item.zone].goggles += 1;
+  return acc;
+}, {} as Record<string, { zone: string; helmet: number; vest: number; goggles: number }>);
+
+const zoneViolationsData: ZoneViolation[] = Object.values(zoneTotals).map(
+  ({ zone, helmet, vest, goggles }) => ({
+    zone,
+    violations: helmet + vest + goggles,
+    subViolations: [
+      { label: "Helmet", value: helmet, icon: EngineeringIcon },
+      { label: "Vest", value: vest, icon: CheckroomIcon },
+      { label: "Goggles", value: goggles, icon: VisibilityOffIcon },
+    ].filter((sub) => sub.value > 0),
+  })
+);
+
+const missingHelmetCount = rawRecentViolations.filter((v) => !v.helmet).length;
+const missingVestCount = rawRecentViolations.filter((v) => !v.vest).length;
+const missingGogglesCount = rawRecentViolations.filter(
+  (v) => !v.goggles
+).length;
+const unsafeZoneCount = Object.keys(zoneTotals).length;
+
+// "Total Violations" is every individual PPE violation instance (a single
+// worker can be missing more than one item at once), so it must equal the
+// sum of the per-item counts below — the same sum the zone breakdown totals
+// to — not just the number of incident rows.
+const totalViolationsCount =
+  missingHelmetCount + missingVestCount + missingGogglesCount;
+
 const ppeKpiData = [
   {
     title: "Total Violations",
-    value: "5",
+    value: String(totalViolationsCount),
     icon: Shield,
     tooltipMessage:
       "Total number of PPE violations detected across all monitored zones.",
   },
   {
     title: "Current Unsafe Zone",
-    value: "2",
+    value: String(unsafeZoneCount),
     icon: LocationOn,
     tooltipMessage:
       "Number of zones where unsafe PPE compliance was detected.",
@@ -94,136 +209,25 @@ const ppeKpiData = [
   },
   {
     title: "Missing Helmet",
-    value: "4",
+    value: String(missingHelmetCount),
     icon: EngineeringIcon,
     tooltipMessage:
       "Number of detected instances where workers were missing helmets.",
   },
   {
     title: "Missing Vest",
-    value: "1",
+    value: String(missingVestCount),
     icon: Checkroom,
     tooltipMessage:
       "Number of detected instances where workers were missing safety vests.",
   },
   {
-    title: "Missing Glasses",
-    value: "4",
+    title: "Missing Goggles",
+    value: String(missingGogglesCount),
     icon: Visibility,
     tooltipMessage:
-      "Number of detected instances where workers were missing safety glasses.",
+      "Number of detected instances where workers were missing safety goggles.",
   },
-];
-
-const rawRecentViolations = [
-  {
-    id: 101,
-    helmet: false,
-    vest: false,
-    glasses: true,
-    zone: "Zone A",
-    snapshot: "/img/p1.jpg",
-    cameraid: "CAM-01",
-    alarmTriggered: true,
-    createdAt: getOneHourBefore().fullDate,
-  },
-  {
-    id: 102,
-    helmet: true,
-    vest: false,
-    glasses: false,
-    zone: "Zone B",
-    snapshot: "/img/p2.png",
-    cameraid: "CAM-02",
-    alarmTriggered: true,
-    createdAt: getOneHourBefore().fullDate,
-  },
-  {
-    id: 103,
-    helmet: false,
-    vest: true,
-    glasses: false,
-    zone: "Zone A",
-    snapshot: "/img/p3.avif",
-    cameraid: "CAM-03",
-    alarmTriggered: true,
-    createdAt: getOneHourBefore().fullDate,
-  },
-  {
-    id: 104,
-    helmet: false,
-    vest: true,
-    glasses: false,
-    zone: "Zone A",
-    snapshot: "/img/p2.png",
-    cameraid: "CAM-04",
-    alarmTriggered: false,
-    createdAt: getOneHourBefore().fullDate,
-  },
-  {
-    id: 105,
-    helmet: false,
-    vest: true,
-    glasses: true,
-    zone: "Zone B",
-    snapshot: "/img/p1.jpg",
-    cameraid: "CAM-05",
-    alarmTriggered: true,
-    createdAt: getOneHourBefore().fullDate,
-  },
-];
-
-const recentViolations: PPEViolation[] = rawRecentViolations.map((item) => {
-  const parts = [];
-  if (!item.helmet) parts.push("Hard hat missing");
-  if (!item.vest) parts.push("Safety vest not worn");
-  if (!item.glasses) parts.push("Safety glasses missing");
-  return {
-    violation: parts.join(", ") || "No violation",
-    zone: item.zone,
-    time: item.createdAt,
-    imageUrl: item.snapshot,
-    cameraId: item.cameraid,
-    alarmTriggered: item.alarmTriggered,
-  };
-});
-
-const zoneViolationsData: ZoneViolation[] = [
-  {
-    zone: "Zone A",
-    violations: 7,
-    subViolations: [
-      { label: "Helmet", value: 4, icon: EngineeringIcon },
-      { label: "Glasses", value: 3, icon: VisibilityOffIcon },
-    ],
-  },
-  {
-    zone: "Zone B",
-    violations: 3,
-    subViolations: [
-      { label: "Helmet", value: 1, icon: EngineeringIcon },
-      { label: "Glasses", value: 1, icon: VisibilityOffIcon },
-      { label: "Vest", value: 1, icon: CheckroomIcon },
-    ],
-  },
- {
-    zone: "Zone c",
-    violations: 7,
-    subViolations: [
-      { label: "Helmet", value: 4, icon: EngineeringIcon },
-      { label: "Glasses", value: 3, icon: VisibilityOffIcon },
-    ],
-  },
-  {
-    zone: "Zone d",
-    violations: 3,
-    subViolations: [
-      { label: "Helmet", value: 1, icon: EngineeringIcon },
-      { label: "Glasses", value: 1, icon: VisibilityOffIcon },
-      { label: "Vest", value: 1, icon: CheckroomIcon },
-    ],
-  },
- 
 ];
 
 // ---------- COMPONENT ----------
@@ -239,7 +243,7 @@ const PPEDetection: React.FC = () => {
       "Last Detection Time": "info",
       "Missing Helmet": "red",
       "Missing Vest": "red",
-      "Missing Glasses": "red",
+      "Missing Goggles": "red",
     };
     const valueFontSize: Record<string, number> = {
       "Last Detection Time": 13,
@@ -287,7 +291,7 @@ const PPEDetection: React.FC = () => {
       options: [
         "Hard hat missing",
         "Safety vest not worn",
-        "Safety glasses missing",
+        "Safety goggles missing",
       ],
     },
     {

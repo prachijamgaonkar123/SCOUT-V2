@@ -29,30 +29,6 @@ const EmployeePresence: React.FC = () => {
   const [viewPopupOpen, setViewPopupOpen] = useState(false);
   const [viewPopupData, setViewPopupData] =
     useState<EmployeePresenceViolation | null>(null);
-  const employeeKpiData = [
-    {
-      title: "Employees in Critical Area",
-      value: "2",
-      icon: Groups,
-
-      tooltipMessage:
-        "Shows the number of employees detected in critical areas.",
-    },
-    {
-      title: "Zone Violations",
-      value: "2 (Zone A, Zone B,)",
-      icon: LocationOn,
-      tooltipMessage:
-        "Displays the count and name of critical zones where employees entered .",
-    },
-    {
-      title: "Last Incidence",
-      value: getOneHourBefore().time,
-      icon: AccessTime,
-      tooltipMessage:
-        "Most recent time employees were detected in critical zones.",
-    },
-  ];
   const backendEmployeePresenceData = [
     {
       id: 201,
@@ -74,7 +50,7 @@ const EmployeePresence: React.FC = () => {
     },
     {
       id: 203,
-      snapshot: "https://picsum.photos/400/200?random=13",
+      snapshot: "/img/employee-presence-critical-areas/e1.png",
       zone: "Critical Zone C",
       camera: "CAM-13",
       createdAt: getOneHourBefore().fullDate,
@@ -94,14 +70,42 @@ const EmployeePresence: React.FC = () => {
     };
   });
 
-  const zoneViolationsData = [
+  // Single source of truth: every KPI and the zone breakdown below is
+  // derived from backendEmployeePresenceData so the totals always match the
+  // recent violations list and the report table.
+  const zoneCounts = backendEmployeePresenceData.reduce((acc, item) => {
+    acc[item.zone] = (acc[item.zone] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const zoneViolationsData = Object.entries(zoneCounts).map(
+    ([zone, violations]) => ({ zone, violations }),
+  );
+
+  const violatedZones = Object.keys(zoneCounts);
+
+  const employeeKpiData = [
     {
-      zone: "Zone A",
-      violations: 1,
+      title: "Employees in Critical Area",
+      value: String(backendEmployeePresenceData.length),
+      icon: Groups,
+
+      tooltipMessage:
+        "Shows the number of employees detected in critical areas.",
     },
     {
-      zone: "Zone B",
-      violations: 1,
+      title: "Zone Violations",
+      value: `${violatedZones.length} (${violatedZones.join(", ")})`,
+      icon: LocationOn,
+      tooltipMessage:
+        "Displays the count and name of critical zones where employees entered .",
+    },
+    {
+      title: "Last Incidence",
+      value: getOneHourBefore().time,
+      icon: AccessTime,
+      tooltipMessage:
+        "Most recent time employees were detected in critical zones.",
     },
   ];
   // Location/time metrics get the "info" tint; violation counts get red — matches PPE.

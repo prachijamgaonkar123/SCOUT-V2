@@ -32,27 +32,6 @@ const EmployeeIdleTime: React.FC = () => {
   const [viewPopupData, setViewPopupData] = useState<EmployeeIdleEvent | null>(
     null,
   );
-  const EmployeeIdleTimeKpiData = [
-    {
-      title: "Total Idle Events",
-      value: "1",
-      icon: AccessTime,
-      tooltipMessage:
-        "Total number of idle time events detected by the system.",
-    },
-    {
-      title: "Last Idle Detection Time",
-      value: getOneHourBefore().time,
-      icon: AccessTime,
-      tooltipMessage: "The most recent idle detection timestamp.",
-    },
-    {
-      title: "Last Idle Detection Zone",
-      value: "Zone A",
-      icon: Room,
-      tooltipMessage: "The zone where the most recent idle event was detected.",
-    },
-  ];
   const backendIdleData = [
     {
       id: 301,
@@ -85,7 +64,7 @@ const EmployeeIdleTime: React.FC = () => {
       notPresent: false,
       trackingId: "TRK-03",
       zone: "Chemical Storage",
-      snapshot: "https://picsum.photos/400/200?random=23",
+      snapshot: "/img/employee-idle-time-monitoring/i1.png",
       cameraid: "CAM-I03",
       createdAt: "2025-10-08 14:30",
       updatedAt: "2025-10-08 14:35",
@@ -97,7 +76,7 @@ const EmployeeIdleTime: React.FC = () => {
       notPresent: true,
       trackingId: "TRK-04",
       zone: "Assembly Line B",
-      snapshot: "https://picsum.photos/400/200?random=24",
+      snapshot: "/img/employee-idle-time-monitoring/i2.jpg",
       cameraid: "CAM-I04",
       createdAt: "2025-10-08 14:20",
       updatedAt: "2025-10-08 14:25",
@@ -109,7 +88,7 @@ const EmployeeIdleTime: React.FC = () => {
       notPresent: false,
       trackingId: "TRK-05",
       zone: "Maintenance Area",
-      snapshot: "https://picsum.photos/400/200?random=25",
+      snapshot: "/img/employee-idle-time-monitoring/i1.png",
       cameraid: "CAM-I05",
       createdAt: "2025-10-08 14:10",
       updatedAt: "2025-10-08 14:15",
@@ -134,24 +113,56 @@ const EmployeeIdleTime: React.FC = () => {
 
   console.log("RECENT IDLE EVENTS", recentIdleEvents);
 
-  const zoneIdleData = [
-    {
-      zone: "Zone A",
-      incidents: 1,
+  // Single source of truth: every KPI and the zone breakdown below is
+  // derived from backendIdleData so the totals always match the recent
+  // events list and the report table.
+  const zoneIdleTotals = backendIdleData.reduce((acc, item) => {
+    if (!acc[item.zone]) {
+      acc[item.zone] = { zone: item.zone, idle: 0, working: 0, notPresent: 0 };
+    }
+    if (item.isIdle) acc[item.zone].idle += 1;
+    if (item.isWorking) acc[item.zone].working += 1;
+    if (item.notPresent) acc[item.zone].notPresent += 1;
+    return acc;
+  }, {} as Record<string, { zone: string; idle: number; working: number; notPresent: number }>);
+
+  const zoneIdleData = Object.values(zoneIdleTotals).map(
+    ({ zone, idle, working, notPresent }) => ({
+      zone,
+      incidents: idle + working + notPresent,
       subViolations: [
-        { label: "Idle", value: 1, icon: AccessTimeIcon },
-        { label: "Working", value: 0, icon: WorkOutlineIcon },
-        { label: "Not Present", value: 0, icon: PersonOffIcon },
+        { label: "Idle", value: idle, icon: AccessTimeIcon },
+        { label: "Working", value: working, icon: WorkOutlineIcon },
+        { label: "Not Present", value: notPresent, icon: PersonOffIcon },
       ],
+    }),
+  );
+
+  const totalIdleEvents = backendIdleData.filter((item) => item.isIdle).length;
+
+  const lastIdleRecord = [...backendIdleData]
+    .filter((item) => item.isIdle)
+    .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1))[0];
+
+  const EmployeeIdleTimeKpiData = [
+    {
+      title: "Total Idle Events",
+      value: String(totalIdleEvents),
+      icon: AccessTime,
+      tooltipMessage:
+        "Total number of idle time events detected by the system.",
     },
     {
-      zone: "Zone B",
-      incidents: 1,
-      subViolations: [
-        { label: "Working", value: 1, icon: WorkOutlineIcon },
-        { label: "Idle", value: 0, icon: AccessTimeIcon },
-        { label: "Not Present", value: 0, icon: PersonOffIcon },
-      ],
+      title: "Last Idle Detection Time",
+      value: getOneHourBefore().time,
+      icon: AccessTime,
+      tooltipMessage: "The most recent idle detection timestamp.",
+    },
+    {
+      title: "Last Idle Detection Zone",
+      value: lastIdleRecord?.zone ?? "N/A",
+      icon: Room,
+      tooltipMessage: "The zone where the most recent idle event was detected.",
     },
   ];
 

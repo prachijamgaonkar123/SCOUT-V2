@@ -63,7 +63,7 @@ const EmployeeIdleTimeMonitoringWithFaceRecognition: React.FC = () => {
       Id: "W-4521",
       severity: "HIGH",
       status: "ACTIVE",
-      imageUrl: "https://picsum.photos/400/200?random=1",
+      imageUrl: "/img/p3.avif",
     },
     {
       Voilation: "Safety vest not worn",
@@ -72,7 +72,7 @@ const EmployeeIdleTimeMonitoringWithFaceRecognition: React.FC = () => {
       Id: "W-3847",
       severity: "MEDIUM",
       status: "ACKNOWLEDGED",
-      imageUrl: "https://picsum.photos/400/200?random=2",
+      imageUrl: "/img/p2.png",
     },
   ];
   const cameraZones: CameraZone[] = [

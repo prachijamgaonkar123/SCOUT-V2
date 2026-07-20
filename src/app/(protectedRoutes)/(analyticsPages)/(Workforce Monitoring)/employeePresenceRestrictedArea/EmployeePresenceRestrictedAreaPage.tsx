@@ -28,38 +28,10 @@ const EmployeePresenceRestrictedAreaPage: React.FC = () => {
   const [viewPopupOpen, setViewPopupOpen] = useState(false);
   const [viewPopupData, setViewPopupData] =
     useState<EmployeePresenceViolation | null>(null);
-  const employeeRestrictedPresenceKpiData = [
-    {
-      title: "Employees in Restricted Area",
-      value: "12", // Number of employees detected in critical areas
-      icon: Groups, // 👥 Represents group of people
-      trendColor: "#f44336",
-      color: "#f44336",
-      bgColor: "#ffebee",
-      borderColor: "#f44336",
-      iconBg: "rgba(244, 67, 54, 0.1)",
-      tooltipMessage:
-        "Shows the number of employees detected in restricted areas.",
-    },
-    {
-      title: "Zone Violations",
-      value: "3 (Zone A, Zone B, Zone C)", // Number of violations and zones
-      icon: LocationOn, // 📍 Zone/location indicator
-      tooltipMessage:
-        "Displays the count and name of restricted zones where employees entered .",
-    },
-    {
-      title: "Last Incidence",
-      value: getOneHourBefore().time, // Time of last detected violation
-      icon: AccessTime, // ⏰ Time
-      tooltipMessage:
-        "Most recent time employees were detected in restricted zones.",
-    },
-  ];
   const backendEmployeePresenceData = [
     {
       id: 201,
-      snapshot: "https://picsum.photos/400/200?random=11",
+      snapshot: "/img/employee-presence-critical-areas/z1.jpg",
       zone: "Restricted Zone A",
       camera: "CAM-11",
       createdAt: getOneHourBefore().fullDate,
@@ -68,7 +40,7 @@ const EmployeePresenceRestrictedAreaPage: React.FC = () => {
     },
     {
       id: 202,
-      snapshot: "https://picsum.photos/400/200?random=12",
+      snapshot: "/img/employee-presence-critical-areas/z2.jpg",
       zone: "Restricted Zone B",
       camera: "CAM-12",
       createdAt: getOneHourBefore().fullDate,
@@ -77,7 +49,7 @@ const EmployeePresenceRestrictedAreaPage: React.FC = () => {
     },
     {
       id: 203,
-      snapshot: "https://picsum.photos/400/200?random=13",
+      snapshot: "/img/employee-presence-critical-areas/e2.jpg",
       zone: "Restricted Zone C",
       camera: "CAM-13",
       createdAt: getOneHourBefore().fullDate,
@@ -98,18 +70,46 @@ const EmployeePresenceRestrictedAreaPage: React.FC = () => {
       alarmTriggered: item.alarmTriggered,
     };
   });
-  const zoneViolationsData = [
+  // Single source of truth: every KPI and the zone breakdown below is
+  // derived from backendEmployeePresenceData so the totals always match the
+  // recent violations list and the report table.
+  const zoneCounts = backendEmployeePresenceData.reduce((acc, item) => {
+    acc[item.zone] = (acc[item.zone] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const zoneViolationsData = Object.entries(zoneCounts).map(
+    ([zone, violations]) => ({ zone, violations }),
+  );
+
+  const violatedZones = Object.keys(zoneCounts);
+
+  const employeeRestrictedPresenceKpiData = [
     {
-      zone: "Restricted Zone A",
-      violations: 1,
+      title: "Employees in Restricted Area",
+      value: String(backendEmployeePresenceData.length),
+      icon: Groups, // 👥 Represents group of people
+      trendColor: "#f44336",
+      color: "#f44336",
+      bgColor: "#ffebee",
+      borderColor: "#f44336",
+      iconBg: "rgba(244, 67, 54, 0.1)",
+      tooltipMessage:
+        "Shows the number of employees detected in restricted areas.",
     },
     {
-      zone: "Restricted Zone B",
-      violations: 1,
+      title: "Zone Violations",
+      value: `${violatedZones.length} (${violatedZones.join(", ")})`,
+      icon: LocationOn, // 📍 Zone/location indicator
+      tooltipMessage:
+        "Displays the count and name of restricted zones where employees entered .",
     },
     {
-      zone: "Restricted Zone C",
-      violations: 1,
+      title: "Last Incidence",
+      value: getOneHourBefore().time, // Time of last detected violation
+      icon: AccessTime, // ⏰ Time
+      tooltipMessage:
+        "Most recent time employees were detected in restricted zones.",
     },
   ];
   // Location/time metrics get the "info" tint; violation counts get red — matches PPE.

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
 import {
   Dialog,
   DialogTitle,
@@ -78,7 +77,11 @@ function ViewAlertPopup<
       onClose={handleClose}
       slotProps={{
         paper: {
-          sx: { width: { xs: "95%", sm: "70%" }, maxWidth: 700, borderRadius: "16px" },
+          // Sized for the mostly-portrait camera snapshots this popup shows —
+          // a wide 700px dialog was leaving big empty margins beside a
+          // narrower image. A tighter width lets the image fill it edge to
+          // edge without needing the dialog to scroll to fit everything.
+          sx: { width: { xs: "95%", sm: "auto" }, maxWidth: 420, borderRadius: "16px" },
         },
       }}
     >
@@ -107,37 +110,57 @@ function ViewAlertPopup<
 
       <DialogContent sx={{ p: "22px 24px" }}>
         {/* Snapshot preview */}
-        <Box
-          sx={{
-            height: 380,
-            borderRadius: "10px",
-            overflow: "hidden",
-            bgcolor: "#374151",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            position: "relative",
-            mb: "18px",
-          }}
-        >
-          {showPlaceholder ? (
+        {showPlaceholder ? (
+          <Box
+            sx={{
+              height: 260,
+              borderRadius: "10px",
+              overflow: "hidden",
+              bgcolor: "#374151",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mb: "18px",
+            }}
+          >
             <Box sx={{ textAlign: "center", color: "rgba(255,255,255,.5)" }}>
               <CameraAlt sx={{ fontSize: 40, mb: 1 }} />
               <Typography sx={{ fontSize: "13px", color: "rgba(255,255,255,.6)" }}>
                 No Image Available
               </Typography>
             </Box>
-          ) : (
-            <Image
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              borderRadius: "10px",
+              overflow: "hidden",
+              display: "flex",
+              justifyContent: "center",
+              mb: "18px",
+            }}
+          >
+            {/* Height is capped to a value that always fits on screen
+                without the dialog needing to scroll; width follows the
+                image's own aspect ratio (not forced to 100%), so a portrait
+                shot fills that height edge to edge instead of being
+                squeezed down and leaving empty space on the sides. */}
+            <Box
+              component="img"
               src={imageUrl}
               alt="Alert"
-              fill
-              style={{ objectFit: "cover" }}
-              unoptimized
               onError={handleImageError}
+              sx={{
+                maxWidth: "100%",
+                maxHeight: 300,
+                width: "auto",
+                height: "auto",
+                objectFit: "contain",
+                display: "block",
+              }}
             />
-          )}
-        </Box>
+          </Box>
+        )}
 
         {/* Detail rows */}
         <Box>

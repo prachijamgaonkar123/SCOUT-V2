@@ -32,35 +32,6 @@ const UnauthorizedParkingOrEquipmentBlockingAisles: React.FC = () => {
   const [viewPopupOpen, setViewPopupOpen] = useState(false);
   const [viewPopupData, setViewPopupData] =
     useState<UnauthorizedParkingEvent | null>(null);
-  const UnauthorizedParkingKpiData = [
-    {
-      title: "Blocked Parking",
-      value: "4",
-      tooltipMessage:
-        "Shows the total number of parking that are currently blocked.",
-      icon: Block,
-    },
-    {
-      title: "Clear Parking",
-      value: "1",
-      tooltipMessage:
-        "Shows the total number of parking that are currently clear and safe for use.",
-      icon: CheckCircle,
-      trendColor: "#4caf50",
-      color: "#4caf50",
-      bgColor: "#e8f5e9",
-      borderColor: "#4caf50",
-      iconBg: "rgba(76, 175, 80, 0.1)",
-    },
-    {
-      title: "Affected Zones (Last 3)",
-      value: "Zone A, Zone B, Zone C",
-      tooltipMessage:
-        "Displays the last three zones where blocked parking were detected.",
-      icon: LocationOn,
-    },
-  ];
-
   const backendData = [
     {
       id: 201,
@@ -110,21 +81,52 @@ const UnauthorizedParkingOrEquipmentBlockingAisles: React.FC = () => {
 
   console.log(recentViolations);
 
-  const zoneViolationsData = [
+  // Single source of truth: every KPI and the zone breakdown below is
+  // derived from backendData so the totals always match the recent
+  // violations list and the report table.
+  const zoneCounts = backendData.reduce((acc, item) => {
+    acc[item.zone] = (acc[item.zone] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const zoneViolationsData = Object.entries(zoneCounts).map(
+    ([zone, violations]) => ({
+      zone,
+      violations,
+      subViolations: [{ label: "Car", value: violations, icon: CarIcon }],
+    }),
+  );
+
+  const affectedZones = Array.from(
+    new Set(backendData.map((item) => item.zone)),
+  ).slice(-3);
+
+  const UnauthorizedParkingKpiData = [
     {
-      zone: "Zone A",
-      violations: 2,
-      subViolations: [{ label: "Car", value: 2, icon: CarIcon }],
+      title: "Blocked Parking",
+      value: String(backendData.length),
+      tooltipMessage:
+        "Shows the total number of parking that are currently blocked.",
+      icon: Block,
     },
     {
-      zone: "Zone B",
-      violations: 1,
-      subViolations: [{ label: "Car", value: 1, icon: CarIcon }],
+      title: "Clear Parking",
+      value: "1",
+      tooltipMessage:
+        "Shows the total number of parking that are currently clear and safe for use.",
+      icon: CheckCircle,
+      trendColor: "#4caf50",
+      color: "#4caf50",
+      bgColor: "#e8f5e9",
+      borderColor: "#4caf50",
+      iconBg: "rgba(76, 175, 80, 0.1)",
     },
     {
-      zone: "Zone C",
-      violations: 1,
-      subViolations: [{ label: "Car", value: 1, icon: CarIcon }],
+      title: "Affected Zones (Last 3)",
+      value: affectedZones.join(", "),
+      tooltipMessage:
+        "Displays the last three zones where blocked parking were detected.",
+      icon: LocationOn,
     },
   ];
   interface FilterParams {
@@ -259,7 +261,7 @@ const UnauthorizedParkingOrEquipmentBlockingAisles: React.FC = () => {
       </Paper>
       {/*  Violations Report */}
       <ReportTable
-        totalCount={4}
+        totalCount={recentViolations.length}
         page={0}
         rowsPerPage={10}
         title="Detailed Report"

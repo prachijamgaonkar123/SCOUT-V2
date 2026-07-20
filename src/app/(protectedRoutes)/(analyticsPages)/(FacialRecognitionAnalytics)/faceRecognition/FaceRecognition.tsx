@@ -66,14 +66,14 @@ const FaceRecognition: React.FC = () => {
       zone: "Production Zone A",
       time: "14:32",
 
-      imageUrl: "https://picsum.photos/400/200?random=1",
+      imageUrl: "/img/p3.avif",
     },
     {
       Voilation: "Safety vest not worn",
       zone: "Warehouse Zone B",
       time: "14:18",
 
-      imageUrl: "https://picsum.photos/400/200?random=2",
+      imageUrl: "/img/p2.png",
     },
   ];
   const cameraZones: CameraZone[] = [

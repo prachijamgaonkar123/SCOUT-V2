@@ -27,41 +27,12 @@ const EmergencyExitBlockage: React.FC = () => {
   const [viewPopupOpen, setViewPopupOpen] = useState(false);
   const [viewPopupData, setViewPopupData] = useState<ReportData | null>(null);
 
-  const ExitKpiData = [
-    {
-      title: "Blocked Emergency Exit",
-      value: "9",
-      tooltipMessage:
-        "Shows the total number of emergency exits that are currently blocked.",
-      icon: Block,
-    },
-    {
-      title: "Clear Emergency Exit Routes",
-      value: "12",
-      tooltipMessage:
-        "Shows the total number of emergency exits that are currently clear and safe for use.",
-      icon: CheckCircle,
-      trendColor: "#4caf50",
-      color: "#4caf50",
-      bgColor: "#e8f5e9",
-      borderColor: "#4caf50",
-      iconBg: "rgba(76, 175, 80, 0.1)",
-    },
-    {
-      title: "Affected Zones (Last 3)",
-      value: "Zone A, Zone B, Zone C",
-      tooltipMessage:
-        "Displays the last three zones where blocked emergency exits were detected.",
-      icon: LocationOn,
-    },
-  ];
-
   const backendExitBlockageData = [
     {
       id: 501,
       blockage: true,
       alarmTriggered: true,
-      snapshot: "/img/e1.jpg",
+      snapshot: "/img/emergency-exit-blockage-detection/E1.png",
       zone: "Emergency Exit A",
       camera: "CAM-14",
       createdAt: getOneHourBefore().fullDate,
@@ -72,7 +43,7 @@ const EmergencyExitBlockage: React.FC = () => {
       id: 503,
       blockage: true,
       alarmTriggered: true,
-      snapshot: "/img/e2.jpg",
+      snapshot: "/img/emergency-exit-blockage-detection/E2.png",
       zone: "Assembly Line Exit",
       camera: "CAM-16",
       createdAt: getOneHourBefore().fullDate,
@@ -82,39 +53,7 @@ const EmergencyExitBlockage: React.FC = () => {
       id: 504,
       blockage: true,
       alarmTriggered: true,
-      snapshot: "/img/e3.jpg",
-      zone: "Emergency Exit A",
-      camera: "CAM-14",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 19:06",
-    },
-
-    {
-      id: 505,
-      blockage: true,
-      alarmTriggered: true,
-      snapshot: "/img/e1.jpg",
-      zone: "Assembly Line Exit",
-      camera: "CAM-16",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 19:21",
-    },
-    {
-      id: 503,
-      blockage: true,
-      alarmTriggered: true,
-      snapshot: "/img/e2.jpg",
-      zone: "Assembly Line Exit",
-      camera: "CAM-16",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 19:21",
-    },
-
-    {
-      id: 504,
-      blockage: true,
-      alarmTriggered: true,
-      snapshot: "/img/e3.jpg",
+      snapshot: "/img/emergency-exit-blockage-detection/E3.png",
       zone: "Emergency Exit A",
       camera: "CAM-14",
       createdAt: getOneHourBefore().fullDate,
@@ -124,32 +63,23 @@ const EmergencyExitBlockage: React.FC = () => {
       id: 505,
       blockage: true,
       alarmTriggered: true,
-      snapshot: "/img/e2.jpg",
-      zone: "Assembly Line Exit",
-      camera: "CAM-16",
+      snapshot: "/img/emergency-exit-blockage-detection/E1.png",
+      zone: "Warehouse Exit B",
+      camera: "CAM-18",
       createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 19:21",
+      updatedAt: "2025-09-23 19:32",
     },
     {
-      id: 503,
+      id: 506,
       blockage: true,
-      alarmTriggered: true,
-      snapshot: "/img/e3.jpg",
-      zone: "Assembly Line Exit",
-      camera: "CAM-16",
+      alarmTriggered: false,
+      snapshot: "/img/emergency-exit-blockage-detection/E2.png",
+      zone: "Loading Dock Exit C",
+      camera: "CAM-20",
       createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 19:21",
-    },
-    {
-      id: 505,
-      blockage: true,
-      alarmTriggered: true,
-      snapshot: "/img/e1.jpg",
-      zone: "Assembly Line Exit",
-      camera: "CAM-16",
-      createdAt: getOneHourBefore().fullDate,
-      updatedAt: "2025-09-23 19:21",
-    },
+      updatedAt: "2025-09-23 19:45",
+    }
+
   ];
 
   // Map backend data to recentViolations format
@@ -174,22 +104,48 @@ const EmergencyExitBlockage: React.FC = () => {
     recentExitBlockageViolations,
   );
 
-  const zoneViolationsData = [
+  // Single source of truth: grouped straight from backendExitBlockageData so
+  // the zone breakdown always sums to the same total as the KPI card and the
+  // recent-violations/report rows.
+  const zoneCounts = backendExitBlockageData.reduce((acc, item) => {
+    acc[item.zone] = (acc[item.zone] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const zoneViolationsData = Object.entries(zoneCounts).map(
+    ([zone, BlockedExit]) => ({ zone, violations: BlockedExit })
+  );
+
+  const affectedZones = Array.from(
+    new Set(backendExitBlockageData.map((item) => item.zone))
+  ).slice(-3);
+
+  const ExitKpiData = [
     {
-      zone: "Emergency Exit A",
-      BlockedExit: 3,
+      title: "Blocked Emergency Exit",
+      value: String(backendExitBlockageData.length),
+      tooltipMessage:
+        "Shows the total number of emergency exits that are currently blocked.",
+      icon: Block,
     },
     {
-      zone: "Assembly Line Exit",
-      BlockedExit: 6,
+      title: "Clear Emergency Exit Routes",
+      value: "12",
+      tooltipMessage:
+        "Shows the total number of emergency exits that are currently clear and safe for use.",
+      icon: CheckCircle,
+      trendColor: "#4caf50",
+      color: "#4caf50",
+      bgColor: "#e8f5e9",
+      borderColor: "#4caf50",
+      iconBg: "rgba(76, 175, 80, 0.1)",
     },
-     {
-      zone: "Emergency Exit b",
-      BlockedExit: 13,
-    },
-      {
-      zone: "Emergency Exit c",
-      BlockedExit: 6,
+    {
+      title: "Affected Zones (Last 3)",
+      value: affectedZones.join(", "),
+      tooltipMessage:
+        "Displays the last three zones where blocked emergency exits were detected.",
+      icon: LocationOn,
     },
   ];
   interface FilterParams {
@@ -338,12 +294,9 @@ const EmergencyExitBlockage: React.FC = () => {
             id: "zone",
             label: "Zone",
             type: "select",
-            options: [
-              "Main Entrance",
-              "Loading Dock",
-              "Assembly Area",
-              "Parking Lot",
-            ],
+            options: Array.from(
+              new Set(recentExitBlockageViolations.map((item) => item.zone)),
+            ),
           },
           {
             id: "cameraId",

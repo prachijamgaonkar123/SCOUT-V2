@@ -19,7 +19,12 @@ export interface TrendResponse {
 }
 
 export interface SurveillanceDashboardResponse {
-  title: keyof typeof surveillanceDashboardConfig;
+  // "Unauthorized Access in Restricted Areas" isn't in surveillanceDashboardConfig
+  // (no icon/route — it's rendered as a blank filler tile, not a real KPI card),
+  // so it's added explicitly alongside the config-backed titles.
+  title:
+    | keyof typeof surveillanceDashboardConfig
+    | "Unauthorized Access in Restricted Areas";
   kpi: {
     title: string;
     violationsCount?: number;
