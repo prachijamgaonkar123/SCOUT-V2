@@ -32,6 +32,9 @@ const EmployeeIdleTime: React.FC = () => {
   const [viewPopupData, setViewPopupData] = useState<EmployeeIdleEvent | null>(
     null,
   );
+  // Exactly 1 idle, 1 working, 1 not-present record — keeps Recent Incident (3
+  // tiles), Zone Incident (1/1/1 breakdown), and Violation Breakdown's
+  // "Total Idle Events" (1) all showing the same underlying counts.
   const backendIdleData = [
     {
       id: 301,
@@ -40,7 +43,7 @@ const EmployeeIdleTime: React.FC = () => {
       notPresent: false,
       trackingId: "TRK-01",
       zone: "Zone A",
-      snapshot: "/img/employee-idle-time-monitoring/i1.png",
+      snapshot: "/img/employee-idle-time-monitoring/idle.png",
       cameraid: "CAM-I01",
       createdAt: getOneHourBefore().fullDate,
       updatedAt: "2025-10-08 14:55",
@@ -52,22 +55,10 @@ const EmployeeIdleTime: React.FC = () => {
       notPresent: false,
       trackingId: "TRK-02",
       zone: "Zone B",
-      snapshot: "/img/employee-idle-time-monitoring/i2.jpg",
+      snapshot: "/img/employee-idle-time-monitoring/working.png",
       cameraid: "CAM-I02",
-      createdAt: getOneHourBefore().fullDate,
+      createdAt: "2025-10-08 14:45",
       updatedAt: "2025-10-08 14:45",
-    },
-    {
-      id: 303,
-      isIdle: true,
-      isWorking: false,
-      notPresent: false,
-      trackingId: "TRK-03",
-      zone: "Chemical Storage",
-      snapshot: "/img/employee-idle-time-monitoring/i1.png",
-      cameraid: "CAM-I03",
-      createdAt: "2025-10-08 14:30",
-      updatedAt: "2025-10-08 14:35",
     },
     {
       id: 304,
@@ -80,18 +71,6 @@ const EmployeeIdleTime: React.FC = () => {
       cameraid: "CAM-I04",
       createdAt: "2025-10-08 14:20",
       updatedAt: "2025-10-08 14:25",
-    },
-    {
-      id: 305,
-      isIdle: true,
-      isWorking: false,
-      notPresent: false,
-      trackingId: "TRK-05",
-      zone: "Maintenance Area",
-      snapshot: "/img/employee-idle-time-monitoring/i1.png",
-      cameraid: "CAM-I05",
-      createdAt: "2025-10-08 14:10",
-      updatedAt: "2025-10-08 14:15",
     },
   ];
 
@@ -113,6 +92,9 @@ const EmployeeIdleTime: React.FC = () => {
 
   console.log("RECENT IDLE EVENTS", recentIdleEvents);
 
+  // Recent Incident card shows only the latest 3 records (no scroll needed).
+  const recentIdleEventsForCard = recentIdleEvents.slice(0, 3);
+
   // Single source of truth: every KPI and the zone breakdown below is
   // derived from backendIdleData so the totals always match the recent
   // events list and the report table.
@@ -129,7 +111,11 @@ const EmployeeIdleTime: React.FC = () => {
   const zoneIdleData = Object.values(zoneIdleTotals).map(
     ({ zone, idle, working, notPresent }) => ({
       zone,
-      incidents: idle + working + notPresent,
+      // Total badge = count of all events in this zone (idle+working+notPresent),
+      // so each zone's total matches its actual record count (1 event = total 1).
+      // NOTE: key must be "violations" — ZoneViolations reads zone.violations
+      // for its total badge; the old "incidents" key was never read at all.
+      violations: idle + working + notPresent,
       subViolations: [
         { label: "Idle", value: idle, icon: AccessTimeIcon },
         { label: "Working", value: working, icon: WorkOutlineIcon },
@@ -281,9 +267,9 @@ const EmployeeIdleTime: React.FC = () => {
           {/* Recent Violations */}
           <Grid size={{ xs: 12, lg: 8 }}>
             <RecentViolations
-              tooltipMessage="Latest 20 detected idel, working,not present employee with details."
+              tooltipMessage="Latest 3 detected idle, working, not present employee events with details."
               label="Recent Incident"
-              violations={recentIdleEvents}
+              violations={recentIdleEventsForCard}
               loading={false}
             />
           </Grid>
@@ -344,7 +330,7 @@ const EmployeeIdleTime: React.FC = () => {
         onView={handleViewSingle}
         downloadFileName="employee-idle-time-report"
         loading={false}
-        totalCount={0}
+        totalCount={recentIdleEvents.length}
         page={0}
         rowsPerPage={0}
       />
