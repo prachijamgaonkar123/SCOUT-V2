@@ -53,10 +53,12 @@ export const mockSurveillanceDashboardData: SurveillanceDashboardResponse[] = [
     title: "Intrusion Detection at Perimeter",
     kpi: {
       title: "Intrusion Detection at Perimeter",
+      // Matches backendIntrusionData in IntrusionDetection.tsx: 4 records,
+      // most recent at "Internal secure storage" (updatedAt 18:16).
       colour: "red",
-      violationsCount: 7,
-      lastDetection: "Zone A",
-      lastDetectionTime: "2026-07-08 14:42:07",
+      violationsCount: 4,
+      lastDetection: "Internal secure storage",
+      lastDetectionTime: "2025-09-23 18:16",
     },
     graphs: {
       data: {
@@ -69,10 +71,12 @@ export const mockSurveillanceDashboardData: SurveillanceDashboardResponse[] = [
     title: "Camera Tampering Detection",
     kpi: {
       title: "Camera Tampering Detection",
+      // Matches backendData in "Camera Tampering.tsx": 3 records (all
+      // tampered, none offline), most recent at "Welding Station".
       colour: "red",
       violationsCount: 3,
-      lastDetection: "Zone C",
-      lastDetectionTime: "2026-07-08 09:37:02",
+      lastDetection: "Welding Station",
+      lastDetectionTime: "2025-09-23 16:12",
     },
     graphs: {
       data: { granularity: "hour", series: [] }, // this use case is pie-chart driven
@@ -99,10 +103,12 @@ export const mockSurveillanceDashboardData: SurveillanceDashboardResponse[] = [
     title: "Movement During Shutdown Hours",
     kpi: {
       title: "Movement During Shutdown Hours",
-      colour: "green",
-      violationsCount: 0,
-      lastDetection: "No Detections",
-      lastDetectionTime: "",
+      // Matches backendPeoplePresenceData in PeoplePresence.tsx: 14 movement
+      // events recorded, most recent at "Zone D" (updatedAt 21:16).
+      colour: "red",
+      violationsCount: 14,
+      lastDetection: "Zone D",
+      lastDetectionTime: "2025-09-23 21:16",
     },
     graphs: {
       data: {

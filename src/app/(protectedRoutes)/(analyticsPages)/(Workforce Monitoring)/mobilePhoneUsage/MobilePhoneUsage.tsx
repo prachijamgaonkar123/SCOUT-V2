@@ -16,7 +16,7 @@ import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
 const MobilePhoneUsage: React.FC = () => {
   interface ViolationData {
-    voilation: string;
+    violation: string;
     zone: string;
     time: string;
     imageUrl: string;
@@ -32,7 +32,7 @@ const MobilePhoneUsage: React.FC = () => {
     {
       id: 201,
       voilation: true,
-      snapshot: "/img/mobile-usage-restricted-zones/m1.avif",
+      snapshot: "/img/mobile-usage-restricted-zones/m1.png",
       zone: "Zone A",
       cameraid: "CAM-11",
       alarmTriggered: true,
@@ -42,7 +42,7 @@ const MobilePhoneUsage: React.FC = () => {
     {
       id: 202,
       voilation: true,
-      snapshot: "/img/mobile-usage-restricted-zones/m2.jpg",
+      snapshot: "/img/mobile-usage-restricted-zones/m2.png",
       zone: "Zone B",
       cameraid: "CAM-12",
       alarmTriggered: false,
@@ -62,7 +62,7 @@ const MobilePhoneUsage: React.FC = () => {
     {
       id: 204,
       voilation: true,
-      snapshot: "/img/mobile-usage-restricted-zones/m1.avif",
+      snapshot: "/img/mobile-usage-restricted-zones/m1.png",
       zone: "Main Entrance",
       cameraid: "CAM-14",
       alarmTriggered: true,
@@ -84,7 +84,7 @@ const MobilePhoneUsage: React.FC = () => {
   // Map backend data to recentViolations format
   const recentMobilePhoneViolations = backendMobilePhoneData.map((item) => {
     return {
-      voilation: item.voilation
+      violation: item.voilation
         ? "Mobile phone usage detected"
         : "No violation",
       zone: item.zone,
@@ -272,7 +272,7 @@ const MobilePhoneUsage: React.FC = () => {
       <ReportTable
         title="Detailed Report"
         columns={[
-          { id: "voilation", label: "Violation", minWidth: 150 },
+          { id: "violation", label: "Violation", minWidth: 150 },
           { id: "time", label: "Time", minWidth: 140 },
           { id: "zone", label: "Zone", minWidth: 120 },
           { id: "cameraId", label: "Cameras", minWidth: 120 },

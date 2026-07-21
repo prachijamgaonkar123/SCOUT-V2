@@ -58,8 +58,11 @@ const PeopleCount: React.FC = () => {
     },
     {
       id: 203,
-      enteredCount: 0,
-      exitCount: 16,
+      // Was 0 entered / 16 exited, which alone pushed total exits above
+      // total entries (36 vs 34) — nonsensical, since more people can't
+      // leave the factory than were ever counted coming in.
+      enteredCount: 6,
+      exitCount: 4,
       zone: "Zone C",
       snapshot: "/img/people-count-factory-premises/p3.jpg",
       cameraid: "CAM-13",
@@ -70,7 +73,7 @@ const PeopleCount: React.FC = () => {
     {
       id: 204,
       enteredCount: 20,
-      exitCount: 18,
+      exitCount: 14,
       zone: "Assembly Line B",
       snapshot: "/img/people-count-factory-premises/p2.jpg",
       cameraid: "CAM-14",

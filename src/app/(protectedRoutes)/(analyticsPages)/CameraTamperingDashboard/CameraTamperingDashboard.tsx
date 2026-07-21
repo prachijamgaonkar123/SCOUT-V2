@@ -32,7 +32,7 @@ const kpiData = [
   },
   {
     title: "Cameras Online",
-    violationsCount: 118,
+    violationsCount: 115,
     lastDetection: "Last Updated",
     lastDetectionTime: "10:15 AM",
     icon: WifiTethering,
@@ -52,7 +52,7 @@ const kpiData = [
   },
   {
     title: "Tampering Incidents Today",
-    violationsCount: 6,
+    violationsCount: 3,
     lastDetection: "Zone B - Warehouse",
     lastDetectionTime: "09:58 AM",
     icon: WarningAmber,

@@ -17,7 +17,7 @@ import { DASHBOARD_COLORS } from "@/app/config/dashboardTheme";
 
 const EmployeePresenceRestrictedAreaPage: React.FC = () => {
   interface EmployeePresenceViolation {
-    voilation: string;
+    violation: string;
     zone: string;
     time: string;
     imageUrl: string;
@@ -60,7 +60,7 @@ const EmployeePresenceRestrictedAreaPage: React.FC = () => {
 
   const recentEmployeeViolations = backendEmployeePresenceData.map((item) => {
     return {
-      voilation: item.alarmTriggered
+      violation: item.alarmTriggered
         ? "Employee presence detected"
         : "No violation",
       zone: item.zone,
@@ -240,7 +240,7 @@ const EmployeePresenceRestrictedAreaPage: React.FC = () => {
       <ReportTable
         title="Detailed Report"
         columns={[
-          { id: "voilation", label: "Violation", minWidth: 200 },
+          { id: "violation", label: "Violation", minWidth: 200 },
           { id: "time", label: "Time", minWidth: 140 },
           { id: "zone", label: "Zone", minWidth: 150 },
 

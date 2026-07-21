@@ -101,10 +101,12 @@ export const mockOperationalDashboardData: OperationalInsightsDashboardResponse[
     title: "People Count in Factory Premises",
     kpi: {
       title: "People Count in Factory Premises",
+      // Matches backendData in PeopleCount.tsx: "Entry Count" KPI sums to 40
+      // (4+5+6+20+5), most recent record at "Zone A" (updatedAt 09:45).
       colour: "blue",
-      violationsCount: 132,
-      lastDetection: "Main Gate",
-      lastDetectionTime: "2026-07-08 16:40:56",
+      violationsCount: 40,
+      lastDetection: "Zone A",
+      lastDetectionTime: "2025-09-30 09:45",
     },
     graphs: {
       data: {
@@ -123,10 +125,12 @@ export const mockOperationalDashboardData: OperationalInsightsDashboardResponse[
     title: "Vehicle Count & ANPR at Gates",
     kpi: {
       title: "Vehicle Count & ANPR at Gates",
+      // Matches vehicleCountBackendData in VehicleCount.tsx: 3 vehicles
+      // detected, most recent at "Zone C" (updatedAt 11:02).
       colour: "blue",
-      violationsCount: 64,
-      lastDetection: "Gate 2",
-      lastDetectionTime: "2026-07-08 17:12:31",
+      violationsCount: 3,
+      lastDetection: "Zone C",
+      lastDetectionTime: "2025-09-23 11:02",
     },
     graphs: {
       data: {
@@ -145,10 +149,13 @@ export const mockOperationalDashboardData: OperationalInsightsDashboardResponse[
     title: "Canteen Usage Monitoring",
     kpi: {
       title: "Canteen Usage Monitoring",
+      // Matches "Total Canteen Usage" KPI in monitoringCanteenUsage&Timings.tsx:
+      // 50 breakfast + 80 lunch + 35 dinner = 165, most recent at "Night
+      // Shift Canteen" (dinner, updatedAt 20:10).
       colour: "blue",
-      violationsCount: 87,
-      lastDetection: "Canteen Block A",
-      lastDetectionTime: "2026-07-08 13:30:43",
+      violationsCount: 165,
+      lastDetection: "Night Shift Canteen",
+      lastDetectionTime: "2025-10-09 20:10",
     },
     graphs: {
       data: {
@@ -161,10 +168,13 @@ export const mockOperationalDashboardData: OperationalInsightsDashboardResponse[
     title: "Vehicle Unloading / Loading Monitoring",
     kpi: {
       title: "Vehicle Unloading / Loading Monitoring",
+      // Matches "Total Loading/Unloading Event" KPI in
+      // VehicleUnloading-Loading.tsx: 2 completed start/stop pairs, most
+      // recent at "Unloading Bay B" (updatedAt 11:05).
       colour: "blue",
-      violationsCount: 21,
-      lastDetection: "Dock 1",
-      lastDetectionTime: "2026-07-08 14:55:18",
+      violationsCount: 2,
+      lastDetection: "Unloading Bay B",
+      lastDetectionTime: "2025-10-09 11:05",
     },
     graphs: {
       data: {
@@ -183,10 +193,13 @@ export const mockOperationalDashboardData: OperationalInsightsDashboardResponse[
     title: "Unauthorized Parking / Blocking Aisles",
     kpi: {
       title: "Unauthorized Parking / Blocking Aisles",
+      // Matches "Blocked Parking" KPI in
+      // UnauthorizedParkingOrEquipmentBlockingAisles.tsx: 3 records, most
+      // recent at "Zone C" (updatedAt 10:08).
       colour: "blue",
-      violationsCount: 8,
-      lastDetection: "Zone B",
-      lastDetectionTime: "2026-07-08 11:47:03",
+      violationsCount: 3,
+      lastDetection: "Zone C",
+      lastDetectionTime: "2025-10-09 10:08",
     },
     graphs: {
       data: {

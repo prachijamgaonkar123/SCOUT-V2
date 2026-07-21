@@ -30,7 +30,7 @@ const cameraTrendData = [
   { time: "00:00", online: 105, offline: 15 },
   { time: "06:00", online: 108, offline: 12 },
   { time: "12:00", online: 110, offline: 10 },
-  { time: "18:00", online: 102, offline: 18 },
+  { time: "18:00", online: 115, offline: 2 },
 ];
 const latestCameraTrend = cameraTrendData[cameraTrendData.length - 1];
 const totalCameras = latestCameraTrend.online + latestCameraTrend.offline;
@@ -67,10 +67,10 @@ const cameraUptimeDowntimeData = [
 
 // Zone-wise camera counts
 const cameraHealthByZone = [
-  { zone: "Parking", online: 5, offline: 3, tampered: 2 },
-  { zone: "Warehouse", online: 4, offline: 2, tampered: 3 },
-  { zone: "Office", online: 7, offline: 0, tampered: 1 },
-  { zone: "Gate 1", online: 6, offline: 1, tampered: 2 },
+  { zone: "Parking", online: 5, offline: 3, tampered: 1 },
+  { zone: "Warehouse", online: 4, offline: 2, tampered: 1 },
+  { zone: "Office", online: 7, offline: 0, tampered: 0 },
+  { zone: "Gate 1", online: 6, offline: 1, tampered: 1 },
 ];
 
 /* -------------------- KPI DATA -------------------- */

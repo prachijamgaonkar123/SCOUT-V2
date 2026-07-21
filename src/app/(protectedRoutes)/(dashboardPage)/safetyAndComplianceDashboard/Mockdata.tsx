@@ -124,7 +124,9 @@ const vehicle = [1, 2, 0, 3, 1, 2, 1];
 export const mockDashboardData: SurveillanceDashboardResponse[] = [
   {
     title: "Fire and Smoke Detection",
-    kpi: kpi("Fire and Smoke Detection", "red", 12, "Zone A", "2026-07-08 14:23:12"),
+    // Matches backendFireData in FireSmokeOilLeakDetection.tsx: 8 records
+    // total (3 fire + 5 smoke), most recent at "Chemical Storage" 16:20.
+    kpi: kpi("Fire and Smoke Detection", "red", 8, "Chemical Storage", "2025-09-23 16:20"),
     graphs: {
       data: {
         granularity: "hour",
@@ -136,7 +138,9 @@ export const mockDashboardData: SurveillanceDashboardResponse[] = [
   },
   {
     title: "PPE Detection (Helmet, Vest, Glasses)",
-    kpi: kpi("PPE Detection (Helmet, Vest, Glasses)", "red", 8, "Zone B", "2026-07-08 13:10:38"),
+    // Matches rawRecentViolations in ppeKitDetectionPage.tsx: 3 individual
+    // PPE items missing (1 helmet + 1 vest + 1 goggles) across 3 rows.
+    kpi: kpi("PPE Detection (Helmet, Vest, Glasses)", "red", 3, "Zone A", "2025-09-25 09:16"),
     graphs: {
       data: {
         granularity: "hour",
@@ -148,7 +152,9 @@ export const mockDashboardData: SurveillanceDashboardResponse[] = [
   },
   {
     title: "Fall Detection",
-    kpi: kpi("Fall Detection", "red", 5, "Zone C", "2026-07-08 09:45:51"),
+    // Matches backendLaydownData in FallDetection.tsx: 3 records, most
+    // recent at "Warehouse" (updatedAt 18:13).
+    kpi: kpi("Fall Detection", "red", 3, "Warehouse", "2025-09-23 18:13"),
     graphs: {
       data: {
         granularity: "hour",
@@ -159,7 +165,9 @@ export const mockDashboardData: SurveillanceDashboardResponse[] = [
   },
   {
     title: "Forklift / Vehicle in Walkways",
-    kpi: kpi("Forklift / Vehicle in Walkways", "red", 9, "Zone A", "2026-07-08 16:20:07"),
+    // Matches backendData in ObjectDetection.tsx: 3 records, most recent
+    // at "Walkway Zone C" (updatedAt 10:10).
+    kpi: kpi("Forklift / Vehicle in Walkways", "red", 3, "Walkway Zone C", "2025-10-08 10:10"),
     graphs: {
       data: {
         granularity: "hour",
@@ -179,7 +187,9 @@ export const mockDashboardData: SurveillanceDashboardResponse[] = [
   },
   {
     title: "Crowd Detection in Hazardous Zones",
-    kpi: kpi("Crowd Detection in Hazardous Zones", "red", 3, "Zone B", "2026-07-08 11:30:29"),
+    // Matches backendCrowdData in CrowdGathering.tsx: 5 records, most
+    // recent at "Loading Dock Zone" (updatedAt 20:36).
+    kpi: kpi("Crowd Detection in Hazardous Zones", "red", 5, "Loading Dock Zone", "2025-09-23 20:36"),
     graphs: {
       data: {
         granularity: "hour",
@@ -190,7 +200,9 @@ export const mockDashboardData: SurveillanceDashboardResponse[] = [
   },
   {
     title: "Emergency Exit Blockage Detection",
-    kpi: kpi("Emergency Exit Blockage Detection", "red", 6, "Loading Dock", "2026-07-08 15:05:44"),
+    // Matches backendExitBlockageData in EmergencyExitBlockage.tsx: 5
+    // records, most recent at "Loading Dock Exit C" (updatedAt 19:45).
+    kpi: kpi("Emergency Exit Blockage Detection", "red", 5, "Loading Dock Exit C", "2025-09-23 19:45"),
     graphs: {
       data: {
         granularity: "hour",

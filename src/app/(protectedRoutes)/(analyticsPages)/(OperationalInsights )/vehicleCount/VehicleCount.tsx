@@ -42,8 +42,11 @@ const VehicleCount: React.FC = () => {
   const vehicleCountBackendData = [
     {
       id: 201,
+      // Was "Exit", which left only 1 recorded entry against 2 recorded
+      // exits — nonsensical, since more vehicles can't leave than were
+      // ever counted coming in.
       numberDetected: "MH12AB1234",
-      status: "Exit",
+      status: "Entry",
       validNumber: false,
       snapshot: "/img/vehicle-count-anpr-gates/v1.jpg",
       zone: "Zone A",

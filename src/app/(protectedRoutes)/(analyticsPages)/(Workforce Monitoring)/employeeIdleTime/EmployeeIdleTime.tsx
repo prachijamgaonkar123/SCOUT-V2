@@ -67,7 +67,7 @@ const EmployeeIdleTime: React.FC = () => {
       notPresent: true,
       trackingId: "TRK-04",
       zone: "Assembly Line B",
-      snapshot: "/img/employee-idle-time-monitoring/i2.jpg",
+      snapshot: "/img/employee-idle-time-monitoring/not-present.png",
       cameraid: "CAM-I04",
       createdAt: "2025-10-08 14:20",
       updatedAt: "2025-10-08 14:25",

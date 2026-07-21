@@ -78,10 +78,12 @@ export const mockWorkforceDashboardData: WorkforceMonitoringDashboardResponse[] 
     title: "Employee Presence in Critical Areas",
     kpi: {
       title: "Employee Presence in Critical Areas",
-      colour: "green",
-      violationsCount: 0,
-      lastDetection: "No Detections",
-      lastDetectionTime: "",
+      // Matches backendEmployeePresenceData in EmployeePresenceCriticalAreaPage.tsx
+      // (3 records, all alarmTriggered) so the KPI card agrees with the use case page.
+      colour: "red",
+      violationsCount: 3,
+      lastDetection: "Critical Zone C",
+      lastDetectionTime: "2025-09-25 09:41",
     },
     graphs: {
       data: {
@@ -98,10 +100,12 @@ export const mockWorkforceDashboardData: WorkforceMonitoringDashboardResponse[] 
     title: "Employee Presence in Restricted Areas",
     kpi: {
       title: "Employee Presence in Restricted Areas",
+      // Matches backendEmployeePresenceData in EmployeePresenceRestrictedAreaPage.tsx
+      // (3 records, all alarmTriggered) so the KPI card agrees with the use case page.
       colour: "red",
-      violationsCount: 5,
-      lastDetection: "Zone B",
-      lastDetectionTime: "2026-07-08 10:22:44",
+      violationsCount: 3,
+      lastDetection: "Restricted Zone C",
+      lastDetectionTime: "2025-09-25 09:41",
     },
     graphs: {
       data: {
@@ -118,10 +122,12 @@ export const mockWorkforceDashboardData: WorkforceMonitoringDashboardResponse[] 
     title: "Employee Idle Time Monitoring",
     kpi: {
       title: "Employee Idle Time Monitoring",
+      // Matches backendIdleData in EmployeeIdleTime.tsx: only 1 of the 3
+      // records has isIdle true, which is what "Total Idle Events" counts.
       colour: "blue",
-      violationsCount: 12,
-      lastDetection: "Gate 3",
-      lastDetectionTime: "2026-07-08 15:10:25",
+      violationsCount: 1,
+      lastDetection: "Zone A",
+      lastDetectionTime: "2025-10-08 14:55",
     },
     graphs: {
       data: [
@@ -136,10 +142,12 @@ export const mockWorkforceDashboardData: WorkforceMonitoringDashboardResponse[] 
     title: "Mobile Phone Usage in Restricted Zones",
     kpi: {
       title: "Mobile Phone Usage in Restricted Zones",
+      // Matches backendMobilePhoneData in MobilePhoneUsage.tsx: 5 records,
+      // which is what the page's own "Total Violations" KPI shows.
       colour: "blue",
-      violationsCount: 6,
-      lastDetection: "Zone A",
-      lastDetectionTime: "2026-07-08 12:05:47",
+      violationsCount: 5,
+      lastDetection: "Parking Area",
+      lastDetectionTime: "2025-09-23 17:36",
     },
     graphs: {
       data: {
@@ -156,10 +164,12 @@ export const mockWorkforceDashboardData: WorkforceMonitoringDashboardResponse[] 
     title: "Sleeping / Absence of Security Guards",
     kpi: {
       title: "Sleeping / Absence of Security Guards",
+      // Matches backendSleepingSecurityData in SleepingSecurityPersonnel.tsx:
+      // all 4 records trip sleeping or absence, so all 4 count as violations.
       colour: "blue",
-      violationsCount: 2,
-      lastDetection: "Gate 1",
-      lastDetectionTime: "2026-07-08 04:15:49",
+      violationsCount: 4,
+      lastDetection: "Assembly Line A",
+      lastDetectionTime: "2025-09-24 08:27",
     },
     graphs: {
       data: [

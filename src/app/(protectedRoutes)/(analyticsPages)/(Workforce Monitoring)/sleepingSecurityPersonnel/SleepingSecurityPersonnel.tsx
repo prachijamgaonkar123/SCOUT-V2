@@ -18,7 +18,7 @@ import PersonOffIcon from "@mui/icons-material/PersonOff";
 import HotelIcon from "@mui/icons-material/Hotel";
 const SleepingSecurityPersonnel: React.FC = () => {
   interface SleepingSecurityViolation {
-    voilation: string;
+    violation: string;
     zone: string;
     time: string;
     imageUrl: string;
@@ -81,7 +81,7 @@ const SleepingSecurityPersonnel: React.FC = () => {
     if (item.absence) titleParts.push("Security personnel absence detected");
 
     return {
-      voilation: titleParts.join(", ") || "No violation",
+      violation: titleParts.join(", ") || "No violation",
       zone: item.zone,
       time: item.createdAt,
       imageUrl: item.snapshot,
@@ -282,7 +282,7 @@ const SleepingSecurityPersonnel: React.FC = () => {
       <ReportTable
         title="Detailed Report"
         columns={[
-          { id: "voilation", label: "Violation", minWidth: 200 },
+          { id: "violation", label: "Violation", minWidth: 200 },
           { id: "time", label: "Time", minWidth: 140 },
           { id: "zone", label: "Zone", minWidth: 150 },
 
@@ -292,11 +292,11 @@ const SleepingSecurityPersonnel: React.FC = () => {
         data={recentViolations}
         filters={[
           {
-            id: "voilation",
+            id: "violation",
             label: "Violation",
             type: "select",
             options: Array.from(
-              new Set(recentViolations.map((item) => item.voilation)),
+              new Set(recentViolations.map((item) => item.violation)),
             ),
           },
           {
