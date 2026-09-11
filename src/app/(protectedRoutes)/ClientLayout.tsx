@@ -33,7 +33,7 @@ export default function ClientLayout({
 
 function ClientLayoutContent({ children }: Readonly<ClientLayoutProps>) {
   const pathname = usePathname();
-  const { popupEvents, isPopupSnoozed, handlePopupStatusChange, handleSnoozePopup } =
+  const { popupEvents, isPopupSnoozed, handlePopupStatusChange, handleSnoozePopup, openIncidentsCount } =
     useAlerts();
 
   const [mounted, setMounted] = useState(false);
@@ -80,7 +80,7 @@ function ClientLayoutContent({ children }: Readonly<ClientLayoutProps>) {
       <Box sx={{ display: "flex", height: "100vh" }}>
         <Header collapsed={sidebarCollapsed} />
 
-        <Sidebar onCollapsedChange={setSidebarCollapsed} />
+        <Sidebar alertCount={openIncidentsCount} onCollapsedChange={setSidebarCollapsed} />
 
         {/* Main Content */}
         <Box

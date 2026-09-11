@@ -8,6 +8,9 @@ import type { SecurityAlertEvent } from "@/app/components/molecules/MiniDropdown
 
 interface AlertsContextValue {
   alerts: Alert[];
+  /** Count of alerts still open — status 'new' or 'acknowledged', i.e. not yet
+   * 'resolved'. Drives the "Open Incidents" KPI card and the sidebar badge. */
+  openIncidentsCount: number;
   popupEvents: SecurityAlertEvent[];
   /** True while the popup is snoozed — the popup is hidden even though
    * popupEvents is non-empty. */
@@ -40,6 +43,11 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
 
   const popupEvents = useMemo(
     () => alerts.filter((alert) => alert.status === "new").map((alert) => toPopupEvent(alert)),
+    [alerts],
+  );
+
+  const openIncidentsCount = useMemo(
+    () => alerts.filter((alert) => alert.status === "new" || alert.status === "acknowledged").length,
     [alerts],
   );
 
@@ -96,6 +104,7 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
 
   const value: AlertsContextValue = {
     alerts,
+    openIncidentsCount,
     popupEvents,
     isPopupSnoozed,
     handleStatusChange,

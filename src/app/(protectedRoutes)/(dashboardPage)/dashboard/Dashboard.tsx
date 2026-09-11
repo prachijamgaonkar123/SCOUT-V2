@@ -40,6 +40,7 @@ import { hasFeature } from "@/utils/hasFeature";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/store/store";
 import { useRouter } from "next/navigation";   // <-- added
+import { useAlerts } from "@/Providers/AlertsProvider";
 
 // Import the route config
 import { MainDashboardConfig } from "./DashboardConfig"; // adjust path as needed
@@ -185,6 +186,7 @@ const Dashboard: React.FC = () => {
   const [cameraPopup, setCameraPopup] = useState<"online" | "offline" | null>(null);
   const statusItems = useStatusItems();
   const router = useRouter();   // <-- added
+  const { openIncidentsCount } = useAlerts();
 
   const filteredUseCases = useMemo(() => {
     const categoryItems = statusItems.filter((item) => item.category === activeCategory);
@@ -230,7 +232,7 @@ const Dashboard: React.FC = () => {
       >
         <StatCard icon={CheckCircleOutline} tone="green" value={115} total=" /120" label="Cameras Online" onClick={() => setCameraPopup("online")} />
         <StatCard icon={VideocamOffOutlined} tone="red" value={5} label="Cameras Offline" onClick={() => setCameraPopup("offline")} />
-        <StatCard icon={ReportProblemOutlined} tone="amber" value={12} label="Open Incidents"  onClick={() => router.push('/alertsPage')} hideArrow />
+        <StatCard icon={ReportProblemOutlined} tone="amber" value={openIncidentsCount} label="Open Incidents"  onClick={() => router.push('/alertsPage')} hideArrow />
         <StatCard icon={QueryStatsOutlined} tone="blue" value={143} label="Total Detections Today" onClick={() => router.push('/alertsPage')} hideArrow />
         <Box
           sx={{
