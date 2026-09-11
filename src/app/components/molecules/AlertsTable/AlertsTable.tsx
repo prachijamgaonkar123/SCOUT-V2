@@ -9,11 +9,16 @@ import ReportTable, {
   ReportFilter,
 } from '@/app/components/organisms/ReportTable/ReportTable';
 import AlertDrawer from '../AlertDrawer/AlertDrawer';
+import AlertsTableSnoozeControl from './AlertsTableSnoozeControl';
 import { CATEGORY_LABEL, DASHBOARD_COLORS, UseCaseCategory } from '@/app/config/dashboardTheme';
 
 // ---------- Type definitions (exported) ----------
 export type AlertSeverity = 'critical' | 'non-critical';
-export type AlertStatus = 'new' | 'viewed' | 'acknowledged' | 'resolved';
+// 'new' only ever exists before the alert has been triaged in the popup —
+// the popup blocks the rest of the page until every alert has moved past
+// it, so by the time this table is reachable, every row is either
+// 'acknowledged' (critical, awaiting resolve in the drawer) or 'resolved'.
+export type AlertStatus = 'new' | 'acknowledged' | 'resolved';
 
 export interface Alert {
   id: string;
@@ -24,23 +29,10 @@ export interface Alert {
   zone: string;
   status: AlertStatus;
   category: UseCaseCategory;
+  imageUrl?: string;
+  imageFileName?: string;
+  notes?: string;
 }
-
-// ---------- Mock data ----------
-const mockAlerts: Alert[] = [
-  { id: 'ALT-20456', timestamp: '2026-07-07T17:42:00', severity: 'critical', title: 'Fire and Smoke Detection', camera: 'CAM-08', zone: 'Warehouse', status: 'new', category: 'safety' },
-  { id: 'ALT-20455', timestamp: '2026-07-07T17:40:00', severity: 'non-critical', title: 'PPE Detection (Helmet, Vest, Gloves, Mask)', camera: 'CAM-12', zone: 'Assembly Line', status: 'new', category: 'safety' },
-  { id: 'ALT-20454', timestamp: '2026-07-07T17:39:00', severity: 'non-critical', title: 'Employee Presence in Restricted Areas', camera: 'CAM-15', zone: 'Gate B', status: 'acknowledged', category: 'workforce' },
-  { id: 'ALT-20453', timestamp: '2026-07-07T17:37:00', severity: 'non-critical', title: 'Forklift / Vehicle in Walkways', camera: 'CAM-04', zone: 'Loading Dock', status: 'viewed', category: 'safety' },
-  { id: 'ALT-20452', timestamp: '2026-07-07T17:35:00', severity: 'non-critical', title: 'Camera Tampering Detection', camera: 'CAM-02', zone: 'Parking', status: 'new', category: 'surveillance' },
-  { id: 'ALT-20451', timestamp: '2026-07-07T17:31:00', severity: 'critical', title: 'Fire and Smoke Detection', camera: 'CAM-20', zone: 'Warehouse', status: 'acknowledged', category: 'safety' },
-  { id: 'ALT-20450', timestamp: '2026-07-07T17:28:00', severity: 'non-critical', title: 'Crowd Detection in Hazardous Zones', camera: 'CAM-09', zone: 'Assembly Line', status: 'viewed', category: 'safety' },
-  { id: 'ALT-20449', timestamp: '2026-07-07T17:24:00', severity: 'non-critical', title: 'Vehicle Unloading / Loading Monitoring', camera: 'CAM-06', zone: 'Loading Dock', status: 'viewed', category: 'operational' },
-  { id: 'ALT-20448', timestamp: '2026-07-07T17:19:00', severity: 'non-critical', title: 'Vehicle Count & ANPR at Gates', camera: 'CAM-14', zone: 'Gate A', status: 'viewed', category: 'operational' },
-  { id: 'ALT-20447', timestamp: '2026-07-07T17:12:00', severity: 'critical', title: 'Intrusion Detection at Perimeter', camera: 'CAM-05', zone: 'Gate A', status: 'resolved', category: 'surveillance' },
-  { id: 'ALT-20446', timestamp: '2026-07-07T17:05:00', severity: 'non-critical', title: 'Canteen Usage Monitoring', camera: 'CAM-08', zone: 'canteen A', status: 'viewed', category: 'operational' },
-  { id: 'ALT-20445', timestamp: '2026-07-07T16:58:00', severity: 'non-critical', title: 'Mobile Phone Usage in Restricted Zones', camera: 'CAM-09', zone: 'Production Floor', status: 'viewed', category: 'workforce' },
-];
 
 // ---------- Category options (shared labels/colors with the rest of the dashboard) ----------
 const categoryOrder: UseCaseCategory[] = ['surveillance', 'safety', 'operational', 'workforce'];
@@ -56,7 +48,6 @@ export function formatTimestamp(iso: string): string {
 // ---------- Label maps (used for both display text and filter matching) ----------
 const statusLabel: Record<AlertStatus, string> = {
   new: 'New',
-  viewed: 'Viewed',
   acknowledged: 'Acknowledged',
   resolved: 'Resolved',
 };
@@ -68,7 +59,6 @@ const severityLabel: Record<AlertSeverity, string> = {
 
 const statusPillColor: Record<string, { color: string; bg: string }> = {
   New: { color: DASHBOARD_COLORS.error, bg: DASHBOARD_COLORS.errorTint },
-  Viewed: { color: DASHBOARD_COLORS.textSecondary, bg: DASHBOARD_COLORS.hover },
   Acknowledged: { color: DASHBOARD_COLORS.warningText, bg: DASHBOARD_COLORS.warningTint },
   Resolved: { color: DASHBOARD_COLORS.success, bg: DASHBOARD_COLORS.successTint },
 };
@@ -77,11 +67,6 @@ const severityDotColor: Record<string, string> = {
   Critical: DASHBOARD_COLORS.error,
   'Non-Critical': DASHBOARD_COLORS.textSecondary,
 };
-
-// ---------- Filter option lists (derived from the mock data) ----------
-const uniqueZones = Array.from(new Set(mockAlerts.map((a) => a.zone))).sort();
-const uniqueCameras = Array.from(new Set(mockAlerts.map((a) => a.camera))).sort();
-const uniqueAlertTitles = Array.from(new Set(mockAlerts.map((a) => a.title))).sort();
 
 // ReportTable's default export is wrapped in React.memo, which erases its
 // generic type parameter — every ReportTable call site in this app types
@@ -193,26 +178,39 @@ const columns: ReportColumn<TableRow>[] = [
   },
 ];
 
-const filters: ReportFilter<TableRow>[] = [
-  { id: 'alert', label: 'Alert', type: 'select', options: uniqueAlertTitles },
-  { id: 'camera', label: 'Camera', type: 'select', options: uniqueCameras },
-  { id: 'zone', label: 'Zone', type: 'select', options: uniqueZones },
-  { id: 'severity', label: 'Severity', type: 'select', options: ['Critical', 'Non-Critical'] },
-  { id: 'status', label: 'Status', type: 'select', options: ['New', 'Viewed', 'Acknowledged', 'Resolved'] },
-  { id: 'category', label: 'Category', type: 'select', options: categoryOptions },
-  { id: 'startDate', label: 'Start date', type: 'datetime' },
-  { id: 'endDate', label: 'End date', type: 'datetime' },
-];
-
 // ---------- Component ----------
-export default function AlertsTable() {
+interface AlertsTableProps {
+  alerts: Alert[];
+  onStatusChange: (alert: Alert, status: AlertStatus, note?: string) => void;
+}
+
+export default function AlertsTable({ alerts: mockAlerts, onStatusChange }: AlertsTableProps) {
   const [appliedFilters, setAppliedFilters] = useState<Record<string, string>>({});
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [exportLoading, setExportLoading] = useState(false);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+  const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
+  const selectedAlert = useMemo(
+    () => mockAlerts.find((a) => a.id === selectedAlertId) ?? null,
+    [mockAlerts, selectedAlertId],
+  );
+
+  const uniqueZones = useMemo(() => Array.from(new Set(mockAlerts.map((a) => a.zone))).sort(), [mockAlerts]);
+  const uniqueCameras = useMemo(() => Array.from(new Set(mockAlerts.map((a) => a.camera))).sort(), [mockAlerts]);
+  const uniqueAlertTitles = useMemo(() => Array.from(new Set(mockAlerts.map((a) => a.title))).sort(), [mockAlerts]);
+
+  const filters: ReportFilter<TableRow>[] = [
+    { id: 'alert', label: 'Alert', type: 'select', options: uniqueAlertTitles },
+    { id: 'camera', label: 'Camera', type: 'select', options: uniqueCameras },
+    { id: 'zone', label: 'Zone', type: 'select', options: uniqueZones },
+    { id: 'severity', label: 'Severity', type: 'select', options: ['Critical', 'Non-Critical'] },
+    { id: 'status', label: 'Status', type: 'select', options: ['Acknowledged', 'Resolved'] },
+    { id: 'category', label: 'Category', type: 'select', options: categoryOptions },
+    { id: 'startDate', label: 'Start date', type: 'datetime' },
+    { id: 'endDate', label: 'End date', type: 'datetime' },
+  ];
 
   const filteredAlerts = useMemo(() => {
     return mockAlerts.filter((alert) => {
@@ -227,7 +225,7 @@ export default function AlertsTable() {
       if (appliedFilters.endDate && ts.isAfter(dayjs(appliedFilters.endDate))) return false;
       return true;
     });
-  }, [appliedFilters]);
+  }, [mockAlerts, appliedFilters]);
 
   const rows: AlertRow[] = useMemo(() => {
     const start = page * rowsPerPage;
@@ -245,13 +243,17 @@ export default function AlertsTable() {
   }, [filteredAlerts, page, rowsPerPage]);
 
   const handleView = (row: TableRow) => {
-    setSelectedAlert(mockAlerts.find((a) => a.id === row.alertId) ?? null);
+    setSelectedAlertId(row.alertId as string);
     setDrawerOpen(true);
   };
 
   const handleCloseDrawer = () => {
     setDrawerOpen(false);
-    setSelectedAlert(null);
+    setSelectedAlertId(null);
+  };
+
+  const handleDownload = (alert: Alert) => {
+    console.log('Download evidence for', alert.id);
   };
 
   const handleSubmit = (nextFilters: Record<string, string>) => {
@@ -323,7 +325,7 @@ export default function AlertsTable() {
 
       <ReportTable
         title="Total Alerts"
-        tooltipMessage="Recent system alerts across all zones and cameras."
+        headerAction={<AlertsTableSnoozeControl />}
         columns={columns}
         data={rows}
         totalCount={filteredAlerts.length}
@@ -342,9 +344,14 @@ export default function AlertsTable() {
         exportLoading={exportLoading}
         onRowClick={handleView}
         hideActions
-        
       />
-      <AlertDrawer open={drawerOpen} onClose={handleCloseDrawer} alert={selectedAlert} />
+      <AlertDrawer
+        open={drawerOpen}
+        onClose={handleCloseDrawer}
+        alert={selectedAlert}
+        onStatusChange={onStatusChange}
+        onDownload={handleDownload}
+      />
     </>
   );
 }

@@ -1,3 +1,5 @@
+'use client';
+
 import { Grid, Container, Box } from '@mui/material';
 
 import AlertStatsCards from '@/app/components/molecules/AlertStatsCard/AlertStatsCard';
@@ -6,8 +8,14 @@ import TopCameras from '@/app/components/molecules/AlertTopCamera/AlertTopCamera
 import AlertsTable from '@/app/components/molecules/AlertsTable/AlertsTable';
 import CollapsibleTimeFilter from '@/app/components/organisms/TimeFilterForAllKPI/CollapsibleTimeFilter';
 import AlertDistribution from '@/app/components/molecules/AlertDitributionCard/AlertDistribution';
+import { useAlerts } from '@/Providers/AlertsProvider';
 
 export default function AlertsPage() {
+  // Alert data + the popup itself now live in AlertsProvider (mounted in
+  // ClientLayout) so the popup can render on any page — this page just
+  // reads/writes the shared state.
+  const { alerts, handleStatusChange } = useAlerts();
+
   return (
     <Container maxWidth="xl" >
       {/* Stats strip + TimeFilter share one row — no dedicated filter row */}
@@ -37,7 +45,7 @@ export default function AlertsPage() {
       </Grid>
 
       <Box sx={{ mt: 2.5 }}>
-        <AlertsTable />
+        <AlertsTable alerts={alerts} onStatusChange={handleStatusChange} />
       </Box>
     </Container>
   );

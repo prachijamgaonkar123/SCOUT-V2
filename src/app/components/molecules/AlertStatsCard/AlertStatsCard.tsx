@@ -1,45 +1,4 @@
-// import { Grid } from '@mui/material';
-// import {
-//   WarningAmberOutlined,
-//   InfoOutlined,
-//   VisibilityOutlined,
-//   CheckCircleOutlined,
-//   TimerOutlined,
-// } from '@mui/icons-material';
-// import StatCard, { StatCardTone } from '../DashboardKpiCardMain/StatCard';
-// import { MuiIcon } from '@/app/config/dashboardTheme';
-
-// const stats: {
-//   id: string;
-//   label: string;
-//   value: string | number;
-//   icon: MuiIcon;
-//   tone: StatCardTone;
-// }[] = [
-//   { id: 'critical', label: 'Critical', value: 4, icon: WarningAmberOutlined, tone: 'red' },
-//   { id: 'nonCritical', label: 'Non-Critical', value: 8, icon: InfoOutlined, tone: 'gray' },
-//   { id: 'acknowledged', label: 'Acknowledged', value: 2, icon: VisibilityOutlined, tone: 'amber' },
-//   { id: 'resolved', label: 'Resolved', value: 1, icon: CheckCircleOutlined, tone: 'green' },
-//   // { id: 'avgResponse', label: 'Avg Response', value: '2m 48s', icon: TimerOutlined, tone: 'green' },
-// ];
-
-// export default function AlertStatsCards() {
-//   return (
-//     <Grid container spacing={2}>
-//       {stats.map((stat) => (
-//         <Grid size={{ xs: 12, sm: 6, md: 2.4 }} key={stat.id}>
-//           <StatCard
-//             icon={stat.icon}
-//             tone={stat.tone}
-//             value={stat.value}
-//             label={stat.label}
-//           />
-//         </Grid>
-//       ))}
-      
-//     </Grid>
-//   );
-// }
+"use client";
 
 import { Box, Grid } from '@mui/material';
 import {
@@ -50,21 +9,26 @@ import {
 } from '@mui/icons-material';
 import StatCard, { StatCardTone } from '../DashboardKpiCardMain/StatCard';
 import { MuiIcon, DASHBOARD_COLORS } from '@/app/config/dashboardTheme';
-
-const stats: {
-  id: string;
-  label: string;
-  value: string | number;
-  icon: MuiIcon;
-  tone: StatCardTone;
-}[] = [
-  { id: 'critical', label: 'Critical', value: 4, icon: WarningAmberOutlined, tone: 'red' },
-  { id: 'nonCritical', label: 'Non-Critical', value: 8, icon: InfoOutlined, tone: 'gray' },
-  { id: 'acknowledged', label: 'Acknowledged', value: 2, icon: VisibilityOutlined, tone: 'amber' },
-  { id: 'resolved', label: 'Resolved', value: 1, icon: CheckCircleOutlined, tone: 'green' },
-];
+import { useAlerts } from '@/Providers/AlertsProvider';
+import { getAlertStats } from '@/app/(protectedRoutes)/alertsPage/AlertsMockData';
 
 export default function AlertStatsCards() {
+  const { alerts } = useAlerts();
+  const alertStats = getAlertStats(alerts);
+
+  const stats: {
+    id: string;
+    label: string;
+    value: string | number;
+    icon: MuiIcon;
+    tone: StatCardTone;
+  }[] = [
+    { id: 'critical', label: 'Critical', value: alertStats.critical, icon: WarningAmberOutlined, tone: 'red' },
+    { id: 'nonCritical', label: 'Non-Critical', value: alertStats.nonCritical, icon: InfoOutlined, tone: 'gray' },
+    { id: 'acknowledged', label: 'Acknowledged', value: alertStats.acknowledged, icon: VisibilityOutlined, tone: 'amber' },
+    { id: 'resolved', label: 'Resolved', value: alertStats.resolved, icon: CheckCircleOutlined, tone: 'green' },
+  ];
+
   return (
     <Grid container spacing={2}>
       {stats.map((stat) => (

@@ -245,12 +245,14 @@ interface ReportTableProps<T extends object> {
   onView?: (row: T) => void;
   onDownload?: (row: T, index: number) => void;
   downloadingRows?: Set<number>;
-  tooltipMessage: string;
+  tooltipMessage?: string;
   /** Row click opens the row (e.g. a detail drawer) instead of using the
    * Actions column's view/download icons — pair with `hideActions`. */
   onRowClick?: (row: T) => void;
   /** Omit the Actions column entirely — for tables driven by `onRowClick` instead. */
   hideActions?: boolean;
+  /** Optional extra control rendered in the header, to the left of the info icon. */
+  headerAction?: React.ReactNode;
 }
 
 // ----------------------------------------------
@@ -278,6 +280,7 @@ function ReportTable<T extends Record<string, string | number | boolean>>({
   onRowsPerPageChange,
   onRowClick,
   hideActions = false,
+  headerAction,
 }: ReportTableProps<T>) {
   const { t } = useTranslation();
 
@@ -636,13 +639,16 @@ function ReportTable<T extends Record<string, string | number | boolean>>({
               </>
             )}
           </Box>
-          {tooltipMessage && (
-            <Tooltip title={tooltipMessage} arrow placement="left">
-              <Box sx={{ cursor: "pointer", color: COLORS.textSecondary }}>
-                <InfoOutlineIcon fontSize="small" />
-              </Box>
-            </Tooltip>
-          )}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {headerAction}
+            {tooltipMessage && (
+              <Tooltip title={tooltipMessage} arrow placement="left">
+                <Box sx={{ cursor: "pointer", color: COLORS.textSecondary }}>
+                  <InfoOutlineIcon fontSize="small" />
+                </Box>
+              </Tooltip>
+            )}
+          </Box>
         </Box>
 
         {/* Filter Bar */}

@@ -3,27 +3,10 @@
 import { Card, Box, Typography } from '@mui/material';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { useAlerts } from '@/Providers/AlertsProvider';
+import { getAlertStats } from '@/app/(protectedRoutes)/alertsPage/AlertsMockData';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
-
-const legendItems = [
-  { label: 'Critical', value: 4, color: '#DC2626' },
-  { label: 'Non-Critical', value: 8, color: '#64748B' },
-];
-
-const total = legendItems.reduce((sum, item) => sum + item.value, 0);
-
-const data = {
-  labels: legendItems.map((item) => item.label),
-  datasets: [
-    {
-      data: legendItems.map((item) => item.value),
-      backgroundColor: legendItems.map((item) => item.color),
-      borderWidth: 3,
-      borderColor: '#fff',
-    },
-  ],
-};
 
 const options = {
   cutout: '68%',
@@ -36,6 +19,28 @@ const options = {
 };
 
 export default function AlertDistribution() {
+  const { alerts } = useAlerts();
+  const alertStats = getAlertStats(alerts);
+
+  const legendItems = [
+    { label: 'Critical', value: alertStats.critical, color: '#DC2626' },
+    { label: 'Non-Critical', value: alertStats.nonCritical, color: '#64748B' },
+  ];
+
+  const total = alertStats.critical + alertStats.nonCritical;
+
+  const data = {
+    labels: legendItems.map((item) => item.label),
+    datasets: [
+      {
+        data: legendItems.map((item) => item.value),
+        backgroundColor: legendItems.map((item) => item.color),
+        borderWidth: 3,
+        borderColor: '#fff',
+      },
+    ],
+  };
+
   return (
     <Card
       sx={{

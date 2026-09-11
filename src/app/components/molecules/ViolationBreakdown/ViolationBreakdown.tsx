@@ -4,11 +4,12 @@ import { Box, Typography } from "@mui/material";
 import ChecklistIcon from "@mui/icons-material/Checklist";
 import { DASHBOARD_COLORS, MuiIcon } from "@/app/config/dashboardTheme";
 
-export type BreakdownTone = "red" | "info";
+export type BreakdownTone = "red" | "info" | "green";
 
 const TONE_STYLES: Record<BreakdownTone, { bg: string; color: string }> = {
   red: { bg: DASHBOARD_COLORS.errorTint, color: DASHBOARD_COLORS.error },
   info: { bg: DASHBOARD_COLORS.accentTint, color: DASHBOARD_COLORS.accent },
+  green: { bg: DASHBOARD_COLORS.successTint, color: DASHBOARD_COLORS.success },
 };
 
 export interface BreakdownMetric {

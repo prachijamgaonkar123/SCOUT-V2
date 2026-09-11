@@ -1,14 +1,14 @@
+"use client";
+
 import { Card, Box, Typography } from '@mui/material';
 import { PhotoCameraOutlined } from '@mui/icons-material';
-
-const cameras = [
-  { id: 'CAM-08', zone: 'Warehouse', count: 2 },
-  { id: 'CAM-09', zone: 'Assembly Line', count: 2 },
-  { id: 'CAM-12', zone: 'Assembly Line', count: 1 },
-  { id: 'CAM-15', zone: 'Gate B', count: 1 },
-];
+import { useAlerts } from '@/Providers/AlertsProvider';
+import { getTopCameras } from '@/app/(protectedRoutes)/alertsPage/AlertsMockData';
 
 export default function TopCameras() {
+  const { alerts } = useAlerts();
+  const cameras = getTopCameras(alerts, 4);
+
   return (
     <Card
       sx={{

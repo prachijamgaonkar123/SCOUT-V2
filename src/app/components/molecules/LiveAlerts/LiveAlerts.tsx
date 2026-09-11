@@ -1,20 +1,29 @@
+"use client";
+
 import { Card, Box, Typography } from '@mui/material';
 import {
- 
   LocalShippingOutlined,
   SensorsOutlined,
-  DoorFrontOutlined,
-  BlockOutlined,
+  WarningAmberOutlined,
+  GroupsOutlined,
 } from '@mui/icons-material';
+import { useAlerts } from '@/Providers/AlertsProvider';
+import { getLiveAlerts } from '@/app/(protectedRoutes)/alertsPage/AlertsMockData';
+import type { UseCaseCategory } from '@/app/config/dashboardTheme';
 
-const alerts = [
-  { id: 1, severity: 'critical', icon: <BlockOutlined sx={{ fontSize: 16 }} />, title: 'Employee Presence in Restricted Areas', camera: 'CAM-08', zone: 'Warehouse', time: '17:42' },
-  { id: 2, severity: 'critical', icon: <SensorsOutlined sx={{ fontSize: 16 }} />, title: 'Intrusion Detection at Perimeter', camera: 'CAM-12', zone: 'Assembly Line', time: '17:40' },
-  { id: 3, severity: 'critical', icon: <DoorFrontOutlined sx={{ fontSize: 16 }} />, title: 'Emergency Exit Blockage Detection', camera: 'CAM-15', zone: 'Gate B', time: '17:39' },
-  { id: 4, severity: 'non-critical', icon: <LocalShippingOutlined sx={{ fontSize: 16 }} />, title: 'Forklift / Vehicle in Walkways', camera: 'CAM-04', zone: 'Loading Dock', time: '17:37' },
-];
+// Icon shown per alert category — kept independent of the specific title so
+// it doesn't need updating every time the mock data's titles change.
+const CATEGORY_ICON: Record<UseCaseCategory, typeof WarningAmberOutlined> = {
+  safety: WarningAmberOutlined,
+  surveillance: SensorsOutlined,
+  operational: LocalShippingOutlined,
+  workforce: GroupsOutlined,
+};
 
 export default function LiveAlerts() {
+  const { alerts: allAlerts } = useAlerts();
+  const alerts = getLiveAlerts(allAlerts, 4);
+
   return (
     <Card
       sx={{
@@ -71,7 +80,9 @@ export default function LiveAlerts() {
           justifyContent: 'center',
         }}
       >
-        {alerts.map((alert, idx) => (
+        {alerts.map((alert, idx) => {
+          const Icon = CATEGORY_ICON[alert.category];
+          return (
           <Box
             key={alert.id}
             sx={{
@@ -95,7 +106,7 @@ export default function LiveAlerts() {
                 color: alert.severity === 'critical' ? '#DC2626' : '#64748B',
               }}
             >
-              {alert.icon}
+              <Icon sx={{ fontSize: 16 }} />
             </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography sx={{ fontSize: '12.5px', fontWeight: 700, color: '#111827' }}>
@@ -109,7 +120,8 @@ export default function LiveAlerts() {
               {alert.time}
             </Typography>
           </Box>
-        ))}
+          );
+        })}
       </Box>
     </Card>
   );

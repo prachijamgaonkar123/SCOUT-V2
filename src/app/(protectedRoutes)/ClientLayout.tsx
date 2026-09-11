@@ -14,6 +14,8 @@ import Loader from "../components/atoms/Loader/Loader";
 import AuthGuard from "@/utils/auth-guard";
 import PageTransitionWrapper from "@/customhooks/PageTransitionWrapper";
 import { HEADER_HEIGHT } from "../config/layoutConstants";
+import { AlertsProvider, useAlerts } from "@/Providers/AlertsProvider";
+import RecentEventPopup from "../components/molecules/AlertPopup/RecentEventPopup";
 
 interface ClientLayoutProps {
   children: ReactNode;
@@ -22,7 +24,17 @@ interface ClientLayoutProps {
 export default function ClientLayout({
   children,
 }: Readonly<ClientLayoutProps>) {
+  return (
+    <AlertsProvider>
+      <ClientLayoutContent>{children}</ClientLayoutContent>
+    </AlertsProvider>
+  );
+}
+
+function ClientLayoutContent({ children }: Readonly<ClientLayoutProps>) {
   const pathname = usePathname();
+  const { popupEvents, isPopupSnoozed, handlePopupStatusChange, handleSnoozePopup } =
+    useAlerts();
 
   const [mounted, setMounted] = useState(false);
   const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
@@ -107,6 +119,15 @@ export default function ClientLayout({
           </Box>
         </Box>
       </Box>
+
+      {popupEvents.length > 0 && !isPopupSnoozed && (
+        <RecentEventPopup
+          events={popupEvents}
+          totalCount={popupEvents.length}
+          onStatusChange={handlePopupStatusChange}
+          onSnooze={handleSnoozePopup}
+        />
+      )}
     </LocalizationProvider>
     </AuthGuard>
   );

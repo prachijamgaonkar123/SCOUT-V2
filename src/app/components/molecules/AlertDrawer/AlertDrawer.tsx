@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from 'react';
 import { Drawer, Box, Typography, IconButton, InputBase, Button } from '@mui/material';
 import {
   Close,
@@ -9,12 +10,14 @@ import {
   Check,
   FileDownloadOutlined,
 } from '@mui/icons-material';
-import { Alert, formatTimestamp } from '../AlertsTable/AlertsTable';
+import { Alert, AlertStatus, formatTimestamp } from '../AlertsTable/AlertsTable';
 
 interface AlertDrawerProps {
   open: boolean;
   onClose: () => void;
   alert: Alert | null;
+  onStatusChange?: (alert: Alert, status: AlertStatus, note?: string) => void;
+  onDownload?: (alert: Alert) => void;
 }
 
 const infoLabelSx = {
@@ -53,12 +56,22 @@ const actionBtnSx = {
   width: '100%',
 };
 
-export default function AlertDrawer({ open, onClose, alert }: AlertDrawerProps) {
+export default function AlertDrawer({ open, onClose, alert, onStatusChange, onDownload }: AlertDrawerProps) {
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    setNote('');
+  }, [alert?.id]);
+
   if (!alert) return null;
 
   const isCritical = alert.severity === 'critical';
   const severityLabel = isCritical ? 'Critical' : 'Non-Critical';
 
+  // Non-critical alerts are only ever resolved from the alert popup (one
+  // step: detected → resolved). Critical alerts go through a 3-step flow —
+  // acknowledge in the popup, then resolve here in the drawer with a
+  // mandatory note.
   const timelineSteps = isCritical
     ? [
         { label: 'AI detected event', done: true },
@@ -67,8 +80,27 @@ export default function AlertDrawer({ open, onClose, alert }: AlertDrawerProps) 
       ]
     : [
         { label: 'AI detected event', done: true },
-        { label: 'Viewed', done: alert.status === 'viewed' },
+        { label: 'Resolved', done: alert.status === 'resolved' },
       ];
+
+  // Kept only as a safety net — in the normal flow every critical alert
+  // reaching this drawer has already been acknowledged in the popup.
+  const canAcknowledge = isCritical && alert.status === 'new';
+  const canResolve = isCritical && alert.status === 'acknowledged' && note.trim().length > 0;
+  const notesEditable = isCritical && alert.status === 'acknowledged';
+  const notesValue = alert.status === 'resolved' ? (alert.notes ?? '') : note;
+
+  const handleAcknowledge = () => {
+    onStatusChange?.(alert, 'acknowledged');
+  };
+
+  const handleResolve = () => {
+    onStatusChange?.(alert, 'resolved', note.trim());
+  };
+
+  const handleDownload = () => {
+    onDownload?.(alert);
+  };
 
   return (
     <Drawer
@@ -137,18 +169,37 @@ export default function AlertDrawer({ open, onClose, alert }: AlertDrawerProps) 
           sx={{
             height: 150,
             borderRadius: '10px',
-            background: 'repeating-linear-gradient(45deg,#F3F4F6,#F3F4F6 10px,#E9EAEE 10px,#E9EAEE 20px)',
+            ...(alert.imageUrl
+              ? {
+                  backgroundImage: `url(${alert.imageUrl})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }
+              : {
+                  background: 'repeating-linear-gradient(45deg,#F3F4F6,#F3F4F6 10px,#E9EAEE 10px,#E9EAEE 20px)',
+                }),
             border: '1px solid #E5E7EB',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
+            justifyContent: 'flex-end',
             gap: '6px',
             mb: '18px',
+            position: 'relative',
+            overflow: 'hidden',
           }}
         >
-          <PhotoCameraOutlined sx={{ fontSize: 28, color: '#9CA3AF' }} />
-          <Typography sx={{ fontSize: '11.5px', color: '#6B7280', fontWeight: 600 }}>
+          {!alert.imageUrl && <PhotoCameraOutlined sx={{ fontSize: 28, color: '#9CA3AF', flex: 1, alignSelf: 'center' }} />}
+          <Typography
+            sx={{
+              fontSize: '11.5px',
+              fontWeight: 600,
+              width: '100%',
+              p: '4px 8px',
+              color: alert.imageUrl ? '#FFFFFF' : '#6B7280',
+              bgcolor: alert.imageUrl ? 'rgba(0,0,0,.45)' : 'transparent',
+            }}
+          >
             Snapshot · {alert.camera}
           </Typography>
         </Box>
@@ -229,25 +280,33 @@ export default function AlertDrawer({ open, onClose, alert }: AlertDrawerProps) 
           ))}
         </Box>
 
-        {/* Notes */}
-        <Typography sx={sectionLabelSx}>Notes</Typography>
-        <InputBase
-          multiline
-          minRows={3}
-          placeholder="Add an operator note…"
-          fullWidth
-          sx={{
-            border: '1px solid #E5E7EB',
-            borderRadius: '8px',
-            p: '10px 12px',
-            fontSize: '13px',
-            color: '#111827',
-            '&.Mui-focused': {
-              borderColor: '#2563EB',
-              boxShadow: '0 0 0 3px rgba(37,99,235,.12)',
-            },
-          }}
-        />
+        {/* Notes — critical alerts only; non-critical alerts are resolved
+            directly from the popup and never collect a note here. */}
+        {isCritical && (
+          <>
+            <Typography sx={sectionLabelSx}>Notes</Typography>
+            <InputBase
+              multiline
+              minRows={3}
+              placeholder="Add an operator note…"
+              fullWidth
+              value={notesValue}
+              onChange={(e) => setNote(e.target.value)}
+              disabled={!notesEditable}
+              sx={{
+                border: '1px solid #E5E7EB',
+                borderRadius: '8px',
+                p: '10px 12px',
+                fontSize: '13px',
+                color: '#111827',
+                '&.Mui-focused': {
+                  borderColor: '#2563EB',
+                  boxShadow: '0 0 0 3px rgba(37,99,235,.12)',
+                },
+              }}
+            />
+          </>
+        )}
       </Box>
 
       {/* Actions */}
@@ -260,20 +319,38 @@ export default function AlertDrawer({ open, onClose, alert }: AlertDrawerProps) 
           borderTop: '1px solid #E5E7EB',
         }}
       >
-        {isCritical && (
+        {isCritical && canAcknowledge && (
           <Button
+            onClick={handleAcknowledge}
+            startIcon={<Check sx={{ fontSize: 17 }} />}
+            sx={{
+              ...actionBtnSx,
+              borderColor: '#BFDBFE',
+              color: '#1D4ED8',
+              '&:hover': { bgcolor: '#EFF6FF' },
+            }}
+          >
+            Acknowledge
+          </Button>
+        )}
+        {isCritical && alert.status === 'acknowledged' && (
+          <Button
+            onClick={handleResolve}
+            disabled={!canResolve}
             startIcon={<Check sx={{ fontSize: 17 }} />}
             sx={{
               ...actionBtnSx,
               borderColor: '#B8E6C9',
               color: '#0F7A38',
               '&:hover': { bgcolor: '#EAF9EF' },
+              '&.Mui-disabled': { color: '#9CA3AF', borderColor: '#E5E7EB' },
             }}
           >
             Resolve
           </Button>
         )}
         <Button
+          onClick={handleDownload}
           startIcon={<FileDownloadOutlined sx={{ fontSize: 17 }} />}
           sx={{
             ...actionBtnSx,

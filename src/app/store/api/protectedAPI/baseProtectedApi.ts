@@ -108,6 +108,8 @@ export const baseProtectedApi = createApi({
     "CanteenUsageData",
     "CanteenUsageDetailedReport",
     "AlertConfig",
+    "ZoneOccupancyMonitoringAnalytics",
+    "ZoneOccupancyMonitoringDetailedReport",
 
 ],
 });

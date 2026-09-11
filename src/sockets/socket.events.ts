@@ -18,6 +18,7 @@ export const SOCKET_EVENTS = {
   PEOPLE_COUNT_UPDATE:"People_Count_In_Factory_Premises_Update",
   OPERATIONAL_INSIGHTS_UPDATE:"Operational_Insights_Update",
   CAMERA_TAMPERING_UPDATE:"camera_tampering_update",
-CANTEEN_USAGE_MONITORING_UPDATE: "canteen_usage_monitoring_update"
+CANTEEN_USAGE_MONITORING_UPDATE: "canteen_usage_monitoring_update",
+  ZONE_OCCUPANCY_MONITORING_UPDATE: "zone_occupancy_monitoring_update",
 
 } as const;

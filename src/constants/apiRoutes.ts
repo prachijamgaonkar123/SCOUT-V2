@@ -462,4 +462,12 @@ export const apiRoutes = {
     root: "alerts",
     getAllAlerts: "get-all-alerts", // kafka queue for showing the alerts
   },
+  zoneOccupancyMonitoring: {
+    root: "zoneOccupancyMonitoring",
+    getZoneOccupancyMonitoringAnalyticsData: "get-zone-occupancy-monitoring-analytics-kpi-recent-zone-violations",
+    getZoneOccupancyMonitoringAnalyticsDetailedReport: "get-zone-occupancy-monitoring-analytics-details-report",
+    getZoneOccupancyMonitoringAnalyticsDownloadDetailedPdfReport: "get-zone-occupancy-monitoring-analytics-download-details-pdf-report",
+    getZoneOccupancyMonitoringAnalyticsDownloadDetailedCSVReport: "get-zone-occupancy-monitoring-analytics-download-details-csv-report",
+    getZoneOccupancyMonitoringAnalyticsDownloadDetailedReportForSingleId: "get-zone-occupancy-monitoring-analytics-download-details-report-for-single-id",
+  },
 };
