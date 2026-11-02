@@ -1,5 +1,3 @@
-
-
 "use client";
 /**
  * Sidebar — Scout Vision (pixel-matched to the approved HTML mockup)
@@ -78,7 +76,10 @@ import { hasFeature } from "@/utils/hasFeature";
 import { useGetOrgAndUserLogoQuery } from "@/app/(protectedRoutes)/(settings)/(userManagement)/addUser/AddUserApi";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/store/store";
-import { SIDEBAR_WIDTH, SIDEBAR_WIDTH_RAIL } from "@/app/config/layoutConstants";
+import {
+  SIDEBAR_WIDTH,
+  SIDEBAR_WIDTH_RAIL,
+} from "@/app/config/layoutConstants";
 
 /* ═════════════════════════════════════════════════════════════════════════
    MOCKUP TOKENS — every value copied verbatim from the approved HTML CSS
@@ -115,8 +116,8 @@ const M = {
 
   /* .nav-item */
   itemGap: "11px",
-  itemMargin: "0",               // removes all vertical spacing between items
-  itemPadding: "5.2px 10px",     // reduces inner height (default was 9px)
+  itemMargin: "0", // removes all vertical spacing between items
+  itemPadding: "5.2px 10px", // reduces inner height (default was 9px)
   itemRadius: "8px",
   itemColor: "#9AA4B8",
   itemWeight: 500,
@@ -184,16 +185,21 @@ const M = {
   footerFontSize: "10px",
   footerColor: "#5B6376",
   footerPadding: "6px 20px 16px 20px",
-} as const;
 
+  /* .sidebar-brand (full-logo mode) */
+  brandPadTop: 18,
+  brandLogoHeight: 64, // raise for a taller logo
+  brandRowGap: 6,
+  brandPaddingFull: "18px 18px 12px 18px", // equal left/right, so the logo gets the full width
+} as const;
+const SHOW_SUBTITLE = true;
+const USE_STATIC_LOGO = true;
 const BRAND = {
-  // TODO(multi-tenant): swap for the tenant's display name once exposed on
-  // the user object / logo query response.
   orgNameFallback: "Customer Logo",
   subtitle: "Scout Platform",
+  staticLogo: "/tvarit.jpeg", // file in /public
   fallbackLogo: "/CustomerLogo1.png",
-  //footerLogo: "/scoutLogo.png",
-    footerLogo: "/icon.png",
+  footerLogo: "/icon.png",
   company: "Elansol Technologies",
 } as const;
 
@@ -279,7 +285,10 @@ const NavLink = React.memo<{
   return (
     <Tooltip title={tooltip} arrow placement="right">
       <span style={{ display: "block" }}>
-        <ListItem disablePadding sx={{ m: sub ? M.subItemMargin : M.itemMargin }}>
+        <ListItem
+          disablePadding
+          sx={{ m: sub ? M.subItemMargin : M.itemMargin }}
+        >
           <ListItemButton
             component={enabled ? Link : "div"}
             href={enabled ? item.path : undefined}
@@ -333,49 +342,66 @@ const NavLink = React.memo<{
             //   },
             // }}
             sx={{
-  gap: M.itemGap,
-  padding: collapsed ? "9px 0" : (sub ? M.subItemPadding : M.itemPadding),
-  paddingLeft: collapsed ? 0 : sub ? M.subItemPaddingLeft : undefined,
-  justifyContent: collapsed ? "center" : "flex-start",
-  borderRadius: M.itemRadius,
-  color: enabled ? M.itemColor : M.itemIconColor,
-  fontWeight: M.itemWeight,
-  position: "relative",
-  overflow: "visible",
-  cursor: enabled ? "pointer" : "not-allowed",
-  transition: "background-color .12s ease, color .12s ease, opacity .12s ease",
-  opacity: enabled ? 1 : 0.65,
-  backgroundColor: enabled ? "transparent" : "rgba(255,255,255,.05)",
-  "&:hover": {
-    backgroundColor: enabled ? M.itemHoverBg : "rgba(255,255,255,.05)",
-    color: enabled ? M.itemHoverColor : undefined,
-    "& .MuiListItemIcon-root": {
-      color: enabled ? M.itemHoverColor : undefined,
-    },
-  },
-  "&.Mui-disabled": { opacity: 1 },
-  "&.Mui-focusVisible": {
-    outline: `2px solid ${M.accentBar}`,
-    outlineOffset: "-2px",
-  },
-  "&.Mui-selected": {
-    backgroundColor: M.activeBg,
-    color: "#fff",
-    boxShadow: M.activeShadow,
-    "&:hover": { backgroundColor: M.activeHoverBg },
-    "& .MuiListItemIcon-root": { color: "#fff" },
-    "&::before": {
-      content: '""',
-      position: "absolute",
-      left: collapsed ? 0 : sub ? M.accentBarLeftSub : M.accentBarLeftRoot,
-      top: "22%",
-      bottom: "22%",
-      width: 3,
-      borderRadius: "2px",
-      backgroundColor: M.accentBar,
-    },
-  },
-}}
+              gap: M.itemGap,
+              padding: collapsed
+                ? "9px 0"
+                : sub
+                  ? M.subItemPadding
+                  : M.itemPadding,
+              paddingLeft: collapsed
+                ? 0
+                : sub
+                  ? M.subItemPaddingLeft
+                  : undefined,
+              justifyContent: collapsed ? "center" : "flex-start",
+              borderRadius: M.itemRadius,
+              color: enabled ? M.itemColor : M.itemIconColor,
+              fontWeight: M.itemWeight,
+              position: "relative",
+              overflow: "visible",
+              cursor: enabled ? "pointer" : "not-allowed",
+              transition:
+                "background-color .12s ease, color .12s ease, opacity .12s ease",
+              opacity: enabled ? 1 : 0.65,
+              backgroundColor: enabled
+                ? "transparent"
+                : "rgba(255,255,255,.05)",
+              "&:hover": {
+                backgroundColor: enabled
+                  ? M.itemHoverBg
+                  : "rgba(255,255,255,.05)",
+                color: enabled ? M.itemHoverColor : undefined,
+                "& .MuiListItemIcon-root": {
+                  color: enabled ? M.itemHoverColor : undefined,
+                },
+              },
+              "&.Mui-disabled": { opacity: 1 },
+              "&.Mui-focusVisible": {
+                outline: `2px solid ${M.accentBar}`,
+                outlineOffset: "-2px",
+              },
+              "&.Mui-selected": {
+                backgroundColor: M.activeBg,
+                color: "#fff",
+                boxShadow: M.activeShadow,
+                "&:hover": { backgroundColor: M.activeHoverBg },
+                "& .MuiListItemIcon-root": { color: "#fff" },
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  left: collapsed
+                    ? 0
+                    : sub
+                      ? M.accentBarLeftSub
+                      : M.accentBarLeftRoot,
+                  top: "22%",
+                  bottom: "22%",
+                  width: 3,
+                  borderRadius: "2px",
+                  backgroundColor: M.accentBar,
+                },
+              },
+            }}
           >
             <ListItemIcon
               sx={{
@@ -578,7 +604,7 @@ export interface SidebarProps {
   /** Live alert count from the alerts API / socket. Overrides the static
    *  badge value in menuConfig when provided. */
 
-   alertCount?: number;
+  alertCount?: number;
 
   /** Notified whenever the collapsed/rail state changes (including the
    *  initial value restored from localStorage), so parent layouts (e.g. the
@@ -599,6 +625,9 @@ const Sidebar: React.FC<SidebarProps> = ({ alertCount, onCollapsedChange }) => {
     { skip: !loggedInUser || !tenantId },
   );
   const orgLogo = data?.logoPath?.orgLogo ?? BRAND.fallbackLogo;
+
+  const logoSrc = USE_STATIC_LOGO ? BRAND.staticLogo : orgLogo;
+  const showSkeleton = !USE_STATIC_LOGO && isLoading;
 
   /* ── layout state — only one section open at a time (accordion) ── */
   const [collapsed, setCollapsedState] = useState(false);
@@ -708,12 +737,22 @@ const Sidebar: React.FC<SidebarProps> = ({ alertCount, onCollapsedChange }) => {
     (key: SectionKey) => {
       if (collapsed) {
         setCollapsed(false);
-        setOpenSections({ monitoring: false, analytics: false, settings: false, [key]: true });
+        setOpenSections({
+          monitoring: false,
+          analytics: false,
+          settings: false,
+          [key]: true,
+        });
         return;
       }
       setOpenSections((p) => {
         const willOpen = !p[key];
-        return { monitoring: false, analytics: false, settings: false, [key]: willOpen };
+        return {
+          monitoring: false,
+          analytics: false,
+          settings: false,
+          [key]: willOpen,
+        };
       });
     },
     [collapsed, setCollapsed],
@@ -771,7 +810,9 @@ const Sidebar: React.FC<SidebarProps> = ({ alertCount, onCollapsedChange }) => {
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         sx={{
           position: "absolute",
-          top: collapsed ? "86px" : "20px",
+          top: collapsed
+            ? "86px"
+            : `${M.brandPadTop + M.brandLogoHeight + M.brandRowGap}px`,
           right: collapsed ? "auto" : "16px",
           left: collapsed ? "50%" : "auto",
           transform: collapsed ? "translateX(-50%)" : "none",
@@ -798,33 +839,36 @@ const Sidebar: React.FC<SidebarProps> = ({ alertCount, onCollapsedChange }) => {
       </IconButton>
 
       {/* ── BRAND ── */}
+      {/* ── BRAND ── */}
       <Box
         sx={{
           display: "flex",
-          alignItems: "center",
-          gap: M.brandGap,
-          padding: collapsed ? "20px 0 18px 0" : M.brandPadding,
-          justifyContent: collapsed ? "center" : "flex-start",
+          flexDirection: "column",
+          alignItems: collapsed ? "center" : "stretch",
+          justifyContent: "center",
+          gap: `${M.brandRowGap}px`,
+          padding: collapsed ? "20px 0 18px 0" : M.brandPaddingFull,
         }}
       >
-        {isLoading ? (
+        {showSkeleton ? (
           <Skeleton
             variant="rounded"
-            width={M.logoBadgeSize}
-            height={M.logoBadgeSize}
+            width={collapsed ? M.logoBadgeSize : "100%"}
+            height={collapsed ? M.logoBadgeSize : M.brandLogoHeight}
             sx={{
               bgcolor: "rgba(255,255,255,.08)",
               borderRadius: M.logoBadgeRadius,
               flexShrink: 0,
             }}
           />
-        ) : (
+        ) : collapsed ? (
+          /* rail mode: small badge so it fits in 72px */
           <Box
             sx={{
               width: M.logoBadgeSize,
               height: M.logoBadgeSize,
               borderRadius: M.logoBadgeRadius,
-              backgroundColor: M.logoBadgeBg,
+              backgroundColor: "#fff",
               border: M.logoBadgeBorder,
               display: "flex",
               alignItems: "center",
@@ -835,38 +879,53 @@ const Sidebar: React.FC<SidebarProps> = ({ alertCount, onCollapsedChange }) => {
           >
             <Box
               component="img"
-              src={orgLogo}
+              src={logoSrc}
               alt="Organization logo"
               onError={handleLogoError}
               sx={{
                 width: "100%",
                 height: "100%",
                 objectFit: "contain",
-                p: "4px",
+                p: "3px",
               }}
             />
           </Box>
+        ) : (
+          /* full mode: logo spans the whole sidebar width */
+          <Box
+            component="img"
+            src={logoSrc}
+            alt="Organization logo"
+            onError={handleLogoError}
+            sx={{
+              display: "block",
+              width: "100%",
+              height: M.brandLogoHeight,
+              boxSizing: "border-box",
+              objectFit: "contain",
+              objectPosition: "center",
+              backgroundColor: "#fff", // JPEG has no transparency
+              borderRadius: "10px",
+              p: "6px",
+            }}
+          />
         )}
 
-        {!collapsed && (
-          <Box sx={{ minWidth: 0, pr: "36px" /* clear the collapse btn */ }}>
-            <Typography
-              sx={{
-                fontWeight: M.brandTextWeight,
-                fontSize: M.brandTextSize,
-                letterSpacing: "-.005em",
-                color: M.brandTextColor,
-                lineHeight: 1.25,
-              }}
-            >
-              {BRAND.orgNameFallback}
-            </Typography>
+        {!collapsed && SHOW_SUBTITLE && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              minHeight: M.collapseBtnSize, // the collapse button sits on this row
+              pr: "36px",
+            }}
+          >
             <Typography
               sx={{
                 fontSize: M.brandSubSize,
                 color: M.brandSubColor,
-                mt: "1px",
                 fontWeight: M.brandSubWeight,
+                lineHeight: 1.2,
               }}
             >
               {BRAND.subtitle}
@@ -876,7 +935,9 @@ const Sidebar: React.FC<SidebarProps> = ({ alertCount, onCollapsedChange }) => {
       </Box>
 
       {/* ── divider ── */}
-      <Box sx={{ height: "1px", backgroundColor: M.divider, m: M.dividerMargin }} />
+      <Box
+        sx={{ height: "1px", backgroundColor: M.divider, m: M.dividerMargin }}
+      />
 
       {/* ── NAV ── */}
       <List
@@ -907,7 +968,11 @@ const Sidebar: React.FC<SidebarProps> = ({ alertCount, onCollapsedChange }) => {
               onClick={() => toggleSection("monitoring")}
             />
             {!collapsed && (
-              <Collapse in={openSections.monitoring} timeout={200} unmountOnExit>
+              <Collapse
+                in={openSections.monitoring}
+                timeout={200}
+                unmountOnExit
+              >
                 <SubList>
                   {monitoringItems.map((item) => (
                     <NavLink
@@ -952,7 +1017,8 @@ const Sidebar: React.FC<SidebarProps> = ({ alertCount, onCollapsedChange }) => {
                               padding: M.itemPadding,
                               borderRadius: M.itemRadius,
                               color: M.itemColor,
-                              transition: "background-color .12s ease, color .12s ease",
+                              transition:
+                                "background-color .12s ease, color .12s ease",
                               "&:hover": {
                                 backgroundColor: M.itemHoverBg,
                                 color: M.itemHoverColor,
@@ -966,7 +1032,8 @@ const Sidebar: React.FC<SidebarProps> = ({ alertCount, onCollapsedChange }) => {
                                 width: M.swatchSize,
                                 height: M.swatchSize,
                                 borderRadius: "2px",
-                                backgroundColor: CATEGORY_SWATCH[category.title] || "#6B7488",
+                                backgroundColor:
+                                  CATEGORY_SWATCH[category.title] || "#6B7488",
                                 flexShrink: 0,
                               }}
                             />
