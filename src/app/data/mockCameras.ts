@@ -67,7 +67,7 @@ export const mockCameras: Camera[] = [
     port: "554",
     make: "Hikvision",
     status: "connected",
-    createdAt: "2024-01-05T09:00:00Z",
+    createdAt: "2024-02-05T09:00:00Z",
   },
   {
     id: 6,
